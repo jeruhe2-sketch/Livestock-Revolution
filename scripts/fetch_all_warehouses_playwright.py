@@ -51,12 +51,12 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
         )
 
         # 1) 메인 페이지 접속 -> login.do 로 리다이렉트됨
-        page.goto(cfg["base_url"] + "/", wait_until="networkidle", timeout=30000)
+        page.goto(cfg["base_url"] + "/", wait_until="networkidle", timeout=90000)
 
         # 2) 로그인 폼 채우고 제출 (실제 사람이 누르는 것과 동일)
         page.fill("input[name='id']", login_id)
         page.fill("input[name='pw']", login_pw)
-        with page.expect_navigation(wait_until="networkidle", timeout=30000):
+        with page.expect_navigation(wait_until="networkidle", timeout=90000):
             page.click("button[type='submit']")
 
         # 로그인 성공 확인 (좌측 메뉴/logout 링크 존재 여부)
@@ -70,7 +70,7 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
         page.goto(
             f"{cfg['base_url']}/rtv_stock02.do?nav_num=0107",
             wait_until="networkidle",
-            timeout=30000,
+            timeout=90000,
         )
 
         today = now_kst().strftime("%Y%m%d")
@@ -83,7 +83,7 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
             date_input.fill("")
             date_input.fill(today)
 
-        with page.expect_navigation(wait_until="networkidle", timeout=30000):
+        with page.expect_navigation(wait_until="networkidle", timeout=90000):
             page.click("button[type='submit']:has-text('조회')")
 
         # DataTables가 화면에 25건씩만 페이지네이션해서 보여주는데(사이트 기본값
@@ -101,7 +101,7 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
             }
             """
         )
-        page.wait_for_timeout(800)
+        page.wait_for_timeout(2000)
 
         html = page.content()
         rows = parse_stock_table(html, cfg["창고명"])
