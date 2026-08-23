@@ -143,55 +143,77 @@ def fetch_one_acecs(playwright, cfg: dict) -> list:
         )
 
     browser = playwright.chromium.launch(headless=True)
-    try:
-        page = browser.new_page(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            )
+    page = browser.new_page(
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
-
-        # 1) 로그인 페이지 접속, id/pw 입력 (필드명 미확인 -> 타입으로 찾기)
-        page.goto(cfg["base_url"], wait_until="networkidle", timeout=90000)
-        page.locator("input[type='text']").first.fill(login_id)
-        page.locator("input[type='password']").first.fill(login_pw)
-        with page.expect_navigation(wait_until="networkidle", timeout=90000):
-            page.locator("input[value='로그인'], button:has-text('로그인'), input[type='submit']").first.click()
-
-        if "General" not in page.url and "WMS" not in page.url:
-            # 로그인 후 재고조회(General) 화면으로 명시적 이동
-            page.goto(
-                "https://cs.acecs.co.kr/IL6/WMS/General",
-                wait_until="networkidle",
-                timeout=90000,
-            )
-
-        # 2) 창고 드롭다운(그리드 룩업) 열고 원하는 창고 선택
-        page.click("#gridLookupDepotInventoryInfo_B-1")
-        page.wait_for_selector("#gridLookupDepotInventoryInfo_DDD_gv_DXMainTable", timeout=15000)
-        depot_name = cfg["depot_name"]
-        page.get_by_text(depot_name, exact=True).first.click()
-        page.wait_for_timeout(300)
-
-        # 3) 조회 버튼 클릭 -> 위탁사/기간은 기본값 그대로 사용
-        with page.expect_response(lambda r: "InventoryInfoList" in r.url, timeout=90000):
-            page.click("#btnInventorySearch")
-        page.wait_for_timeout(2000)
-
-        html = page.content()
-        rows = parse_acecs_table(html, cfg["창고명"])
-        if not rows:
-            debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}.html"
-            with open(debug_path, "w", encoding="utf-8") as f:
-                f.write(html)
-            print(
-                f"  -> 0건 파싱됨. 원본 페이지를 {debug_path} 에 저장했으니 "
-                "이 파일을 보내주시면 표 구조를 확인할 수 있습니다.",
-                file=sys.stderr,
-            )
-        return rows
+    )
+    try:
+        try:
+            return _run_acecs_flow(page, cfg, login_id, login_pw)
+        except Exception:
+            debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}_실패시점.html"
+            try:
+                with open(debug_path, "w", encoding="utf-8") as f:
+                    f.write(page.content())
+                print(f"  -> 실패 시점 화면을 {debug_path} 에 저장했습니다.", file=sys.stderr)
+            except Exception:
+                pass
+            raise
     finally:
         browser.close()
+
+
+def _run_acecs_flow(page, cfg: dict, login_id: str, login_pw: str) -> list:
+    # 1) 로그인 페이지 접속, id/pw 입력 (필드명 미확인 -> 타입으로 찾기)
+    page.goto(cfg["base_url"], wait_until="networkidle", timeout=90000)
+    page.locator("input[type='text']").first.fill(login_id)
+    page.locator("input[type='password']").first.fill(login_pw)
+    with page.expect_navigation(wait_until="networkidle", timeout=90000):
+        page.locator("input[value='로그인'], button:has-text('로그인'), input[type='submit']").first.click()
+
+    if "General" not in page.url and "WMS" not in page.url:
+        # 로그인 후 재고조회(General) 화면으로 명시적 이동
+        page.goto(
+            "https://cs.acecs.co.kr/IL6/WMS/General",
+            wait_until="networkidle",
+            timeout=90000,
+        )
+
+    # 이 사이트는 좌측 메뉴를 눌러야 "재고조회" 화면(창고 드롭다운 포함)이
+    # 실제로 로드되는 구조(단순 URL 이동만으로는 기본 홈 화면만 뜸).
+    try:
+        page.get_by_text("재고조회", exact=True).first.click(timeout=15000)
+        page.wait_for_load_state("networkidle", timeout=90000)
+    except Exception:
+        pass  # 이미 재고조회 화면이면 무시하고 계속 진행
+
+    # 2) 창고 드롭다운(그리드 룩업) 열고 원하는 창고 선택
+    page.wait_for_selector("#gridLookupDepotInventoryInfo_B-1", timeout=30000)
+    page.click("#gridLookupDepotInventoryInfo_B-1")
+    page.wait_for_selector("#gridLookupDepotInventoryInfo_DDD_gv_DXMainTable", timeout=15000)
+    depot_name = cfg["depot_name"]
+    page.get_by_text(depot_name, exact=True).first.click()
+    page.wait_for_timeout(300)
+
+    # 3) 조회 버튼 클릭 -> 위탁사/기간은 기본값 그대로 사용
+    with page.expect_response(lambda r: "InventoryInfoList" in r.url, timeout=90000):
+        page.click("#btnInventorySearch")
+    page.wait_for_timeout(2000)
+
+    html = page.content()
+    rows = parse_acecs_table(html, cfg["창고명"])
+    if not rows:
+        debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}.html"
+        with open(debug_path, "w", encoding="utf-8") as f:
+            f.write(html)
+        print(
+            f"  -> 0건 파싱됨. 원본 페이지를 {debug_path} 에 저장했으니 "
+            "이 파일을 보내주시면 표 구조를 확인할 수 있습니다.",
+            file=sys.stderr,
+        )
+    return rows
 
 
 def main():
