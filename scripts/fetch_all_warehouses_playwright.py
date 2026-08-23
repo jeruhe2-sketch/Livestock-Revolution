@@ -166,12 +166,12 @@ def fetch_one_acecs(playwright, cfg: dict) -> list:
 
 
 def _run_acecs_flow(page, cfg: dict, login_id: str, login_pw: str) -> list:
-    # 1) 로그인 페이지 접속, id/pw 입력 (필드명 미확인 -> 타입으로 찾기)
+    # 1) 로그인 페이지 접속, id/pw 입력 (실제 로그인 폼 필드명 확인됨: UserID/UserPw/btnLogin)
     page.goto(cfg["base_url"], wait_until="networkidle", timeout=90000)
-    page.locator("input[type='text']").first.fill(login_id)
-    page.locator("input[type='password']").first.fill(login_pw)
+    page.fill("#UserID", login_id)
+    page.fill("#UserPw", login_pw)
     with page.expect_navigation(wait_until="networkidle", timeout=90000):
-        page.locator("input[value='로그인'], button:has-text('로그인'), input[type='submit']").first.click()
+        page.click("#btnLogin")
 
     if "General" not in page.url and "WMS" not in page.url:
         # 로그인 후 재고조회(General) 화면으로 명시적 이동
@@ -202,18 +202,46 @@ def _run_acecs_flow(page, cfg: dict, login_id: str, login_pw: str) -> list:
         page.click("#btnInventorySearch")
     page.wait_for_timeout(2000)
 
-    html = page.content()
-    rows = parse_acecs_table(html, cfg["창고명"])
-    if not rows:
+    # 4) 이 그리드는 기본 10건씩 페이지네이션되어 있어서(DevExpress ASPxGridView),
+    # "다음 페이지" 버튼을 화면상 사라질 때까지 계속 눌러가며 전부 모은다.
+    all_rows = []
+    seen_page_html = set()
+    for _ in range(500):  # 무한루프 방지용 안전장치
+        html = page.content()
+        rows = parse_acecs_table(html, cfg["창고명"])
+        all_rows.extend(rows)
+
+        next_btn = page.locator(
+            "img[alt='다음 페이지'], img[alt='Next Page'], "
+            ".dxp-button:has-text('다음'), a[title='다음 페이지'], a[title='Next Page']"
+        ).first
+        if next_btn.count() == 0:
+            break
+        # 비활성화(더 이상 다음 페이지 없음) 상태면 종료
+        classattr = next_btn.get_attribute("class") or ""
+        if "dxp-disabledButton" in classattr:
+            break
+
+        with page.expect_response(lambda r: "InventoryInfoList" in r.url, timeout=90000):
+            next_btn.click()
+        page.wait_for_timeout(1200)
+
+        # 같은 페이지가 반복되면(다음 버튼이 실제로 안 눌린 경우) 무한루프 방지
+        fingerprint = page.content()[:2000]
+        if fingerprint in seen_page_html:
+            break
+        seen_page_html.add(fingerprint)
+
+    if not all_rows:
         debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}.html"
         with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(html)
+            f.write(page.content())
         print(
             f"  -> 0건 파싱됨. 원본 페이지를 {debug_path} 에 저장했으니 "
             "이 파일을 보내주시면 표 구조를 확인할 수 있습니다.",
             file=sys.stderr,
         )
-    return rows
+    return all_rows
 
 
 def main():
