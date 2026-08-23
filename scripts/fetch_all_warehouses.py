@@ -65,9 +65,10 @@ _SUPPLIER_PATTERN = re.compile(
 # 같은 공급사를 가리키는 다른 표기(내부 약어, 한글 음역 등). 매칭 후 이 이름으로 통일.
 SUPPLIER_ALIASES = {
     "A/S": "AGROSUPER",
-    "G/N": "GREENLEA",
+    "G/N": "GREENIA",
     "S/W": "SWIFT",
     "INCA": "INCARLOPSA",
+    "GREENLEA": "GREENIA",
 }
 # 품목명에 라틴 문자 대신 한글 음역으로만 적힌 경우 (예: "닭다리정육-사디아")
 KOREAN_SUPPLIER_ALIASES = {
