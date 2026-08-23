@@ -53,6 +53,7 @@ KNOWN_SUPPLIERS = [
     "KAMOURASKA", "EXC", "NATIONAL", "LORIENTE", "GREENIA", "LORFOOD",
     "PERDIGAO", "SADIA", "DUMECO", "LAR", "QAF",
     "NV", "A/S", "BAUCELLS",
+    "BINDAREE", "G/N", "S/W",
 ]
 # 공급사명 표기가 대소문자 섞여있는 경우(예: "Fribin")도 매칭되도록 대소문자 무시.
 # \b 대신 (?<![A-Za-z0-9])...(?![A-Za-z0-9]) 를 쓰는 이유: "ACC_상이품"처럼 뒤에
@@ -64,6 +65,8 @@ _SUPPLIER_PATTERN = re.compile(
 # 같은 공급사를 가리키는 다른 표기(내부 약어, 한글 음역 등). 매칭 후 이 이름으로 통일.
 SUPPLIER_ALIASES = {
     "A/S": "AGROSUPER",
+    "G/N": "GREENLEA",
+    "S/W": "SWIFT",
 }
 # 품목명에 라틴 문자 대신 한글 음역으로만 적힌 경우 (예: "닭다리정육-사디아")
 KOREAN_SUPPLIER_ALIASES = {
@@ -351,6 +354,9 @@ SUPPLIER_ANIMAL_MAP = {
     "DARLING DOWNS": "소",
     "MAFRIGES": "소",
     "PATEL": "소",
+    "BINDAREE": "소",
+    "GREENLEA": "소",
+    "SWIFT": "소",
     # 돼지
     "AGROSUPER": "돼지",
     "SEABOARD": "돼지",
@@ -390,9 +396,9 @@ def classify_animal(품목명: str, 공급사: str = None) -> str:
     name = 품목명 or ""
     if re.search(r"염소", name):
         return "염소"
-    if re.match(r"^\(?돈", name):
+    if re.match(r"^\(?돈", name) or re.search(r"\)돈", name):
         return "돼지"
-    if re.search(r"항정살|삼겹살|가브리|갈매기살|시트밸리|등갈비|전지|후지|돈가스", name):
+    if re.search(r"항정살|삼겹살|가[브부]리|갈매기살|시트밸리|등갈비|전지|후지|돈가스", name):
         return "돼지"
     if re.match(r"^\(?닭", name) or re.match(r"^\(?계", name) or re.search(r"계육|장각", name):
         return "닭"
