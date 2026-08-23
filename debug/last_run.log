@@ -1,23 +1,14 @@
-[오류] 대청냉장/미통관 수집 실패: Page.goto: Timeout 30000ms exceeded.
-Call log:
-  - navigating to "http://211.239.173.91:8080/dchdst/rtv_stock02.do?nav_num=0107", waiting until "networkidle"
-
-[오류] 한라냉장/통관 수집 실패: Page.goto: Timeout 30000ms exceeded.
-Call log:
-  - navigating to "http://211.239.173.91:8080/hlgdst/rtv_stock02.do?nav_num=0107", waiting until "networkidle"
-
-[오류] 한라냉장/미통관 수집 실패: Page.goto: Timeout 30000ms exceeded.
-Call log:
-  - navigating to "http://211.239.173.91:8080/hlgdst/rtv_stock02.do?nav_num=0107", waiting until "networkidle"
-
-[오류] 신우냉장/미통관(축산물) 수집 실패: [신우냉장/미통관(축산물)] 환경변수 NWILL_SINWOO_LIVESTOCK_UNCLEARED_ID / NWILL_SINWOO_LIVESTOCK_UNCLEARED_PW 가 설정되지 않았습니다.
   -> 0건 파싱됨. 원본 페이지를 debug_삼진1냉장_전체.html 에 저장했으니 이 파일을 보내주시면 표 구조를 확인할 수 있습니다.
+[대청냉장/미통관] 39건 수집
 [신우냉장/미통관(계육)] 40건 수집
+[한라냉장/통관] 33건 수집
+[한라냉장/미통관] 84건 수집
 [대청냉장/통관] 120건 수집
 [신우냉장/통관(축산물)] 134건 수집
+[신우냉장/미통관(축산물)] 89건 수집
 [신우냉장/통관(계육)] 3건 수집
 [삼진1냉장/전체] 0건 수집
 [삼진2냉장/전체] 15건 수집
 [오로라씨에스/전체] 9건 수집
-완료: 총 477건 저장 (data/warehouse_stock.json)
+완료: 총 566건 저장 (data/warehouse_stock.json)
 exit_code=0
