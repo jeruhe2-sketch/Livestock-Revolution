@@ -180,7 +180,20 @@ WAREHOUSE_CONFIGS = [
         "pw_env": "NWILL_AURORA_PW",
         "계정용도": "전체",
     },
-    # 강동냉장: 점검중이라 보류
+    {
+        "창고명": "삼일냉장",
+        "base_url": "http://nwill.net:8080/sidst",
+        "id_env": "NWILL_SAMIL_ID",
+        "pw_env": "NWILL_SAMIL_PW",
+        "계정용도": "전체",
+    },
+    {
+        "창고명": "강동냉장",
+        "base_url": "http://211.239.173.90/kd1dst",
+        "id_env": "NWILL_GANGDONG_ID",
+        "pw_env": "NWILL_GANGDONG_PW",
+        "계정용도": "전체",
+    },
 ]
 
 

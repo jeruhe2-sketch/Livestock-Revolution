@@ -53,6 +53,10 @@ jobs:
           NWILL_SAMJIN2_PW: ${{ secrets.NWILL_SAMJIN2_PW }}
           NWILL_AURORA_ID: ${{ secrets.NWILL_AURORA_ID }}
           NWILL_AURORA_PW: ${{ secrets.NWILL_AURORA_PW }}
+          NWILL_SAMIL_ID: ${{ secrets.NWILL_SAMIL_ID }}
+          NWILL_SAMIL_PW: ${{ secrets.NWILL_SAMIL_PW }}
+          NWILL_GANGDONG_ID: ${{ secrets.NWILL_GANGDONG_ID }}
+          NWILL_GANGDONG_PW: ${{ secrets.NWILL_GANGDONG_PW }}
         run: |
           mkdir -p debug
           python scripts/fetch_all_warehouses_playwright.py > debug/last_run.log 2>&1
