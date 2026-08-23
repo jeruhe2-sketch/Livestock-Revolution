@@ -82,18 +82,28 @@ def _looks_like_code(text: str) -> bool:
 
 
 def extract_supplier(품목명: str, raw_brand: str) -> str:
-    """품목명에서 알려진 공급사명을 우선 찾고, 없으면 브랜드 컬럼값(코드성 문자열 제외)으로 폴백."""
+    """
+    품목명에서 알려진 공급사명을 우선 찾고, 못 찾으면 브랜드 컬럼값도 같은
+    방식으로 검색한다 (예: "IOWA/EST 8", "DUMECO(61)" 처럼 브랜드 컬럼에만
+    적혀있고 품목명엔 없는 경우 대응). 그래도 없으면 브랜드 컬럼값을
+    괄호 등 잡다한 텍스트만 정리해서 그대로 쓰고, 코드성 문자열이면 버린다.
+    """
     품목명 = 품목명 or ""
-    match = _SUPPLIER_PATTERN.search(품목명)
-    if match:
-        canonical = match.group(1).upper()
-        return SUPPLIER_ALIASES.get(canonical, canonical)
+    raw_brand = (raw_brand or "").strip()
+
+    for text in (품목명, raw_brand):
+        match = _SUPPLIER_PATTERN.search(text)
+        if match:
+            canonical = match.group(1).upper()
+            return SUPPLIER_ALIASES.get(canonical, canonical)
+
     for kor, canonical in KOREAN_SUPPLIER_ALIASES.items():
         if kor in 품목명:
             return canonical
-    raw_brand = (raw_brand or "").strip()
-    if raw_brand and not _looks_like_code(raw_brand):
-        return raw_brand
+
+    raw_brand_clean = re.sub(r"\(.*\)", "", raw_brand).strip()
+    if raw_brand_clean and not _looks_like_code(raw_brand_clean):
+        return raw_brand_clean
     return "기타/미상"
 
 # ------------------------------------------------------------------
