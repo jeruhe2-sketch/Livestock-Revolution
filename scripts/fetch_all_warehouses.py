@@ -69,6 +69,9 @@ SUPPLIER_ALIASES = {
     "S/W": "SWIFT",
     "INCA": "INCARLOPSA",
     "GREENLEA": "GREENIA",
+    "LORIENTE": "INCARLOPSA",
+    "LORFOOD": "INCARLOPSA",
+    "KAMOURASKA": "MAPLE",
 }
 # 품목명에 라틴 문자 대신 한글 음역으로만 적힌 경우 (예: "닭다리정육-사디아")
 KOREAN_SUPPLIER_ALIASES = {
