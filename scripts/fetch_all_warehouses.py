@@ -194,6 +194,15 @@ WAREHOUSE_CONFIGS = [
         "pw_env": "NWILL_GANGDONG_PW",
         "계정용도": "전체",
     },
+    {
+        "창고명": "에이스냉장(처인)",
+        "system": "acecs",
+        "base_url": "https://cs.acecs.co.kr/il6",
+        "depot_name": "처인사업소",
+        "id_env": "ACECS_ID",
+        "pw_env": "ACECS_PW",
+        "계정용도": "전체",
+    },
 ]
 
 
@@ -265,6 +274,47 @@ def parse_stock_table(html: str, 창고명: str) -> list:
 
         pass_raw = record.pop("통관구분", "").strip()
         record["통관상태"] = pass_raw if pass_raw else None  # 후처리 단계에서 계정 기본값 적용
+
+        for field in NUMERIC_FIELDS:
+            if field in record:
+                record[field] = _to_number(record[field])
+
+        rows.append(record)
+
+    return rows
+
+
+# ACE CS(cs.acecs.co.kr, "Intralogis"/DevExpress 시스템)는 nwill과 완전히
+# 다른 구조 - DataTables 대신 DevExpress ASPxGridView를 쓰고, 결과 화면의
+# HTML은 헤더/바디에 의미 있는 <thead>/<tbody> 구분이 없어서 헤더 기반 파싱이
+# 안 통한다. 대신 컬럼 순서가 페이지 JS(dxo.columns)에 고정되어 있는 걸
+# 확인해서 그 순서를 그대로 하드코딩한다.
+ACECS_COLUMNS = [
+    "품목명", "관리번호", "규격", "단위", "LOT-NO", "B/L NO", "유통식별번호",
+    "EST-NO", "저장위치", "재고수량", "중량_kg", "단위중량", "유통기한",
+    "통관상태", "원산지",
+]
+
+
+def parse_acecs_table(html: str, 창고명: str) -> list:
+    """ACE CS(Intralogis) 재고조회 결과 테이블(#InventoryList_DXMainTable) 파싱."""
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.select_one("#InventoryList_DXMainTable")
+    if table is None:
+        raise RuntimeError("ACE CS 재고조회 결과 테이블을 찾지 못했습니다 (페이지 구조 변경 가능성).")
+
+    rows = []
+    for tr in table.select("tr[id^=InventoryList_DXDataRow]"):
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+        if len(cells) < len(ACECS_COLUMNS):
+            continue
+
+        record = dict(zip(ACECS_COLUMNS, cells))
+        record["창고명"] = 창고명
+        record["공급사"] = extract_supplier(record["품목명"], "")
+        record["비고"] = record.pop("원산지", "")
 
         for field in NUMERIC_FIELDS:
             if field in record:

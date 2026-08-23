@@ -26,6 +26,7 @@ from fetch_all_warehouses import (
     WAREHOUSE_CONFIGS,
     OUTPUT_PATH,
     parse_stock_table,
+    parse_acecs_table,
     apply_default_customs_status,
     load_existing,
     append_daily_history,
@@ -125,6 +126,74 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
         browser.close()
 
 
+def fetch_one_acecs(playwright, cfg: dict) -> list:
+    """
+    ACE CS(cs.acecs.co.kr, "Intralogis"/DevExpress ASPxGridView) 시스템 수집.
+    nwill과 완전히 다른 구조라 별도 함수로 분리:
+    - DataTables가 아니라 DevExpress 콜백 방식이라 요청을 직접 흉내내지 않고,
+      실제 화면에서 창고 드롭다운 선택 -> 조회 버튼 클릭까지 그대로 재현한다.
+    - 로그인 필드명이 확인 안 돼서 "첫 번째 text input / password input"으로
+      최대한 범용적으로 찾는다.
+    """
+    login_id = os.environ.get(cfg["id_env"])
+    login_pw = os.environ.get(cfg["pw_env"])
+    if not login_id or not login_pw:
+        raise RuntimeError(
+            f"[{cfg['창고명']}/{cfg['계정용도']}] 환경변수 {cfg['id_env']} / {cfg['pw_env']} 가 설정되지 않았습니다."
+        )
+
+    browser = playwright.chromium.launch(headless=True)
+    try:
+        page = browser.new_page(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+        )
+
+        # 1) 로그인 페이지 접속, id/pw 입력 (필드명 미확인 -> 타입으로 찾기)
+        page.goto(cfg["base_url"], wait_until="networkidle", timeout=90000)
+        page.locator("input[type='text']").first.fill(login_id)
+        page.locator("input[type='password']").first.fill(login_pw)
+        with page.expect_navigation(wait_until="networkidle", timeout=90000):
+            page.get_by_text("로그인", exact=True).first.click()
+
+        if "General" not in page.url and "WMS" not in page.url:
+            # 로그인 후 재고조회(General) 화면으로 명시적 이동
+            page.goto(
+                "https://cs.acecs.co.kr/IL6/WMS/General",
+                wait_until="networkidle",
+                timeout=90000,
+            )
+
+        # 2) 창고 드롭다운(그리드 룩업) 열고 원하는 창고 선택
+        page.click("#gridLookupDepotInventoryInfo_B-1")
+        page.wait_for_selector("#gridLookupDepotInventoryInfo_DDD_gv_DXMainTable", timeout=15000)
+        depot_name = cfg["depot_name"]
+        page.get_by_text(depot_name, exact=True).first.click()
+        page.wait_for_timeout(300)
+
+        # 3) 조회 버튼 클릭 -> 위탁사/기간은 기본값 그대로 사용
+        with page.expect_response(lambda r: "InventoryInfoList" in r.url, timeout=90000):
+            page.click("#btnInventorySearch")
+        page.wait_for_timeout(2000)
+
+        html = page.content()
+        rows = parse_acecs_table(html, cfg["창고명"])
+        if not rows:
+            debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}.html"
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(
+                f"  -> 0건 파싱됨. 원본 페이지를 {debug_path} 에 저장했으니 "
+                "이 파일을 보내주시면 표 구조를 확인할 수 있습니다.",
+                file=sys.stderr,
+            )
+        return rows
+    finally:
+        browser.close()
+
+
 def main():
     existing = load_existing()
     existing_rows = existing.get("데이터", [])
@@ -135,7 +204,10 @@ def main():
     with sync_playwright() as p:
         for cfg in WAREHOUSE_CONFIGS:
             try:
-                rows = fetch_one_with_browser(p, cfg)
+                if cfg.get("system") == "acecs":
+                    rows = fetch_one_acecs(p, cfg)
+                else:
+                    rows = fetch_one_with_browser(p, cfg)
                 apply_default_customs_status(rows, cfg)
                 print(f"[{cfg['창고명']}/{cfg['계정용도']}] {len(rows)}건 수집")
                 all_new_rows.extend(rows)

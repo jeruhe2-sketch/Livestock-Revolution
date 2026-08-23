@@ -57,6 +57,8 @@ jobs:
           NWILL_SAMIL_PW: ${{ secrets.NWILL_SAMIL_PW }}
           NWILL_GANGDONG_ID: ${{ secrets.NWILL_GANGDONG_ID }}
           NWILL_GANGDONG_PW: ${{ secrets.NWILL_GANGDONG_PW }}
+          ACECS_ID: ${{ secrets.ACECS_ID }}
+          ACECS_PW: ${{ secrets.ACECS_PW }}
         run: |
           mkdir -p debug
           python scripts/fetch_all_warehouses_playwright.py > debug/last_run.log 2>&1
