@@ -156,7 +156,7 @@ def fetch_one_acecs(playwright, cfg: dict) -> list:
         page.locator("input[type='text']").first.fill(login_id)
         page.locator("input[type='password']").first.fill(login_pw)
         with page.expect_navigation(wait_until="networkidle", timeout=90000):
-            page.get_by_text("로그인", exact=True).first.click()
+            page.locator("input[value='로그인'], button:has-text('로그인'), input[type='submit']").first.click()
 
         if "General" not in page.url and "WMS" not in page.url:
             # 로그인 후 재고조회(General) 화면으로 명시적 이동
