@@ -370,7 +370,7 @@ SUPPLIER_ANIMAL_MAP = {
     "MAFRIGES": "소",
     "PATEL": "소",
     "BINDAREE": "소",
-    "GREENLEA": "소",
+    "GREENIA": "소",
     "SWIFT": "소",
     # 돼지
     "AGROSUPER": "돼지",
