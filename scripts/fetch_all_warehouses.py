@@ -291,6 +291,9 @@ def parse_stock_table(html: str, 창고명: str) -> list:
         record["유통기한"] = record.pop("소비기한", None) or record.pop("유통기한", "")
 
         pass_raw = record.pop("통관구분", "").strip()
+        # "분할통관"도 통관으로 취급 (사용자 요청)
+        if pass_raw == "분할통관":
+            pass_raw = "통관"
         record["통관상태"] = pass_raw if pass_raw else None  # 후처리 단계에서 계정 기본값 적용
 
         for field in NUMERIC_FIELDS:
