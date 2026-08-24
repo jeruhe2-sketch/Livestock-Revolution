@@ -1,14 +1,11 @@
 name: 창고 재고 데이터 자동 갱신 (Playwright)
 
 on:
-  schedule:
-    # 매일 한국시간 오전 7시 30분 (UTC 기준 전날 22시 30분) - 수입검역 갱신(7시)과 겹치지 않게
-    # 매시간 정각, 단 한국시간 08:00~18:00 사이에만 (새벽엔 필요 없으니)
-    # UTC로 환산: KST 08~18시 = UTC 전날 23시, 00~09시
-    # \uB9E4\uC2DC\uAC04 \uC815\uAC01(0\uBD84)\uC5D0 \uB3CC\uB9AC\uBA74 GitHub \uCE21 \uBD80\uD558\uAC00 \uBAB0\uB824\uC11C \uC2A4\uCF00\uC904\uC774 \uC9C0\uC5F0/\uB204\uB77D\uB420 \uC218 \uC788\uB2E4\uACE0
-    # GitHub\uC774 \uACF5\uC2DD\uC801\uC73C\uB85C \uACBD\uACE0\uD568 -> 7\uBD84\uC73C\uB85C \uBC00\uB9BC
-    - cron: '7 0-9,23 * * *'
-  workflow_dispatch: {}  # "Run workflow" 버튼으로 수동 실행도 가능
+  # GitHub \uC790\uCCB4 schedule \uD2B8\uB9AC\uAC70\uAC00 \uD558\uB8E8\uC5D0 \uD55C\uBC88 \uC815\uB3C4\uB9CC \ub3c8\uACE0 \ub098\uba38\uC9C0\ub294 \ub204\ub77d\ub418\ub294
+  # \ubB38\uC81C\uAC00 \uD655\uC778\ub3fc\uc11c \uc678\ubD80 \uc608\uC57D \uc11c\ube44\uc2a4(cron-job.org)\uc5d0\uC11c
+  # workflow_dispatch\ub97c \ud638\ucd9c\ud558\ub294 \ubc29\uc2dd\uc73c\ub85c \ubc14\uafd4\uc11c, \uc5ec\uae30\uc11c\uB294 schedule \uc0ad\uc81c\ud568
+  # (\uc911\ubcf5 \uC2E4\ud589 \ubc29\uc9c0)
+  workflow_dispatch: {}  # \"Run workflow\" 버튼(또는 API 호출)으로 실행
 
 permissions:
   contents: write
