@@ -214,6 +214,18 @@ function Dashboard({ db }) {
   const [partFilter, setPartFilter] = useState(() => pList("pt"));
   const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
   const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
+  const [monthFrom, setMonthFrom] = useState(() => pInt("ms", 1));
+  const [monthTo, setMonthTo] = useState(() => pInt("me", 12));
+  const onMonthFrom = (v) => {
+    const val = +v;
+    setMonthFrom(val);
+    if (val > monthTo) setMonthTo(val);
+  };
+  const onMonthTo = (v) => {
+    const val = +v;
+    setMonthTo(val);
+    if (val < monthFrom) setMonthFrom(val);
+  };
   const onYmStart = (v) => {
     const val = +v;
     setYmStart(val);
@@ -243,9 +255,10 @@ function Dashboard({ db }) {
       if (partFilter.length && !partFilter.includes(META.\uBD80\uC704[rIdx])) return false;
       const ym = y * 100 + m;
       if (ym < ymStart || ym > ymEnd) return false;
+      if (m < monthFrom || m > monthTo) return false;
       return true;
     });
-  }, [ROWS, meatIdx, ice, countryFilter, partFilter, ymStart, ymEnd]);
+  }, [ROWS, meatIdx, ice, countryFilter, partFilter, ymStart, ymEnd, monthFrom, monthTo]);
   const years = useMemo(() => [...new Set(baseFilteredRows.map((r) => r[0]))].sort((a, b) => a - b), [baseFilteredRows]);
   const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + r[6], 0), [baseFilteredRows]);
   const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
@@ -345,6 +358,8 @@ function Dashboard({ db }) {
     if (partFilter.length) sp.set("pt", partFilter.join(","));
     sp.set("ys", ymStart);
     sp.set("ye", ymEnd);
+    if (monthFrom !== 1) sp.set("ms", monthFrom);
+    if (monthTo !== 12) sp.set("me", monthTo);
     sp.set("tab", mainTab);
     if (mainTab === "table") {
       sp.set("rd", rowDim);
@@ -362,7 +377,7 @@ function Dashboard({ db }) {
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [meat, ice, countryFilter, partFilter, ymStart, ymEnd, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, overlayYearCtx, overlaySel]);
+  }, [meat, ice, countryFilter, partFilter, ymStart, ymEnd, monthFrom, monthTo, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, overlayYearCtx, overlaySel]);
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -418,17 +433,19 @@ function Dashboard({ db }) {
       }
     },
     p2
-  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
         setYmStart(YM_MIN);
         setYmEnd(YM_MAX);
+        setMonthFrom(1);
+        setMonthTo(12);
       },
       style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" }
     },
     "\uC804\uCCB4\uAE30\uAC04"
-  )), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } }, meat, " \xB7 ", ice, countryFilter.length ? ` \xB7 \uAD6D\uAC00 ${countryFilter.length}\uAC1C` : "", partFilter.length ? ` \xB7 \uBD80\uC704 ${partFilter.length}\uAC1C` : "", " \xB7 ", ymLabel(ymStart), "~", ymLabel(ymEnd)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } }, meat, " \xB7 ", ice, countryFilter.length ? ` \xB7 \uAD6D\uAC00 ${countryFilter.length}\uAC1C` : "", partFilter.length ? ` \xB7 \uBD80\uC704 ${partFilter.length}\uAC1C` : "", " \xB7 ", ymLabel(ymStart), "~", ymLabel(ymEnd), (monthFrom !== 1 || monthTo !== 12) ? ` \xB7 ${monthFrom}\uC6D4~${monthTo}\uC6D4\uB9CC` : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: copyShareLink,
