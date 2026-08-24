@@ -392,7 +392,7 @@ function Dashboard({ db }) {
   };
   const selectAllOverlay = () => setOverlaySel({ dim: overlayDim, list: [...overlayCandidates] });
   const clearOverlay = () => setOverlaySel({ dim: overlayDim, list: [] });
-  const overlayXLabels = useMemo(() => effectiveXAxis === "month" ? Array.from({ length: 12 }, (_, i) => `${i + 1}\uC6D4`) : years.map(String), [effectiveXAxis, years]);
+  const overlayXLabels = useMemo(() => effectiveXAxis === "month" ? Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}\uC6D4`) : years.map(String), [effectiveXAxis, years, monthFrom, monthTo]);
   const overlaySeries = useMemo(() => {
     let rowsForOverlay = baseFilteredRows;
     if (overlayDim !== "year" && effectiveXAxis === "month") rowsForOverlay = rowsForOverlay.filter((r) => r[0] === overlayYearCtx);
