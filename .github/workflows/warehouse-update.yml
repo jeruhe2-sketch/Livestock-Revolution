@@ -3,7 +3,9 @@ name: 창고 재고 데이터 자동 갱신 (Playwright)
 on:
   schedule:
     # 매일 한국시간 오전 7시 30분 (UTC 기준 전날 22시 30분) - 수입검역 갱신(7시)과 겹치지 않게
-    - cron: '30 22 * * *'
+    # 매시간 정각, 단 한국시간 08:00~18:00 사이에만 (새벽엔 필요 없으니)
+    # UTC로 환산: KST 08~18시 = UTC 전날 23시, 00~09시
+    - cron: '0 0-9,23 * * *'
   workflow_dispatch: {}  # "Run workflow" 버튼으로 수동 실행도 가능
 
 permissions:
