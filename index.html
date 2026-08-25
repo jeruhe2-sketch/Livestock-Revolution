@@ -679,16 +679,24 @@ function EuTradeApp() {
   const toTon = (v) => valueKey === "kg" ? Math.round(v / 1000) : Math.round(v);
 
   const cumsum = (arr) => { let s = 0; return arr.map((v) => { s += (v || 0); return s; }); };
+  // \uC120\ud0DD\ud55C \uC6D4\ubc94\uC704\uc5D0 \uD574\ub2F9\ud558\ub294 \uC8FC(week)\ub9CC \uCD94\ub824\ub0B4\uAE30 (53\uAC1C \uC804\ubD80\ub97C \uAE30\uBCF8\uAC12\ub85c \uADF8\ub9AC\uba74 \uC6D4\ubc94\uC704\ub97C \uC88B\ud614\uc744 \ub54C\ub3C4 X\uCD95\uc5D0 0\uAC12 \uC8FC\uAC00 \uADF8\ub300\ub85c \ub0A8\uC544\uC788\ub294 \ubB38\uC81C\uAC00 \uc0DD\uAE40)
+  const weeksInRange = useMemo(() => {
+    const set = new Set();
+    rows.forEach((r) => { if (r.month >= monthFrom && r.month <= monthTo) set.add(r.week); });
+    return [...set].sort((a, b) => a - b);
+  }, [rows, monthFrom, monthTo]);
+
+  // \uC6D4\ubc94\uC704(monthFrom~monthTo)\uC5D0 \ud574\ub2F9\ud558\ub294 \uC8FC(week) \ubC88\uD638\ub9CC \ucd94\ub824\ub0B4\uAE30
+  // (\uc5F0\ub3C4\ub9c8\ub2E4 \uc8FC-\uC6D4 \ub300\uc751\uc774 \uc57D\uAC04 \ub2E4\ub97c \uc218 \uc788\uc5b4\uc11c \uc804\ub144\ub3C4 \ud569\uc0B0\uD574\uc11c \ubC94\uC704 \uACB0\uC815)
 
   const { categories, series } = useMemo(() => {
     if (compareBy === "year") {
       const useWeeks = xAxis === "week";
-      const cats = useWeeks ? Array.from({ length: 53 }, (_, i) => i + 1 + "\uC8FC") : MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo).map((m) => m + "\uC6D4");
+      const cats = useWeeks ? weeksInRange.map((w) => w + "\uC8FC") : MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo).map((m) => m + "\uC6D4");
       const ser = years.map((y, i) => {
         let values;
         if (useWeeks) {
-          values = Array.from({ length: 53 }, (_, wi) => {
-            const w = wi + 1;
+          values = weeksInRange.map((w) => {
             const vals = filteredRows.filter((r) => partnerSel.includes(r.partnerCode) && r.year === y && r.week === w);
             return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
           });
@@ -729,7 +737,7 @@ function EuTradeApp() {
       });
       return { categories: cats, series: ser };
     }
-    const weeks = Array.from({ length: 53 }, (_, i) => i + 1);
+    const weeks = weeksInRange;
     const cats = weeks.map((w) => w + "\uC8FC");
     const ser = partnerSel.map((code) => {
       let values = weeks.map((w) => {
@@ -740,7 +748,7 @@ function EuTradeApp() {
       return { label: msLabel + PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
     });
     return { categories: cats, series: ser };
-  }, [filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo]);
+  }, [filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo, weeksInRange, msLabel]);
 
   const pivot = useMemo(() => {
     const map = {};
