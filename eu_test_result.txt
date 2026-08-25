@@ -1,8 +1,23 @@
-=== pigmeat/trade {'memberStateCodes': 'ES', 'years': '2025', 'partnerCountries': 'KR'} -> 404
-{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
-=== pigmeat/trade {'memberStateCodes': 'ES', 'marketingYears': '2025', 'partnerCountries': 'KR'} -> 404
-{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
-=== beef/trade {'memberStateCodes': 'ES', 'years': '2025', 'partnerCountries': 'KR'} -> 404
-{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
-=== pigmeat/trade {'years': '2025', 'months': '1', 'partnerCountries': 'South Korea'} -> 404
-{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
+=== pigmeat -> 200
+  /api/pigmeat/prices
+  /api/pigmeat/cuts/prices
+  /api/pigmeat/cuts/categories
+  /api/pigmeat/cuts/priceTypes
+  /api/pigmeat/cuts/prices/month
+  /api/pigmeat/cuts/prices/month/categories
+  /api/pigmeat/cuts/prices/month/priceTypes
+  /api/pigmeat/production
+=== beef -> 200
+  /api/beef/prices
+  /api/beef/categories
+  /api/beef/productCodes
+  /api/liveAnimal/prices
+  /api/liveAnimal/categories
+  /api/beef/cuts/prices
+  /api/beef/cuts/prices/categories
+  /api/beef/cuts/prices/priceTypes
+  /api/beef/cuts/prices/month
+  /api/beef/cuts/prices/month/categories
+  /api/beef/cuts/prices/month/priceTypes
+  /api/beef/production
+  /api/beef/production/categories
