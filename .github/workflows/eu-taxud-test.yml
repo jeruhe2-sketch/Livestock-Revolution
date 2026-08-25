@@ -1,0 +1,40 @@
+name: EU TAXUD 다운로드 자동화 테스트 (임시)
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install playwright && playwright install --with-deps chromium
+      - name: 페이지 구조 탐색
+        run: |
+          python3 << 'PYEOF' > eu_probe_result.txt 2>&1
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page()
+              page.goto("https://agridata.ec.europa.eu/extensions/DashboardTaxud/TaxudWeeklyExport.html", wait_until="networkidle", timeout=60000)
+              page.wait_for_timeout(5000)
+              # iframe이 있는지 확인 (Qlik은 보통 iframe 안에 있음)
+              frames = page.frames
+              print("프레임 개수:", len(frames))
+              for f in frames:
+                  print(" -", f.url)
+              # 페이지 전체 스크린샷
+              page.screenshot(path="eu_page.png", full_page=True)
+              browser.close()
+          PYEOF
+          cat eu_probe_result.txt
+      - name: 결과 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add eu_probe_result.txt eu_page.png
+          git commit -m "test: EU TAXUD 페이지 구조 탐색" || echo "변경없음"
+          git push
