@@ -536,13 +536,11 @@ const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH"];
 const PARTNER_LABEL = { KR: "\uD55C\uAD6D", US: "\uBBF8\uAD6D", GB: "\uC601\uAD6D", CN: "\uC911\uAD6D", JP: "\uC77C\uBCF8", PH: "\uD544\uB9AC\uD540" };
 const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a", "#e0985a", "#7ea0c4", "#8b7bb0"];
 const PARTNER_COLOR = { KR: SERIES_PALETTE[0], US: SERIES_PALETTE[1], GB: SERIES_PALETTE[2], CN: SERIES_PALETTE[3], JP: SERIES_PALETTE[4], PH: SERIES_PALETTE[5] };
+const YEAR_SERIES_COLORS = ["#8f857a", "#4f8fb8", "#5c8f7a", "#d98b3f", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a"];
+const MONTHS_ALL = [1,2,3,4,5,6,7,8,9,10,11,12];
 
-function n(v) {
-  return Math.round(v).toLocaleString();
-}
-function fmtShort(v) {
-  return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString();
-}
+function n(v) { return Math.round(v).toLocaleString(); }
+function fmtShort(v) { return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString(); }
 function downloadXlsx(aoa, filename, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
@@ -550,8 +548,6 @@ function downloadXlsx(aoa, filename, sheetName) {
   XLSX.writeFile(wb, filename);
 }
 
-// SvgLineChart / ChartLegend: \uAC80\uC5ED\uD604\uD669(QuarantineApp)\uACFC \uB3D9\uC77C\uD55C \uACB0\uACFC\uBB3C\uC744 \uB0B4\uAE30 \uC704\uD574 \uAC19\uC740 \uAD6C\uD604\uC744 \uC774
-// \uBAA8\uB4C8 \uC2A4\uCF54\uD504\uC5D0\uB3C4 \uBCF5\uC0AC\uD574\uB458 (\uB2E4\uB978 IIFE\uB77C \uACF5\uC720 \uBD88\uAC00, \uCC3D\uACE0/\uAC80\uC5ED\uACC0\uACC4\uC5D0\uC11C\uB3C4 \uAC19\uC740 \uD328\uD134 \uC0AC\uC6A9\uD568)
 function SvgLineChart({ categories, series, height = 260 }) {
   const width = 760;
   const manyLabels = categories.length > 16;
@@ -587,9 +583,7 @@ function SvgLineChart({ categories, series, height = 260 }) {
       const pts = s.values.map((v, i) => (v === null || v === undefined ? null : [xFor(i), yFor(v)]));
       const segs = [];
       let cur = [];
-      pts.forEach((p) => {
-        if (p) cur.push(p); else { if (cur.length > 1) segs.push(cur); cur = []; }
-      });
+      pts.forEach((p) => { if (p) cur.push(p); else { if (cur.length > 1) segs.push(cur); cur = []; } });
       if (cur.length > 1) segs.push(cur);
       return /* @__PURE__ */ React.createElement("g", { key: si }, segs.map((seg, gi) => /* @__PURE__ */ React.createElement("polyline", { key: gi, points: seg.map((p) => p.join(",")).join(" "), fill: "none", stroke: s.color, strokeWidth: 2 })), pts.map((p, i) => p ? /* @__PURE__ */ React.createElement("circle", { key: i, cx: p[0], cy: p[1], r: hover === i ? 4 : 2.5, fill: s.color }) : null));
     }),
@@ -604,7 +598,6 @@ function SvgLineChart({ categories, series, height = 260 }) {
 function ChartLegend({ series }) {
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 } }, series.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.mute } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: 2, background: s.color, display: "inline-block" } }), s.label)));
 }
-
 function ChipGroup({ label, options, value, onChange }) {
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
     label && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginRight: 2 } }, label),
@@ -622,23 +615,21 @@ function ChipGroup({ label, options, value, onChange }) {
 function HoverAxisPicker({ label, value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const timer = useRef(null);
-  const enter = () => {
-    if (timer.current) clearTimeout(timer.current);
-    setOpen(true);
-  };
-  const leave = () => {
-    timer.current = setTimeout(() => setOpen(false), 150);
-  };
+  const enter = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const leave = () => { timer.current = setTimeout(() => setOpen(false), 150); };
   const found = options.find(([v]) => v === value);
   const currentLabel = found ? found[1] : value;
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 90, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => {
-    onChange(v);
-    setOpen(false);
-  }, style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))));
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 90, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => { onChange(v); setOpen(false); }, style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))));
+}
+function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
+  const [open, setOpen] = useState(false);
+  const timer = useRef(null);
+  const enter = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const leave = () => { timer.current = setTimeout(() => setOpen(false), 150); };
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600 } }, label, " ", selected.length === options.length ? "\uC804\uCCB4" : `(${selected.length})`, " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 280, maxHeight: 320, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uD574\uC81C"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map(([code, label2]) => /* @__PURE__ */ React.createElement("button", { key: code, onClick: () => onToggle(code), style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(code) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(code) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(code) ? COLORS.amberSoft : COLORS.mute } }, label2)))));
 }
 
 const XAXIS_OPTIONS = [["year", "\uC5F0\ub3C4\ubcC4"], ["month", "\uC6D4\ubcC4"], ["week", "\uC8FC\ubcC4"]];
-const YEAR_SERIES_COLORS = ["#8f857a", "#4f8fb8", "#5c8f7a", "#d98b3f", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a"];
 
 function EuTradeApp() {
   const [db, setDb] = useState(null);
@@ -648,50 +639,54 @@ function EuTradeApp() {
   useEffect(() => {
     fetch("./data/eu_pigmeat_trade.json", { cache: "no-store" })
       .then((r) => { if (!r.ok) throw new Error("fetch failed"); return r.json(); })
-      .then((d) => { setDb(d); setLoading(false); })
+      .then((d) => {
+        const objs = d.data.map((row) => ({ year: row[0], week: row[1], month: row[2], partnerCode: row[3], msCode: row[4], kg: row[5], euro: row[6] }));
+        setDb({ ...d, data: objs });
+        setLoading(false);
+      })
       .catch(() => { setError(true); setLoading(false); });
   }, []);
 
   const rows = db ? db.data : [];
+  const msNames = db ? db.msNames : {};
+  const MS_LIST = useMemo(() => Object.keys(msNames).sort((a, b) => msNames[a].localeCompare(msNames[b])), [msNames]);
+
   const [partnerSel, setPartnerSel] = useState([...PARTNER_LIST]);
+  const [msSel, setMsSel] = useState([]);
+  useEffect(() => { if (MS_LIST.length && msSel.length === 0) setMsSel([...MS_LIST]); }, [MS_LIST]);
+
   const [valueKey, setValueKey] = useState("kg");
   const [xAxis, setXAxis] = useState("year");
-  const [compareBy, setCompareBy] = useState("country"); // country | year
+  const [compareBy, setCompareBy] = useState("country");
   const [cumulative, setCumulative] = useState(false);
   const years = useMemo(() => [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b), [rows]);
   const [refYear, setRefYear] = useState(null);
   useEffect(() => { if (years.length && refYear === null) setRefYear(years[years.length - 1]); }, [years]);
 
-  // \uC6D4\ubc94\uC704 \ud544\ud130 (1~12\uC6D4 \uC911 \uC6D0\ud558\ub294 \uAD6C\uAC04\ub9CC) - \uC5F0\ub3C4\ub97C \uAC00\ub85C\uC9C0\ub97C\ub54C \uCD5C\uC2E0\uC5F0\ub3C4\uAC00 \ubD84\uAE30 \uC57D\ud574\uc11c \ub5A8\uC5B4\uC9C0\ub294 \uCC29\uc2DC \ubc29\uc9C0
   const [monthFrom, setMonthFrom] = useState(1);
   const [monthTo, setMonthTo] = useState(12);
-  const filteredRows = useMemo(() => rows.filter((r) => r.month >= monthFrom && r.month <= monthTo), [rows, monthFrom, monthTo]);
+  const filteredRows = useMemo(() => rows.filter((r) => r.month >= monthFrom && r.month <= monthTo && msSel.includes(r.msCode)), [rows, monthFrom, monthTo, msSel]);
 
   const togglePartner = (code) => setPartnerSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
-  // kg\ub85C \uC800\uC7A5\ub41C \uc6d0\ubcf8\uc744 \uD1A4(t) \ub2E8\uc704\ub85C \ubcC0\ud658 (\ubc18\uc62C\ub9BC). euro\ub294 \ubcC0\ud658 \uc548\ud568.
+  const toggleMs = (code) => setMsSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
   const toTon = (v) => valueKey === "kg" ? Math.round(v / 1000) : Math.round(v);
 
-  const cumsum = (arr) => {
-    let s = 0;
-    return arr.map((v) => { s += (v || 0); return s; });
-  };
+  const cumsum = (arr) => { let s = 0; return arr.map((v) => { s += (v || 0); return s; }); };
 
-  // \uACB9\uCCD0\ubcF4\uAE30 \uCC28\ud2b8 \ub370\uC774\ud130 \uAD6C\uC131
   const { categories, series } = useMemo(() => {
     if (compareBy === "year") {
-      // \uC5F0\ub3C4\ub97C \uC2DC\ub9AC\uC988\ub85c \uACB9\uCCD0 \ubE44\uAD50 (\uc120\ud0dd \uAD6D\uAC00 \ud569\uc0B0), X\ucd95=\uC6D4/\uC8FC
       const useWeeks = xAxis === "week";
-      const cats = useWeeks ? Array.from({ length: 53 }, (_, i) => i + 1 + "\uC8FC") : Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => m >= monthFrom && m <= monthTo).map((m) => m + "\uC6D4");
+      const cats = useWeeks ? Array.from({ length: 53 }, (_, i) => i + 1 + "\uC8FC") : MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo).map((m) => m + "\uC6D4");
       const ser = years.map((y, i) => {
         let values;
         if (useWeeks) {
           values = Array.from({ length: 53 }, (_, wi) => {
             const w = wi + 1;
-            const vals = filteredRows.filter((r) => r.partnerCode && partnerSel.includes(r.partnerCode) && r.year === y && r.week === w);
+            const vals = filteredRows.filter((r) => partnerSel.includes(r.partnerCode) && r.year === y && r.week === w);
             return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
           });
         } else {
-          const monthsInRange = Array.from({ length: 12 }, (_, i2) => i2 + 1).filter((m) => m >= monthFrom && m <= monthTo);
+          const monthsInRange = MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo);
           values = monthsInRange.map((m) => {
             const vals = filteredRows.filter((r) => partnerSel.includes(r.partnerCode) && r.year === y && r.month === m);
             return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
@@ -702,7 +697,6 @@ function EuTradeApp() {
       });
       return { categories: cats, series: ser };
     }
-    // compareBy === "country"
     if (xAxis === "year") {
       const cats = years.map(String);
       const ser = partnerSel.map((code) => {
@@ -716,7 +710,7 @@ function EuTradeApp() {
       return { categories: cats, series: ser };
     }
     if (xAxis === "month") {
-      const monthsInRange = Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => m >= monthFrom && m <= monthTo);
+      const monthsInRange = MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo);
       const cats = monthsInRange.map((m) => m + "\uC6D4");
       const ser = partnerSel.map((code) => {
         let values = monthsInRange.map((m) => {
@@ -728,29 +722,27 @@ function EuTradeApp() {
       });
       return { categories: cats, series: ser };
     }
-    // week
     const weeks = Array.from({ length: 53 }, (_, i) => i + 1);
     const cats = weeks.map((w) => w + "\uC8FC");
     const ser = partnerSel.map((code) => {
       let values = weeks.map((w) => {
-        const rec = rows.find((r) => r.partnerCode === code && r.year === refYear && r.week === w);
-        return rec ? toTon(rec[valueKey] || 0) : 0;
+        const vals = filteredRows.filter((r) => r.partnerCode === code && r.year === refYear && r.week === w);
+        return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
       });
       if (cumulative) values = cumsum(values);
       return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
     });
     return { categories: cats, series: ser };
-  }, [rows, filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo]);
+  }, [filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo]);
 
-  // \uC5F0\ub3C4 x \uC6D4\ubcC4 \ud53C\ubCF7 (\uC120\ud0dD\ud55C \uAD6D\uac00 \ud569\uc0B0)
   const pivot = useMemo(() => {
     const map = {};
-    rows.filter((r) => partnerSel.includes(r.partnerCode)).forEach((r) => {
+    rows.filter((r) => partnerSel.includes(r.partnerCode) && msSel.includes(r.msCode)).forEach((r) => {
       if (!map[r.year]) map[r.year] = {};
       map[r.year][r.month] = (map[r.year][r.month] || 0) + (r[valueKey] || 0);
     });
     return map;
-  }, [rows, partnerSel, valueKey]);
+  }, [rows, partnerSel, msSel, valueKey]);
 
   const exportExcel = () => {
     const unitTag = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C";
@@ -758,21 +750,16 @@ function EuTradeApp() {
     const body = years.map((y) => {
       const rowVals = MONTHS_ALL.map((m) => toTon((pivot[y] && pivot[y][m]) || 0));
       const total = rowVals.reduce((a, b) => a + b, 0);
-      return [y, ...rowVals.map((v) => Math.round(v)), Math.round(total)];
+      return [y, ...rowVals, total];
     });
     downloadXlsx([header, ...body], `EU_\ub3C8\uC721\uC218\uCD9C_${partnerSel.map((c) => PARTNER_LABEL[c]).join("-")}.xlsx`, "\uC5F0\ub3C4x\uC6D4\ubcC4");
   };
 
-  const MONTHS_ALL = [1,2,3,4,5,6,7,8,9,10,11,12];
-
-  if (loading) {
-    return React.createElement("div", { style: { padding: 30, color: COLORS.mute, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
-  }
-  if (error || !db) {
-    return React.createElement("div", { style: { padding: 30, color: COLORS.rust, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
-  }
+  if (loading) return React.createElement("div", { style: { padding: 30, color: COLORS.mute, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
+  if (error || !db) return React.createElement("div", { style: { padding: 30, color: COLORS.rust, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
 
   const unitLabel = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C(\u20AC)";
+  const msOptions = MS_LIST.map((code) => [code, msNames[code]]);
 
   return React.createElement("div", { style: { padding: "14px 16px 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif", maxWidth: 1120, margin: "0 auto" } },
     React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU \u2192 \uD55C\uAD6D \u00B7 \uBBF8\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
@@ -781,15 +768,8 @@ function EuTradeApp() {
     React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 16 } }, "국가별 물량이 서로 영향을 주고받을 수 있어서(예: 미국 수량 증가 → 다른 국가에 늘어가는 물량 감소 가능성), 여러 국가를 같이 겹쳐보면서 추세를 비교해 보세요."),
 
     React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
-      PARTNER_LIST.map((code) => React.createElement("button", {
-        key: code, onClick: () => togglePartner(code),
-        style: {
-          padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-          border: `1px solid ${partnerSel.includes(code) ? PARTNER_COLOR[code] : COLORS.panelBorder}`,
-          background: partnerSel.includes(code) ? PARTNER_COLOR[code] + "29" : COLORS.panel,
-          color: partnerSel.includes(code) ? PARTNER_COLOR[code] : COLORS.mute
-        }
-      }, PARTNER_LABEL[code])),
+      React.createElement(HoverMultiPicker, { label: "\uC218\uCD9C\uAD6D(EU \ud68C\uc6D0\uAD6D)", options: msOptions, selected: msSel, onToggle: toggleMs, onSelectAll: () => setMsSel([...MS_LIST]), onClear: () => setMsSel([]) }),
+      React.createElement(HoverMultiPicker, { label: "\uC218\uC785\uAD6D", options: PARTNER_LIST.map((c) => [c, PARTNER_LABEL[c]]), selected: partnerSel, onToggle: togglePartner, onSelectAll: () => setPartnerSel([...PARTNER_LIST]), onClear: () => setPartnerSel([]) }),
       React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
       ["kg", "euro"].map((k) => React.createElement("button", {
         key: k, onClick: () => setValueKey(k),
@@ -799,12 +779,13 @@ function EuTradeApp() {
           background: valueKey === k ? "rgba(217,139,63,0.16)" : COLORS.panel,
           color: valueKey === k ? COLORS.amber : COLORS.mute
         }
-      }, k === "kg" ? "\uD1A4(t)" : "\uC720\uB85C(\u20AC)")),
-      React.createElement("span", { style: { flex: 1 } }),
-      React.createElement("button", {
-        onClick: () => setPartnerSel(partnerSel.length === PARTNER_LIST.length ? [] : [...PARTNER_LIST]),
-        style: { fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder}`, background: COLORS.panel, color: COLORS.mute, cursor: "pointer" }
-      }, partnerSel.length === PARTNER_LIST.length ? "\uC804\uCCB4 \uD574\uC81C" : "\uC804\uCCB4 \uC120\uD0DD")
+      }, k === "kg" ? "\uD1A4(t)" : "\uC720\uB85C(\u20AC)"))
+    ),
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 } },
+      partnerSel.map((code) => React.createElement("span", {
+        key: code,
+        style: { padding: "4px 10px", borderRadius: 7, fontSize: 12, fontWeight: 700, border: `1px solid ${PARTNER_COLOR[code]}`, background: PARTNER_COLOR[code] + "20", color: PARTNER_COLOR[code] }
+      }, PARTNER_LABEL[code]))
     ),
 
     React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "20px 0 10px" } }, "\uACB9\uCCD0\ubcF4\uAE30"),
