@@ -534,7 +534,7 @@ const COLORS = {
 };
 const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH"];
 const PARTNER_LABEL = { KR: "\uD55C\uAD6D", US: "\uBBF8\uAD6D", GB: "\uC601\uAD6D", CN: "\uC911\uAD6D", JP: "\uC77C\uBCF8", PH: "\uD544\uB9AC\uD540" };
-const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c", "#b0a25c"];
+const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a", "#e0985a", "#7ea0c4", "#8b7bb0"];
 const PARTNER_COLOR = { KR: SERIES_PALETTE[0], US: SERIES_PALETTE[1], GB: SERIES_PALETTE[2], CN: SERIES_PALETTE[3], JP: SERIES_PALETTE[4], PH: SERIES_PALETTE[5] };
 
 function n(v) {
@@ -542,6 +542,12 @@ function n(v) {
 }
 function fmtShort(v) {
   return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString();
+}
+function downloadXlsx(aoa, filename, sheetName) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
+  XLSX.writeFile(wb, filename);
 }
 
 // SvgLineChart / ChartLegend: \uAC80\uC5ED\uD604\uD669(QuarantineApp)\uACFC \uB3D9\uC77C\uD55C \uACB0\uACFC\uBB3C\uC744 \uB0B4\uAE30 \uC704\uD574 \uAC19\uC740 \uAD6C\uD604\uC744 \uC774
@@ -615,6 +621,7 @@ function ChipGroup({ label, options, value, onChange }) {
 }
 
 const XAXIS_OPTIONS = [["year", "\uC5F0\ub3C4\ubcC4"], ["month", "\uC6D4\ubcC4"], ["week", "\uC8FC\ubcC4"]];
+const YEAR_SERIES_COLORS = ["#8f857a", "#4f8fb8", "#5c8f7a", "#d98b3f", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a"];
 
 function EuTradeApp() {
   const [db, setDb] = useState(null);
@@ -632,49 +639,89 @@ function EuTradeApp() {
   const [partnerSel, setPartnerSel] = useState([...PARTNER_LIST]);
   const [valueKey, setValueKey] = useState("kg");
   const [xAxis, setXAxis] = useState("year");
+  const [compareBy, setCompareBy] = useState("country"); // country | year
+  const [cumulative, setCumulative] = useState(false);
   const years = useMemo(() => [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b), [rows]);
   const [refYear, setRefYear] = useState(null);
   useEffect(() => { if (years.length && refYear === null) setRefYear(years[years.length - 1]); }, [years]);
 
+  // \uC6D4\ubc94\uC704 \ud544\ud130 (1~12\uC6D4 \uC911 \uC6D0\ud558\ub294 \uAD6C\uAC04\ub9CC) - \uC5F0\ub3C4\ub97C \uAC00\ub85C\uC9C0\ub97C\ub54C \uCD5C\uC2E0\uC5F0\ub3C4\uAC00 \ubD84\uAE30 \uC57D\ud574\uc11c \ub5A8\uC5B4\uC9C0\ub294 \uCC29\uc2DC \ubc29\uc9C0
+  const [monthFrom, setMonthFrom] = useState(1);
+  const [monthTo, setMonthTo] = useState(12);
+  const filteredRows = useMemo(() => rows.filter((r) => r.month >= monthFrom && r.month <= monthTo), [rows, monthFrom, monthTo]);
+
   const togglePartner = (code) => setPartnerSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
+
+  const cumsum = (arr) => {
+    let s = 0;
+    return arr.map((v) => { s += (v || 0); return s; });
+  };
 
   // \uACB9\uCCD0\ubcF4\uAE30 \uCC28\ud2b8 \ub370\uC774\ud130 \uAD6C\uC131
   const { categories, series } = useMemo(() => {
+    if (compareBy === "year") {
+      // \uC5F0\ub3C4\ub97C \uC2DC\ub9AC\uC988\ub85c \uACB9\uCCD0 \ubE44\uAD50 (\uc120\ud0dd \uAD6D\uAC00 \ud569\uc0B0), X\ucd95=\uC6D4/\uC8FC
+      const useWeeks = xAxis === "week";
+      const cats = useWeeks ? Array.from({ length: 53 }, (_, i) => i + 1 + "\uC8FC") : Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => m >= monthFrom && m <= monthTo).map((m) => m + "\uC6D4");
+      const ser = years.map((y, i) => {
+        let values;
+        if (useWeeks) {
+          values = Array.from({ length: 53 }, (_, wi) => {
+            const w = wi + 1;
+            const vals = filteredRows.filter((r) => r.partnerCode && partnerSel.includes(r.partnerCode) && r.year === y && r.week === w);
+            return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+          });
+        } else {
+          const monthsInRange = Array.from({ length: 12 }, (_, i2) => i2 + 1).filter((m) => m >= monthFrom && m <= monthTo);
+          values = monthsInRange.map((m) => {
+            const vals = filteredRows.filter((r) => partnerSel.includes(r.partnerCode) && r.year === y && r.month === m);
+            return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+          });
+        }
+        if (cumulative) values = cumsum(values);
+        return { label: String(y), color: YEAR_SERIES_COLORS[i % YEAR_SERIES_COLORS.length], values };
+      });
+      return { categories: cats, series: ser };
+    }
+    // compareBy === "country"
     if (xAxis === "year") {
       const cats = years.map(String);
-      const ser = partnerSel.map((code, i) => ({
-        label: PARTNER_LABEL[code], color: PARTNER_COLOR[code],
-        values: years.map((y) => {
-          const vals = rows.filter((r) => r.partnerCode === code && r.year === y);
+      const ser = partnerSel.map((code) => {
+        let values = years.map((y) => {
+          const vals = filteredRows.filter((r) => r.partnerCode === code && r.year === y);
           return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
-        })
-      }));
+        });
+        if (cumulative) values = cumsum(values);
+        return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
+      });
       return { categories: cats, series: ser };
     }
     if (xAxis === "month") {
-      const months = [1,2,3,4,5,6,7,8,9,10,11,12];
-      const cats = months.map((m) => m + "\uC6D4");
-      const ser = partnerSel.map((code) => ({
-        label: PARTNER_LABEL[code], color: PARTNER_COLOR[code],
-        values: months.map((m) => {
-          const vals = rows.filter((r) => r.partnerCode === code && r.year === refYear && r.month === m);
+      const monthsInRange = Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => m >= monthFrom && m <= monthTo);
+      const cats = monthsInRange.map((m) => m + "\uC6D4");
+      const ser = partnerSel.map((code) => {
+        let values = monthsInRange.map((m) => {
+          const vals = filteredRows.filter((r) => r.partnerCode === code && r.year === refYear && r.month === m);
           return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
-        })
-      }));
+        });
+        if (cumulative) values = cumsum(values);
+        return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
+      });
       return { categories: cats, series: ser };
     }
     // week
     const weeks = Array.from({ length: 53 }, (_, i) => i + 1);
     const cats = weeks.map((w) => w + "\uC8FC");
-    const ser = partnerSel.map((code) => ({
-      label: PARTNER_LABEL[code], color: PARTNER_COLOR[code],
-      values: weeks.map((w) => {
+    const ser = partnerSel.map((code) => {
+      let values = weeks.map((w) => {
         const rec = rows.find((r) => r.partnerCode === code && r.year === refYear && r.week === w);
-        return rec ? (rec[valueKey] || 0) : null;
-      })
-    }));
+        return rec ? (rec[valueKey] || 0) : 0;
+      });
+      if (cumulative) values = cumsum(values);
+      return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
+    });
     return { categories: cats, series: ser };
-  }, [rows, partnerSel, xAxis, years, refYear, valueKey]);
+  }, [rows, filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo]);
 
   // \uC5F0\ub3C4 x \uC6D4\ubcC4 \ud53C\ubCF7 (\uC120\ud0dD\ud55C \uAD6D\uac00 \ud569\uc0B0)
   const pivot = useMemo(() => {
@@ -686,6 +733,18 @@ function EuTradeApp() {
     return map;
   }, [rows, partnerSel, valueKey]);
 
+  const exportExcel = () => {
+    const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => m + "\uC6D4"), "\uCD1D\ud569\uacC4"];
+    const body = years.map((y) => {
+      const rowVals = MONTHS_ALL.map((m) => (pivot[y] && pivot[y][m]) || 0);
+      const total = rowVals.reduce((a, b) => a + b, 0);
+      return [y, ...rowVals.map((v) => Math.round(v)), Math.round(total)];
+    });
+    downloadXlsx([header, ...body], `EU_\ub3C8\uC721\uC218\uCD9C_${partnerSel.map((c) => PARTNER_LABEL[c]).join("-")}.xlsx`, "\uC5F0\ub3C4x\uC6D4\ubcC4");
+  };
+
+  const MONTHS_ALL = [1,2,3,4,5,6,7,8,9,10,11,12];
+
   if (loading) {
     return React.createElement("div", { style: { padding: 30, color: COLORS.mute, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
   }
@@ -693,8 +752,7 @@ function EuTradeApp() {
     return React.createElement("div", { style: { padding: 30, color: COLORS.rust, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
   }
 
-  const unitLabel = valueKey === "kg" ? "kg" : valueKey === "kg_equiv" ? "kg(\uC9C0\uC721\uD658\uC0B0)" : "\uC720\uB85C(\u20AC)";
-  const MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
+  const unitLabel = valueKey === "kg" ? "kg" : "\uC720\uB85C(\u20AC)";
 
   return React.createElement("div", { style: { padding: "14px 16px 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif", maxWidth: 1120, margin: "0 auto" } },
     React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU \u2192 \uD55C\uAD6D \u00B7 \uBBF8\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
@@ -713,13 +771,38 @@ function EuTradeApp() {
         }
       }, PARTNER_LABEL[code])),
       React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
-      React.createElement(ChipGroup, { options: ["kg", "euro"], value: valueKey, onChange: setValueKey })
+      React.createElement(ChipGroup, { options: ["kg", "euro"], value: valueKey, onChange: setValueKey }),
+      React.createElement("span", { style: { flex: 1 } }),
+      React.createElement("button", {
+        onClick: exportExcel,
+        style: { fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder}`, background: COLORS.panel, color: COLORS.sage, cursor: "pointer" }
+      }, "\u2B07\uFE0F \uC5D1\uC140 \ub2E4\uC6B4\ub85c\ub4dc")
     ),
 
-    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "20px 0 10px" } }, "\uAD6D\uac00\ubcC4 \uACB9\uCCD0\ubcF4\uAE30"),
-    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14, alignItems: "center" } },
-      React.createElement(ChipGroup, { label: "X\uCD95", options: XAXIS_OPTIONS.map((o) => o[1]), value: XAXIS_OPTIONS.find((o) => o[0] === xAxis)[1], onChange: (label) => setXAxis(XAXIS_OPTIONS.find((o) => o[1] === label)[0]) }),
-      xAxis !== "year" && years.length > 0 && React.createElement(ChipGroup, { label: "\uAE30\uC900\uC5F0\ub3C4", options: years.map(String), value: String(refYear), onChange: (y) => setRefYear(+y) })
+    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "20px 0 10px" } }, "\uACB9\uCCD0\ubcF4\uAE30"),
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 10, alignItems: "center" } },
+      React.createElement(ChipGroup, { label: "\uBE44\uAD50\uAE30\uC900", options: ["\uAD6D\uAC00", "\uC5F0\ub3C4"], value: compareBy === "country" ? "\uAD6D\uAC00" : "\uC5F0\ub3C4", onChange: (v) => setCompareBy(v === "\uAD6D\uAC00" ? "country" : "year") }),
+      React.createElement(ChipGroup, { label: "X\uCD95", options: compareBy === "year" ? ["\uC6D4\ubcC4", "\uC8FC\ubcC4"] : XAXIS_OPTIONS.map((o) => o[1]), value: xAxis === "year" ? "\uC5F0\ub3C4\ubcC4" : xAxis === "month" ? "\uC6D4\ubcC4" : "\uC8FC\ubcC4", onChange: (label) => { const found = XAXIS_OPTIONS.find((o) => o[1] === label); setXAxis(found ? found[0] : "month"); } }),
+      compareBy === "country" && xAxis !== "year" && years.length > 0 && React.createElement(ChipGroup, { label: "\uAE30\uC900\uC5F0\ub3C4", options: years.map(String), value: String(refYear), onChange: (y) => setRefYear(+y) }),
+      React.createElement("button", {
+        onClick: () => setCumulative((c) => !c),
+        style: {
+          padding: "5px 11px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          border: `1px solid ${cumulative ? COLORS.sage : COLORS.panelBorder}`,
+          background: cumulative ? "rgba(111,148,130,0.18)" : COLORS.panel,
+          color: cumulative ? COLORS.sage : COLORS.mute
+        }
+      }, cumulative ? "\u2713 \uB204\uC801\ud569\uACC4\ub85C \ubcf4\ub294 \uC911" : "\uB204\uC801\ud569\uACC4\ub85C \ubcf4\uAE30")
+    ),
+    (xAxis === "month" || (compareBy === "year" && xAxis !== "week")) && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14, alignItems: "center" } },
+      React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "\uC6D4\ubc94\uC704"),
+      React.createElement(ChipGroup, { options: MONTHS_ALL.map(String), value: String(monthFrom), onChange: (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); } }),
+      React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"),
+      React.createElement(ChipGroup, { options: MONTHS_ALL.map(String), value: String(monthTo), onChange: (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); } }),
+      (monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+        onClick: () => { setMonthFrom(1); setMonthTo(12); },
+        style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" }
+      }, "\uC804\uCCB4\uC6D4")
     ),
     React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "16px 12px" } },
       React.createElement(SvgLineChart, { categories, series }),
@@ -732,13 +815,13 @@ function EuTradeApp() {
         React.createElement("thead", null,
           React.createElement("tr", null,
             React.createElement("th", { style: { padding: "8px 10px", textAlign: "left", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}` } }, "\uC5F0\ub3C4"),
-            MONTHS.map((m) => React.createElement("th", { key: m, style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}`, whiteSpace: "nowrap" } }, m + "\uC6D4")),
+            MONTHS_ALL.map((m) => React.createElement("th", { key: m, style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}`, whiteSpace: "nowrap" } }, m + "\uC6D4")),
             React.createElement("th", { style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.amberSoft, borderBottom: `1px solid ${COLORS.panelBorder2}` } }, "\uCD1D\ud569\uacC4")
           )
         ),
         React.createElement("tbody", null,
           years.map((y) => {
-            const rowVals = MONTHS.map((m) => (pivot[y] && pivot[y][m]) || 0);
+            const rowVals = MONTHS_ALL.map((m) => (pivot[y] && pivot[y][m]) || 0);
             const total = rowVals.reduce((a, b) => a + b, 0);
             return React.createElement("tr", { key: y },
               React.createElement("td", { style: { padding: "7px 10px", fontSize: 13, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}` } }, y),
@@ -753,7 +836,6 @@ function EuTradeApp() {
 }
 return EuTradeApp;
 })();
-
 
 window.WarehouseDashboardApp = (function() {
 const { useState, useMemo, useRef } = React;
