@@ -12,24 +12,23 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: API 테스트
+      - name: Swagger 명세 확인
         run: |
           python3 << 'PYEOF' > eu_test_result.txt 2>&1
           import requests, json
           base = "https://api.tech.ec.europa.eu/agrifood"
-          candidates = [
-              ("pigmeat/trade", {"memberStateCodes":"ES","years":"2025","partnerCountries":"KR"}),
-              ("pigmeat/trade", {"memberStateCodes":"ES","marketingYears":"2025","partnerCountries":"KR"}),
-              ("beef/trade", {"memberStateCodes":"ES","years":"2025","partnerCountries":"KR"}),
-              ("pigmeat/trade", {"years":"2025","months":"1","partnerCountries":"South Korea"}),
-          ]
-          for path, params in candidates:
+          for name in ["pigmeat", "beef"]:
               try:
-                  r = requests.get(f"{base}/{path}", params=params, timeout=20)
-                  print("===", path, params, "->", r.status_code)
-                  print(r.text[:800])
+                  r = requests.get(f"{base}/v3/api-docs/{name}", timeout=20)
+                  print("===", name, "->", r.status_code)
+                  if r.status_code == 200:
+                      spec = r.json()
+                      for path in spec.get("paths", {}):
+                          print(" ", path)
+                  else:
+                      print(r.text[:300])
               except Exception as e:
-                  print(path, "에러:", e)
+                  print(name, "에러:", e)
           PYEOF
           cat eu_test_result.txt
       - name: 결과 커밋
@@ -37,5 +36,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add eu_test_result.txt
-          git commit -m "test: EU API 진단 결과" || echo "변경없음"
+          git commit -m "test: EU API swagger 진단" || echo "변경없음"
           git push
