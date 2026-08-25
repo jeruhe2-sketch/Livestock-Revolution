@@ -666,6 +666,9 @@ function parseAccItem(품목명) {
     hadWooPrefix = true;
     afterPrefix = text.slice(prefixMatch[0].length);
   }
+  // \u266B \u2665 \u2606 \uAC19\uC740 \uD2B9\uC218\uBB38\uC790\uAC00 \uB9E8 \uC55E\uC5D0 \uBD99\uB294 \uACBD\uC6B0\uAC00 \uC788\uC5B4\uC11C(\uC608: "\u2665\uAC08\uBE44 ACC..."),
+  // \uD55C\uAE00\uC774 \uC544\uB2CC \uC120\uB450 \uBB38\uC790\uB294 \uBA3C\uC800 \uAC70\uB984
+  afterPrefix = afterPrefix.replace(/^[^\uAC00-\uD7A3]+/, "");
   const cutMatch = afterPrefix.match(/^[가-힣]+/);
   const cutName = cutMatch ? cutMatch[0] : afterPrefix;
   const base = (hadWooPrefix ? "우" : "") + cutName;
