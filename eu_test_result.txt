@@ -1,0 +1,8 @@
+=== pigmeat/trade {'memberStateCodes': 'ES', 'years': '2025', 'partnerCountries': 'KR'} -> 404
+{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
+=== pigmeat/trade {'memberStateCodes': 'ES', 'marketingYears': '2025', 'partnerCountries': 'KR'} -> 404
+{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
+=== beef/trade {'memberStateCodes': 'ES', 'years': '2025', 'partnerCountries': 'KR'} -> 404
+{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
+=== pigmeat/trade {'years': '2025', 'months': '1', 'partnerCountries': 'South Korea'} -> 404
+{"code":"404","type":"Status report","message":"Runtime Error","description":"No matching resource found for given API Request"}
