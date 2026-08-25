@@ -1,0 +1,31 @@
+name: EU API 진단 테스트 (임시)
+on:
+  workflow_dispatch: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: API 테스트
+        run: |
+          python3 << 'PYEOF'
+          import requests, json
+          base = "https://api.tech.ec.europa.eu/agrifood"
+          candidates = [
+              ("pigmeat/trade", {"memberStateCodes":"ES","years":"2025","partnerCountries":"KR"}),
+              ("pigmeat/trade", {"memberStateCodes":"ES","marketingYears":"2025","partnerCountries":"KR"}),
+              ("beef/trade", {"memberStateCodes":"ES","years":"2025","partnerCountries":"KR"}),
+              ("pigmeat/trade", {"years":"2025","months":"1","partnerCountries":"South Korea"}),
+          ]
+          for path, params in candidates:
+              try:
+                  r = requests.get(f"{base}/{path}", params=params, timeout=20)
+                  print("===", path, params, "->", r.status_code)
+                  print(r.text[:800])
+              except Exception as e:
+                  print(path, "에러:", e)
+          PYEOF
