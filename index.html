@@ -668,6 +668,8 @@ function EuTradeApp() {
   const filteredRows = useMemo(() => rows.filter((r) => r.month >= monthFrom && r.month <= monthTo), [rows, monthFrom, monthTo]);
 
   const togglePartner = (code) => setPartnerSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
+  // kg\ub85C \uC800\uC7A5\ub41C \uc6d0\ubcf8\uc744 \uD1A4(t) \ub2E8\uc704\ub85C \ubcC0\ud658 (\ubc18\uc62C\ub9BC). euro\ub294 \ubcC0\ud658 \uc548\ud568.
+  const toTon = (v) => valueKey === "kg" ? Math.round(v / 1000) : Math.round(v);
 
   const cumsum = (arr) => {
     let s = 0;
@@ -686,13 +688,13 @@ function EuTradeApp() {
           values = Array.from({ length: 53 }, (_, wi) => {
             const w = wi + 1;
             const vals = filteredRows.filter((r) => r.partnerCode && partnerSel.includes(r.partnerCode) && r.year === y && r.week === w);
-            return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+            return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
           });
         } else {
           const monthsInRange = Array.from({ length: 12 }, (_, i2) => i2 + 1).filter((m) => m >= monthFrom && m <= monthTo);
           values = monthsInRange.map((m) => {
             const vals = filteredRows.filter((r) => partnerSel.includes(r.partnerCode) && r.year === y && r.month === m);
-            return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+            return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
           });
         }
         if (cumulative) values = cumsum(values);
@@ -706,7 +708,7 @@ function EuTradeApp() {
       const ser = partnerSel.map((code) => {
         let values = years.map((y) => {
           const vals = filteredRows.filter((r) => r.partnerCode === code && r.year === y);
-          return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+          return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
         });
         if (cumulative) values = cumsum(values);
         return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
@@ -719,7 +721,7 @@ function EuTradeApp() {
       const ser = partnerSel.map((code) => {
         let values = monthsInRange.map((m) => {
           const vals = filteredRows.filter((r) => r.partnerCode === code && r.year === refYear && r.month === m);
-          return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+          return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
         });
         if (cumulative) values = cumsum(values);
         return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
@@ -732,7 +734,7 @@ function EuTradeApp() {
     const ser = partnerSel.map((code) => {
       let values = weeks.map((w) => {
         const rec = rows.find((r) => r.partnerCode === code && r.year === refYear && r.week === w);
-        return rec ? (rec[valueKey] || 0) : 0;
+        return rec ? toTon(rec[valueKey] || 0) : 0;
       });
       if (cumulative) values = cumsum(values);
       return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
@@ -751,9 +753,10 @@ function EuTradeApp() {
   }, [rows, partnerSel, valueKey]);
 
   const exportExcel = () => {
-    const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => m + "\uC6D4"), "\uCD1D\ud569\uacC4"];
+    const unitTag = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C";
+    const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => `${m}\uC6D4(${unitTag})`), `\uCD1D\ud569\uacC4(${unitTag})`];
     const body = years.map((y) => {
-      const rowVals = MONTHS_ALL.map((m) => (pivot[y] && pivot[y][m]) || 0);
+      const rowVals = MONTHS_ALL.map((m) => toTon((pivot[y] && pivot[y][m]) || 0));
       const total = rowVals.reduce((a, b) => a + b, 0);
       return [y, ...rowVals.map((v) => Math.round(v)), Math.round(total)];
     });
@@ -769,7 +772,7 @@ function EuTradeApp() {
     return React.createElement("div", { style: { padding: 30, color: COLORS.rust, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
   }
 
-  const unitLabel = valueKey === "kg" ? "kg" : "\uC720\uB85C(\u20AC)";
+  const unitLabel = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C(\u20AC)";
 
   return React.createElement("div", { style: { padding: "14px 16px 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif", maxWidth: 1120, margin: "0 auto" } },
     React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU \u2192 \uD55C\uAD6D \u00B7 \uBBF8\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
@@ -788,7 +791,15 @@ function EuTradeApp() {
         }
       }, PARTNER_LABEL[code])),
       React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
-      React.createElement(ChipGroup, { options: ["kg", "euro"], value: valueKey, onChange: setValueKey }),
+      ["kg", "euro"].map((k) => React.createElement("button", {
+        key: k, onClick: () => setValueKey(k),
+        style: {
+          padding: "5px 11px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          border: `1px solid ${valueKey === k ? COLORS.amber : COLORS.panelBorder}`,
+          background: valueKey === k ? "rgba(217,139,63,0.16)" : COLORS.panel,
+          color: valueKey === k ? COLORS.amber : COLORS.mute
+        }
+      }, k === "kg" ? "\uD1A4(t)" : "\uC720\uB85C(\u20AC)")),
       React.createElement("span", { style: { flex: 1 } }),
       React.createElement("button", {
         onClick: () => setPartnerSel(partnerSel.length === PARTNER_LIST.length ? [] : [...PARTNER_LIST]),
@@ -844,7 +855,7 @@ function EuTradeApp() {
         ),
         React.createElement("tbody", null,
           years.map((y) => {
-            const rowVals = MONTHS_ALL.map((m) => (pivot[y] && pivot[y][m]) || 0);
+            const rowVals = MONTHS_ALL.map((m) => toTon((pivot[y] && pivot[y][m]) || 0));
             const total = rowVals.reduce((a, b) => a + b, 0);
             return React.createElement("tr", { key: y },
               React.createElement("td", { style: { padding: "7px 10px", fontSize: 13, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}` } }, y),
