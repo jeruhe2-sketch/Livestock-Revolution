@@ -533,16 +533,88 @@ const COLORS = {
   sage: "#6f9482", rust: "#c2695f", head: "#141211"
 };
 const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH"];
-const PARTNER_LABEL = { KR: "한국", US: "미국", GB: "영국", CN: "중국", JP: "일본", PH: "필리핀" };
-const PARTNER_COLOR = { KR: "#d98b3f", US: "#5c8f7a", GB: "#4f8fb8", CN: "#c2695f", JP: "#a06a9c", PH: "#b0a25c" };
-const MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
+const PARTNER_LABEL = { KR: "\uD55C\uAD6D", US: "\uBBF8\uAD6D", GB: "\uC601\uAD6D", CN: "\uC911\uAD6D", JP: "\uC77C\uBCF8", PH: "\uD544\uB9AC\uD540" };
+const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c", "#b0a25c"];
+const PARTNER_COLOR = { KR: SERIES_PALETTE[0], US: SERIES_PALETTE[1], GB: SERIES_PALETTE[2], CN: SERIES_PALETTE[3], JP: SERIES_PALETTE[4], PH: SERIES_PALETTE[5] };
 
 function n(v) {
   return Math.round(v).toLocaleString();
 }
+function fmtShort(v) {
+  return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString();
+}
 
-const thStyle = { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}`, whiteSpace: "nowrap" };
-const tdStyle = { padding: "7px 10px", fontSize: 13, borderBottom: `1px solid ${COLORS.panelBorder}` };
+// SvgLineChart / ChartLegend: \uAC80\uC5ED\uD604\uD669(QuarantineApp)\uACFC \uB3D9\uC77C\uD55C \uACB0\uACFC\uBB3C\uC744 \uB0B4\uAE30 \uC704\uD574 \uAC19\uC740 \uAD6C\uD604\uC744 \uC774
+// \uBAA8\uB4C8 \uC2A4\uCF54\uD504\uC5D0\uB3C4 \uBCF5\uC0AC\uD574\uB458 (\uB2E4\uB978 IIFE\uB77C \uACF5\uC720 \uBD88\uAC00, \uCC3D\uACE0/\uAC80\uC5ED\uACC0\uACC4\uC5D0\uC11C\uB3C4 \uAC19\uC740 \uD328\uD134 \uC0AC\uC6A9\uD568)
+function SvgLineChart({ categories, series, height = 260 }) {
+  const width = 760;
+  const manyLabels = categories.length > 16;
+  const padL = 46, padR = 12, padT = 14, padB = manyLabels ? 46 : 28;
+  const innerW = width - padL - padR, innerH = height - padT - padB;
+  const allVals = series.flatMap((s) => s.values).filter((v) => v !== null && v !== undefined);
+  const maxV = Math.max(1, ...allVals);
+  const minV = Math.min(0, ...allVals);
+  const range = maxV - minV || 1;
+  const xStep = categories.length > 1 ? innerW / (categories.length - 1) : 0;
+  const yFor = (v) => padT + innerH - ((v - minV) / range) * innerH;
+  const xFor = (i) => padL + i * xStep;
+  const ticks = 4;
+  const gridLines = Array.from({ length: ticks + 1 }, (_, i) => minV + (range * i) / ticks);
+  const [hover, setHover] = useState(null);
+  const svgRef = React.useRef(null);
+  const handleMove = (e) => {
+    if (!svgRef.current || categories.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = width / rect.width;
+    const relX = (e.clientX - rect.left) * scaleX;
+    let idx = Math.round((relX - padL) / (xStep || 1));
+    idx = Math.max(0, Math.min(categories.length - 1, idx));
+    setHover(idx);
+  };
+  return /* @__PURE__ */ React.createElement("svg", { ref: svgRef, viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height: "auto", display: "block" }, onMouseMove: handleMove, onMouseLeave: () => setHover(null) },
+    gridLines.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("line", { x1: padL, x2: width - padR, y1: yFor(v), y2: yFor(v), stroke: COLORS.panelBorder2, strokeWidth: 1 }), /* @__PURE__ */ React.createElement("text", { x: padL - 6, y: yFor(v) + 3, fontSize: 9.5, fill: COLORS.mute, textAnchor: "end" }, fmtShort(v)))),
+    categories.map((c, i) => {
+      const showLabel = manyLabels ? i % Math.ceil(categories.length / 12) === 0 : true;
+      return showLabel ? /* @__PURE__ */ React.createElement("text", { key: i, x: xFor(i), y: height - padB + (manyLabels ? 26 : 16), fontSize: 9.5, fill: COLORS.mute, textAnchor: "middle", transform: manyLabels ? `rotate(-40 ${xFor(i)} ${height - padB + 26})` : undefined }, c) : null;
+    }),
+    series.map((s, si) => {
+      const pts = s.values.map((v, i) => (v === null || v === undefined ? null : [xFor(i), yFor(v)]));
+      const segs = [];
+      let cur = [];
+      pts.forEach((p) => {
+        if (p) cur.push(p); else { if (cur.length > 1) segs.push(cur); cur = []; }
+      });
+      if (cur.length > 1) segs.push(cur);
+      return /* @__PURE__ */ React.createElement("g", { key: si }, segs.map((seg, gi) => /* @__PURE__ */ React.createElement("polyline", { key: gi, points: seg.map((p) => p.join(",")).join(" "), fill: "none", stroke: s.color, strokeWidth: 2 })), pts.map((p, i) => p ? /* @__PURE__ */ React.createElement("circle", { key: i, cx: p[0], cy: p[1], r: hover === i ? 4 : 2.5, fill: s.color }) : null));
+    }),
+    hover !== null && /* @__PURE__ */ React.createElement("g", null,
+      /* @__PURE__ */ React.createElement("line", { x1: xFor(hover), x2: xFor(hover), y1: padT, y2: height - padB, stroke: COLORS.panelBorder2, strokeWidth: 1 }),
+      /* @__PURE__ */ React.createElement("rect", { x: Math.min(width - padR - 150, xFor(hover) + 8), y: padT, width: 150, height: 16 * series.length + 22, fill: COLORS.head, stroke: COLORS.panelBorder, rx: 6 }),
+      /* @__PURE__ */ React.createElement("text", { x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 14, fontSize: 10.5, fill: COLORS.cream, fontWeight: 700 }, categories[hover]),
+      series.map((s, si) => /* @__PURE__ */ React.createElement("text", { key: si, x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 30 + si * 16, fontSize: 10, fill: s.color }, `${s.label}: ${s.values[hover] !== null && s.values[hover] !== undefined ? n(s.values[hover]) : "-"}`))
+    )
+  );
+}
+function ChartLegend({ series }) {
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 } }, series.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.mute } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: 2, background: s.color, display: "inline-block" } }), s.label)));
+}
+
+function ChipGroup({ label, options, value, onChange }) {
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
+    label && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginRight: 2 } }, label),
+    options.map((opt) => /* @__PURE__ */ React.createElement("button", {
+      key: opt, onClick: () => onChange(opt),
+      style: {
+        padding: "5px 11px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+        border: `1px solid ${value === opt ? COLORS.amber : COLORS.panelBorder}`,
+        background: value === opt ? "rgba(217,139,63,0.16)" : COLORS.panel,
+        color: value === opt ? COLORS.amber : COLORS.mute
+      }
+    }, opt))
+  );
+}
+
+const XAXIS_OPTIONS = [["year", "\uC5F0\ub3C4\ubcC4"], ["month", "\uC6D4\ubcC4"], ["week", "\uC8FC\ubcC4"]];
 
 function EuTradeApp() {
   const [db, setDb] = useState(null);
@@ -556,42 +628,63 @@ function EuTradeApp() {
       .catch(() => { setError(true); setLoading(false); });
   }, []);
 
-  const [partnerFilter, setPartnerFilter] = useState([...PARTNER_LIST]);
-  const [valueKey, setValueKey] = useState("kg");
-  const [chartMode, setChartMode] = useState("byYear");
-
   const rows = db ? db.data : [];
-  const filtered = useMemo(() => rows.filter((r) => partnerFilter.includes(r.partnerCode)), [rows, partnerFilter]);
-  const years = useMemo(() => [...new Set(filtered.map((r) => r.year))].sort((a, b) => a - b), [filtered]);
+  const [partnerSel, setPartnerSel] = useState([...PARTNER_LIST]);
+  const [valueKey, setValueKey] = useState("kg");
+  const [xAxis, setXAxis] = useState("year");
+  const years = useMemo(() => [...new Set(rows.map((r) => r.year))].sort((a, b) => a - b), [rows]);
+  const [refYear, setRefYear] = useState(null);
+  useEffect(() => { if (years.length && refYear === null) setRefYear(years[years.length - 1]); }, [years]);
 
+  const togglePartner = (code) => setPartnerSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
+
+  // \uACB9\uCCD0\ubcF4\uAE30 \uCC28\ud2b8 \ub370\uC774\ud130 \uAD6C\uC131
+  const { categories, series } = useMemo(() => {
+    if (xAxis === "year") {
+      const cats = years.map(String);
+      const ser = partnerSel.map((code, i) => ({
+        label: PARTNER_LABEL[code], color: PARTNER_COLOR[code],
+        values: years.map((y) => {
+          const vals = rows.filter((r) => r.partnerCode === code && r.year === y);
+          return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+        })
+      }));
+      return { categories: cats, series: ser };
+    }
+    if (xAxis === "month") {
+      const months = [1,2,3,4,5,6,7,8,9,10,11,12];
+      const cats = months.map((m) => m + "\uC6D4");
+      const ser = partnerSel.map((code) => ({
+        label: PARTNER_LABEL[code], color: PARTNER_COLOR[code],
+        values: months.map((m) => {
+          const vals = rows.filter((r) => r.partnerCode === code && r.year === refYear && r.month === m);
+          return vals.length ? vals.reduce((s, r) => s + (r[valueKey] || 0), 0) : 0;
+        })
+      }));
+      return { categories: cats, series: ser };
+    }
+    // week
+    const weeks = Array.from({ length: 53 }, (_, i) => i + 1);
+    const cats = weeks.map((w) => w + "\uC8FC");
+    const ser = partnerSel.map((code) => ({
+      label: PARTNER_LABEL[code], color: PARTNER_COLOR[code],
+      values: weeks.map((w) => {
+        const rec = rows.find((r) => r.partnerCode === code && r.year === refYear && r.week === w);
+        return rec ? (rec[valueKey] || 0) : null;
+      })
+    }));
+    return { categories: cats, series: ser };
+  }, [rows, partnerSel, xAxis, years, refYear, valueKey]);
+
+  // \uC5F0\ub3C4 x \uC6D4\ubcC4 \ud53C\ubCF7 (\uC120\ud0dD\ud55C \uAD6D\uac00 \ud569\uc0B0)
   const pivot = useMemo(() => {
     const map = {};
-    filtered.forEach((r) => {
+    rows.filter((r) => partnerSel.includes(r.partnerCode)).forEach((r) => {
       if (!map[r.year]) map[r.year] = {};
       map[r.year][r.month] = (map[r.year][r.month] || 0) + (r[valueKey] || 0);
     });
     return map;
-  }, [filtered, valueKey]);
-
-  const byPartnerYear = useMemo(() => {
-    const map = {};
-    filtered.forEach((r) => {
-      if (!map[r.partnerCode]) map[r.partnerCode] = {};
-      map[r.partnerCode][r.year] = (map[r.partnerCode][r.year] || 0) + (r[valueKey] || 0);
-    });
-    return map;
-  }, [filtered, valueKey]);
-
-  const latestYear = years.length ? years[years.length - 1] : null;
-  const byPartnerMonthLatestYear = useMemo(() => {
-    if (!latestYear) return {};
-    const map = {};
-    filtered.filter((r) => r.year === latestYear).forEach((r) => {
-      if (!map[r.partnerCode]) map[r.partnerCode] = {};
-      map[r.partnerCode][r.month] = (map[r.partnerCode][r.month] || 0) + (r[valueKey] || 0);
-    });
-    return map;
-  }, [filtered, valueKey, latestYear]);
+  }, [rows, partnerSel, valueKey]);
 
   if (loading) {
     return React.createElement("div", { style: { padding: 30, color: COLORS.mute, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
@@ -601,45 +694,46 @@ function EuTradeApp() {
   }
 
   const unitLabel = valueKey === "kg" ? "kg" : valueKey === "kg_equiv" ? "kg(\uC9C0\uC721\uD658\uC0B0)" : "\uC720\uB85C(\u20AC)";
-
-  const maxBar = Math.max(1, ...PARTNER_LIST.map((p) => (byPartnerMonthLatestYear[p] ? Math.max(...Object.values(byPartnerMonthLatestYear[p])) : 0)));
+  const MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
 
   return React.createElement("div", { style: { padding: "14px 16px 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif", maxWidth: 1120, margin: "0 auto" } },
     React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU \u2192 \uD55C\uAD6D \u00B7 \uBBF8\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
     React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC720\uB7FD\uC0B0 \uB3C8\uC721(\uB0C9\uB3D9) \uC218\uCD9C \uD604\uD669"),
     db.sourceMostRecentData && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft, marginBottom: 6 } }, "\uD83D\uDD52 ", db.sourceMostRecentData, " \uAE30\uC900 (EU TAXUD \uC8FC\uAC04 \uC7A0\uC815\uCE58)"),
-    React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 14 } }, "\uC790\ub8CC: \uC2DD\uc57D\ucc98 \uC218\uc785\uc2DD\ud488\uc815\ubcf4\ub9c8\ub8e8 \ud788\uc2A4\ud1a0\ub9AC + \uacf5\uacf5\ub370\uc774\ud130\ud3ec\ud130 \uC2E4\uC2DC\uAC04 API \ubcd1\ud589. \ub2E8\uc704 kg. \ub9E4\uc77c \uc790\ub3d9 \uac31\uc2E0\ub429\ub2c8\ub2E4."),
-    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14, alignItems: "center" } },
+    React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 16 } }, "국가별 물량이 서로 영향을 주고받을 수 있어서(예: 미국 수량 증가 → 다른 국가에 늘어가는 물량 감소 가능성), 여러 국가를 같이 겹쳐보면서 추세를 비교해 보세요."),
+
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
       PARTNER_LIST.map((code) => React.createElement("button", {
-        key: code,
-        onClick: () => setPartnerFilter(partnerFilter.includes(code) ? partnerFilter.filter((c) => c !== code) : [...partnerFilter, code]),
+        key: code, onClick: () => togglePartner(code),
         style: {
           padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-          border: `1px solid ${partnerFilter.includes(code) ? PARTNER_COLOR[code] : COLORS.panelBorder}`,
-          background: partnerFilter.includes(code) ? PARTNER_COLOR[code] + "29" : COLORS.panel,
-          color: partnerFilter.includes(code) ? PARTNER_COLOR[code] : COLORS.mute
+          border: `1px solid ${partnerSel.includes(code) ? PARTNER_COLOR[code] : COLORS.panelBorder}`,
+          background: partnerSel.includes(code) ? PARTNER_COLOR[code] + "29" : COLORS.panel,
+          color: partnerSel.includes(code) ? PARTNER_COLOR[code] : COLORS.mute
         }
       }, PARTNER_LABEL[code])),
       React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
-      ["kg", "euro"].map((k) => React.createElement("button", {
-        key: k,
-        onClick: () => setValueKey(k),
-        style: {
-          padding: "6px 12px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-          border: `1px solid ${valueKey === k ? COLORS.amber : COLORS.panelBorder}`,
-          background: valueKey === k ? "rgba(217,139,63,0.16)" : COLORS.panel,
-          color: valueKey === k ? COLORS.amber : COLORS.mute
-        }
-      }, k === "kg" ? "\uC911\uB7C9(kg)" : "\uAE08\uC561(\u20AC)"))
+      React.createElement(ChipGroup, { options: ["kg", "euro"], value: valueKey, onChange: setValueKey })
     ),
-    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "20px 0 10px" } }, "\uC5F0\ub3C4 \u00D7 \uc6D4\ubcC4 \ud569\uacC4 (\uC120\ud0dd\ud55C \uAD6D\uac00 \uD569\uc0B0, ", unitLabel, ")"),
+
+    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "20px 0 10px" } }, "\uAD6D\uac00\ubcC4 \uACB9\uCCD0\ubcF4\uAE30"),
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14, alignItems: "center" } },
+      React.createElement(ChipGroup, { label: "X\uCD95", options: XAXIS_OPTIONS.map((o) => o[1]), value: XAXIS_OPTIONS.find((o) => o[0] === xAxis)[1], onChange: (label) => setXAxis(XAXIS_OPTIONS.find((o) => o[1] === label)[0]) }),
+      xAxis !== "year" && years.length > 0 && React.createElement(ChipGroup, { label: "\uAE30\uC900\uC5F0\ub3C4", options: years.map(String), value: String(refYear), onChange: (y) => setRefYear(+y) })
+    ),
+    React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "16px 12px" } },
+      React.createElement(SvgLineChart, { categories, series }),
+      React.createElement(ChartLegend, { series })
+    ),
+
+    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "24px 0 10px" } }, "\uC5F0\ub3C4 \u00D7 \uC6D4\ubcC4 \ud569\uacC4 (\uc120\ud0DD\ud55C \uAD6D\uac00 \ud569\uc0B0, ", unitLabel, ")"),
     React.createElement("div", { style: { overflowX: "auto", background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10 } },
       React.createElement("table", { style: { borderCollapse: "collapse", width: "100%" } },
         React.createElement("thead", null,
           React.createElement("tr", null,
-            React.createElement("th", { style: { ...thStyle, textAlign: "left" } }, "\uC5F0\ub3C4"),
-            MONTHS.map((m) => React.createElement("th", { key: m, style: thStyle }, m + "\uC6D4")),
-            React.createElement("th", { style: { ...thStyle, color: COLORS.amberSoft } }, "\uCD1D\ud569\uacC4")
+            React.createElement("th", { style: { padding: "8px 10px", textAlign: "left", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}` } }, "\uC5F0\ub3C4"),
+            MONTHS.map((m) => React.createElement("th", { key: m, style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}`, whiteSpace: "nowrap" } }, m + "\uC6D4")),
+            React.createElement("th", { style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.amberSoft, borderBottom: `1px solid ${COLORS.panelBorder2}` } }, "\uCD1D\ud569\uacC4")
           )
         ),
         React.createElement("tbody", null,
@@ -647,49 +741,11 @@ function EuTradeApp() {
             const rowVals = MONTHS.map((m) => (pivot[y] && pivot[y][m]) || 0);
             const total = rowVals.reduce((a, b) => a + b, 0);
             return React.createElement("tr", { key: y },
-              React.createElement("td", { style: { ...tdStyle, fontWeight: 700 } }, y),
-              rowVals.map((v, i) => React.createElement("td", { key: i, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color: v ? COLORS.cream : COLORS.mute } }, v ? n(v) : "-")),
-              React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontWeight: 700, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace" } }, n(total))
+              React.createElement("td", { style: { padding: "7px 10px", fontSize: 13, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}` } }, y),
+              rowVals.map((v, i) => React.createElement("td", { key: i, style: { padding: "7px 10px", fontSize: 13, textAlign: "right", fontFamily: "ui-monospace,monospace", color: v ? COLORS.cream : COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder}` } }, v ? n(v) : "-")),
+              React.createElement("td", { style: { padding: "7px 10px", fontSize: 13, textAlign: "right", fontWeight: 700, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", borderBottom: `1px solid ${COLORS.panelBorder}` } }, n(total))
             );
           })
-        )
-      )
-    ),
-    latestYear && React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "24px 0 10px" } }, latestYear, "\uB144 \uAD6D\uac00\ubcc4 \uC6D4\ubcc4 \uCD94\uC774"),
-    latestYear && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "16px 12px" } },
-      React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 3, height: 180, borderBottom: `1px solid ${COLORS.panelBorder2}`, paddingBottom: 4 } },
-        MONTHS.map((m) => React.createElement("div", { key: m, style: { flex: 1, display: "flex", alignItems: "flex-end", gap: 1, height: "100%" } },
-          partnerFilter.map((code) => {
-            const v = (byPartnerMonthLatestYear[code] && byPartnerMonthLatestYear[code][m]) || 0;
-            const h = maxBar ? Math.max(1, (v / maxBar) * 170) : 1;
-            return React.createElement("div", { key: code, title: `${PARTNER_LABEL[code]} ${m}\uC6D4: ${n(v)}`, style: { flex: 1, height: h, background: PARTNER_COLOR[code], borderRadius: "2px 2px 0 0" } });
-          })
-        ))
-      ),
-      React.createElement("div", { style: { display: "flex", justifyContent: "space-around", marginTop: 6, fontSize: 10.5, color: COLORS.mute } },
-        MONTHS.map((m) => React.createElement("span", { key: m }, m + "\uC6D4"))
-      ),
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 14 } },
-        partnerFilter.map((code) => React.createElement("div", { key: code, style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12 } },
-          React.createElement("span", { style: { width: 10, height: 10, borderRadius: 2, background: PARTNER_COLOR[code], display: "inline-block" } }),
-          PARTNER_LABEL[code]
-        ))
-      )
-    ),
-    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "24px 0 10px" } }, "\uAD6D\uac00\ubcC4 \u00D7 \uC5F0\ub3C4 \ud569\uACC4"),
-    React.createElement("div", { style: { overflowX: "auto", background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10 } },
-      React.createElement("table", { style: { borderCollapse: "collapse", width: "100%" } },
-        React.createElement("thead", null,
-          React.createElement("tr", null,
-            React.createElement("th", { style: { ...thStyle, textAlign: "left" } }, "\uAD6D\uac00"),
-            years.map((y) => React.createElement("th", { key: y, style: thStyle }, y))
-          )
-        ),
-        React.createElement("tbody", null,
-          partnerFilter.map((code) => React.createElement("tr", { key: code },
-            React.createElement("td", { style: { ...tdStyle, fontWeight: 700, color: PARTNER_COLOR[code] } }, PARTNER_LABEL[code]),
-            years.map((y) => React.createElement("td", { key: y, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n((byPartnerYear[code] && byPartnerYear[code][y]) || 0)))
-          ))
         )
       )
     )
@@ -697,6 +753,7 @@ function EuTradeApp() {
 }
 return EuTradeApp;
 })();
+
 
 window.WarehouseDashboardApp = (function() {
 const { useState, useMemo, useRef } = React;
