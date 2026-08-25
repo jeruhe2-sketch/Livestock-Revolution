@@ -1,2 +1,0 @@
-pigmeat swagger -> 500
-{"code":"303001","type":"Status report","message":"Runtime Error","description":"Currently , Address endpoint : [ Name : AgrifoodPublicData--vprod_APIproductionEndpoint ] [ State : SUSPENDED ]"}
