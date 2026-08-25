@@ -1,23 +1,15 @@
-=== pigmeat -> 200
-  /api/pigmeat/prices
-  /api/pigmeat/cuts/prices
-  /api/pigmeat/cuts/categories
-  /api/pigmeat/cuts/priceTypes
-  /api/pigmeat/cuts/prices/month
-  /api/pigmeat/cuts/prices/month/categories
-  /api/pigmeat/cuts/prices/month/priceTypes
-  /api/pigmeat/production
-=== beef -> 200
-  /api/beef/prices
-  /api/beef/categories
-  /api/beef/productCodes
-  /api/liveAnimal/prices
-  /api/liveAnimal/categories
-  /api/beef/cuts/prices
-  /api/beef/cuts/prices/categories
-  /api/beef/cuts/prices/priceTypes
-  /api/beef/cuts/prices/month
-  /api/beef/cuts/prices/month/categories
-  /api/beef/cuts/prices/month/priceTypes
-  /api/beef/production
-  /api/beef/production/categories
+=== trade -> 500
+=== pigmeatTrade -> 500
+=== pigMeat -> 500
+=== eggs -> 500
+=== poultry -> 500
+=== dairy -> 500
+=== tradeQuotas -> 500
+=== eggsTrade -> 500
+=== poultryTrade -> 500
+=== sheepmeat -> 500
+=== cereals -> 500
+===PROBE /v3/api-docs -> 500
+{"code":"303001","type":"Status report","message":"Runtime Error","description":"Currently , Address endpoint : [ Name : AgrifoodPublicData--vprod_APIproductionEndpoint ] [ State : SUSPENDED ]"}
+===PROBE /v3/api-docs/swagger-config -> 500
+{"code":"303001","type":"Status report","message":"Runtime Error","description":"Currently , Address endpoint : [ Name : AgrifoodPublicData--vprod_APIproductionEndpoint ] [ State : SUSPENDED ]"}
