@@ -677,7 +677,6 @@ function parseAccItem(품목명) {
   if (normalized === "백립") normalized = "빽립";
   if (normalized === "등갈비") normalized = "빽립";
   if (normalized === "뒤사태") normalized = "뒷사태";
-  if (normalized === "목심") normalized = "알목심";
   return { base, normalized, grade, est };
 }
 // 공급사별 축종 매핑 - 커팅명보다 신뢰도 높음 (scripts/fetch_all_warehouses.py의
@@ -815,10 +814,17 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
     });
   }, [filtered]);
   const accFiltered = useMemo(() => {
+    // "\uBAA9\uC2EC"\uACFC "\uC54C\uBAA9\uC2EC"\uC740 \uAC19\uC740 \uC0C1\uD488\uAD70\uC73C\uB85C \uCDE8\uAE09\uD574\uC11C, \uC774\uB984\uC740 \uAC01\uAC01 \uADF8\uB300\uB85C
+    // \uB450\uACE0(\uD45C\uC2DC \uBCC0\uACBD X) \uAC80\uC0C9\uB9CC \uD569\uC9D1\uD569\uC73C\uB85C \uCC98\uB9AC\uD55C\uB2E4.
+    const ACC_SEARCH_GROUPS = { "\uBAA9\uC2EC": ["\uBAA9\uC2EC", "\uC54C\uBAA9\uC2EC"], "\uC54C\uBAA9\uC2EC": ["\uBAA9\uC2EC", "\uC54C\uBAA9\uC2EC"] };
     return accRows.filter((r) => {
       if (accGrade !== "\uC804\uCCB4" && r.\uB4F1\uAE09 !== accGrade) return false;
       if (accEst !== "\uC804\uCCB4" && r.EST !== accEst) return false;
-      if (accSearch.trim() && r.\uC815\uADDC\uD654\uBA85 !== accSearch.trim()) return false;
+      if (accSearch.trim()) {
+        const q = accSearch.trim();
+        const group = ACC_SEARCH_GROUPS[q];
+        if (group ? !group.includes(r.\uC815\uADDC\uD654\uBA85) : r.\uC815\uADDC\uD654\uBA85 !== q) return false;
+      }
       return true;
     }).sort((a, b) => {
       const da = daysUntil(a.\uC720\uD1B5\uAE30\uD55C);
