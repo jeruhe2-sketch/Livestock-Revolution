@@ -654,6 +654,13 @@ function EuTradeApp() {
   const [partnerSel, setPartnerSel] = useState([...PARTNER_LIST]);
   const [msSel, setMsSel] = useState([]);
   useEffect(() => { if (MS_LIST.length && msSel.length === 0) setMsSel([...MS_LIST]); }, [MS_LIST]);
+  // \uC218\uCD9C\uAD6D\uC744 3\uAC1C \uC774\ud558\ub85c \uC88B\ud614\uc744 \ub54C\ub9CC \uBC94\uB840\uC5D0 "\uC624\uc2A4\ud2B8\uB9AC\uC544\u2192\uBBF8\uAD6D" \uCC98\ub7FC \uD45C\uC2DC (\uB108\uBB34 \ub9CE\uC73C\uba74 \uC9C0\ub85c\ubD84\uCEE8\uD558\uAC8C \uB300\uC2E0 \uC218\uc785\uAD6D\uba85\ub9CC)
+  const msLabel = useMemo(() => {
+    if (msSel.length > 0 && msSel.length <= 3 && msSel.length < MS_LIST.length) {
+      return msSel.map((c) => msNames[c]).join("/") + "\u2192";
+    }
+    return "";
+  }, [msSel, MS_LIST, msNames]);
 
   const [valueKey, setValueKey] = useState("kg");
   const [xAxis, setXAxis] = useState("year");
@@ -705,7 +712,7 @@ function EuTradeApp() {
           return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
         });
         if (cumulative) values = cumsum(values);
-        return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
+        return { label: msLabel + PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
       });
       return { categories: cats, series: ser };
     }
@@ -718,7 +725,7 @@ function EuTradeApp() {
           return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
         });
         if (cumulative) values = cumsum(values);
-        return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
+        return { label: msLabel + PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
       });
       return { categories: cats, series: ser };
     }
@@ -730,7 +737,7 @@ function EuTradeApp() {
         return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
       });
       if (cumulative) values = cumsum(values);
-      return { label: PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
+      return { label: msLabel + PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
     });
     return { categories: cats, series: ser };
   }, [filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo]);
