@@ -53,7 +53,7 @@ KNOWN_SUPPLIERS = [
     "KAMOURASKA", "EXC", "NATIONAL", "LORIENTE", "GREENIA", "LORFOOD",
     "PERDIGAO", "SADIA", "DUMECO", "LAR", "QAF",
     "NV", "A/S", "BAUCELLS",
-    "BINDAREE", "G/N", "S/W", "INCA",
+    "BINDAREE", "G/N", "S/W", "INCA", "RAABTAL",
 ]
 # 공급사명 표기가 대소문자 섞여있는 경우(예: "Fribin")도 매칭되도록 대소문자 무시.
 # \b 대신 (?<![A-Za-z0-9])...(?![A-Za-z0-9]) 를 쓰는 이유: "ACC_상이품"처럼 뒤에
@@ -388,6 +388,7 @@ SUPPLIER_ANIMAL_MAP = {
     "BAUCELLS": "돼지",
     "OLYMEL": "돼지",
     "MARCHER": "돼지",
+    "RAABTAL": "돼지",
     # 닭
     "SADIA": "닭",
     "PERDIGAO": "닭",
