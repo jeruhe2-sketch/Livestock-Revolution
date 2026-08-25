@@ -677,6 +677,7 @@ function parseAccItem(품목명) {
   if (normalized === "백립") normalized = "빽립";
   if (normalized === "등갈비") normalized = "빽립";
   if (normalized === "뒤사태") normalized = "뒷사태";
+  if (normalized === "목심") normalized = "알목심";
   return { base, normalized, grade, est };
 }
 // 공급사별 축종 매핑 - 커팅명보다 신뢰도 높음 (scripts/fetch_all_warehouses.py의
