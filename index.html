@@ -744,12 +744,12 @@ function EuTradeApp() {
 
   const pivot = useMemo(() => {
     const map = {};
-    rows.filter((r) => partnerSel.includes(r.partnerCode) && msSel.includes(r.msCode)).forEach((r) => {
+    filteredRows.filter((r) => partnerSel.includes(r.partnerCode)).forEach((r) => {
       if (!map[r.year]) map[r.year] = {};
       map[r.year][r.month] = (map[r.year][r.month] || 0) + (r[valueKey] || 0);
     });
     return map;
-  }, [rows, partnerSel, msSel, valueKey]);
+  }, [filteredRows, partnerSel, valueKey]);
 
   const exportExcel = () => {
     const unitTag = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C";
