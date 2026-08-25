@@ -12,23 +12,32 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: Swagger 명세 확인
+      - name: Swagger 명세 후보 탐색
         run: |
           python3 << 'PYEOF' > eu_test_result.txt 2>&1
-          import requests, json
+          import requests
           base = "https://api.tech.ec.europa.eu/agrifood"
-          for name in ["pigmeat", "beef"]:
+          candidates = ["trade", "pigmeatTrade", "pigMeat", "eggs", "poultry", "dairy",
+                        "tradeQuotas", "eggsTrade", "poultryTrade", "sheepmeat", "cereals"]
+          for name in candidates:
               try:
-                  r = requests.get(f"{base}/v3/api-docs/{name}", timeout=20)
+                  r = requests.get(f"{base}/v3/api-docs/{name}", timeout=15)
                   print("===", name, "->", r.status_code)
                   if r.status_code == 200:
                       spec = r.json()
                       for path in spec.get("paths", {}):
-                          print(" ", path)
-                  else:
-                      print(r.text[:300])
+                          print("  ", path)
               except Exception as e:
                   print(name, "에러:", e)
+
+          # v3/api-docs 자체를 나열하는 게이트웨이 엔드포인트가 있는지도 확인
+          for probe in ["/v3/api-docs", "/v3/api-docs/swagger-config"]:
+              try:
+                  r = requests.get(f"{base}{probe}", timeout=15)
+                  print("===PROBE", probe, "->", r.status_code)
+                  print(r.text[:1000])
+              except Exception as e:
+                  print(probe, "에러:", e)
           PYEOF
           cat eu_test_result.txt
       - name: 결과 커밋
@@ -36,5 +45,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add eu_test_result.txt
-          git commit -m "test: EU API swagger 진단" || echo "변경없음"
+          git commit -m "test: swagger 후보 탐색" || echo "변경없음"
           git push
