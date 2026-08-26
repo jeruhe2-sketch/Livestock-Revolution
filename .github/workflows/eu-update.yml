@@ -27,12 +27,21 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions"
-          git add data/eu_pigmeat_trade.json debug/eu_update_last.log
-          git diff --cached --quiet && echo "변경 없음" && exit 0
-          git commit -m "auto: EU 돈육 수출현황 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
-          for i in 1 2 3 4 5; do
-            git pull --rebase origin main && git push && break
-            echo "retry $i"; sleep 5
+          for i in 1 2 3 4 5 6 7 8; do
+            git add data/eu_pigmeat_trade.json debug/eu_update_last.log
+            if git diff --cached --quiet; then
+              echo "변경 없음"
+              break
+            fi
+            git commit -m "auto: EU 돈육 수출현황 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+            if git push; then
+              echo "push 성공"
+              break
+            fi
+            echo "push 충돌, 재시도 $i"
+            git fetch origin main
+            git reset --mixed origin/main
+            sleep $((RANDOM % 10 + 3))
           done
       - name: 수집 실패했으면 워크플로우도 실패로 표시
         if: steps.run.outcome == 'failure'

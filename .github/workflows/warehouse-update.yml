@@ -71,15 +71,22 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/warehouse_stock.json
-          git add debug/last_run.log
-          git add debug_*.html 2>/dev/null || true
-          git diff --cached --quiet && echo "변경 없음, 커밋 스킵" && exit 0
-          git commit -m "chore: 창고 데이터 자동 갱신 $(date -u +%Y-%m-%d)"
           for i in 1 2 3 4 5 6 7 8; do
-            git push && break
-            echo "push 충돌, 재시도 $i (다른 워크플로우와 동시 push 경합으로 보임)"
-            git pull --rebase origin main
+            git add data/warehouse_stock.json
+            git add debug/last_run.log
+            git add debug_*.html 2>/dev/null || true
+            if git diff --cached --quiet; then
+              echo "변경 없음, 커밋 스킵"
+              break
+            fi
+            git commit -m "chore: 창고 데이터 자동 갱신 $(date -u +%Y-%m-%d)"
+            if git push; then
+              echo "push 성공"
+              break
+            fi
+            echo "push 충돌(다른 워크플로우와 동시 실행으로 보임), 재시도 $i"
+            git fetch origin main
+            git reset --mixed origin/main
             sleep $((RANDOM % 10 + 3))
           done
 
