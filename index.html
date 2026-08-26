@@ -692,6 +692,18 @@ function EuTradeApp() {
 }
 
 function Dashboard({ db, exRates }) {
+  // 필터 배너(<details>) 열려있을 때 다른 곳 클릭하면 자동으로 닫히게.
+  // details는 원래 summary를 다시 눌러야만 닫히는데, 그러면 다른 필터 열 때
+  // 이전 필터가 계속 열려있게 되므로 전역으로 한 번만 등록해서 처리.
+  useEffect(() => {
+    const onDocClick = (e) => {
+      document.querySelectorAll("details[open]").forEach((d) => {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
   const ROWS = useMemo(() => db.data.map((row) => ({ year: row[0], week: row[1], month: row[2], partnerCode: row[3], msCode: row[4], kg: row[5], euro: row[6] })), [db]);
   const msNames = db.msNames || {};
   const MS_LIST = useMemo(() => Object.keys(msNames).sort((a, b) => msNames[a].localeCompare(msNames[b])), [msNames]);
@@ -1211,6 +1223,16 @@ function UsdaTradeApp() {
 }
 
 function Dashboard({ db }) {
+  // 필터 배너(<details>) 열려있을 때 다른 곳 클릭하면 자동으로 닫히게.
+  useEffect(() => {
+    const onDocClick = (e) => {
+      document.querySelectorAll("details[open]").forEach((d) => {
+        if (!d.contains(e.target)) d.open = false;
+      });
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
   const ROWS = useMemo(() => db.data.map((row) => {
     const [marketYear, commodityCode, countryCode, weekEndingDate, weeklyExports, accumulatedExports, outstandingSales, grossNewSales, currentMYNetSales, currentMYTotalCommitment] = row;
     const { year, month } = dateToYearMonth(weekEndingDate);
