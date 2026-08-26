@@ -12,31 +12,29 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: 헤더 후보 테스트
+      - name: API_KEY 헤더로 세부 테스트
         env:
           USDA_KEY: ${{ secrets.USDA_API_KEY }}
         run: |
           python3 << 'PYEOF' > usda_test_result.txt 2>&1
           import requests, os
           key = os.environ["USDA_KEY"]
-          url = "https://apps.fas.usda.gov/OpenData/api/psd/commodities"
+          print("키 길이:", len(key), "앞4글자:", key[:4])
 
-          candidates = [
-              ("X-Api-Key header", {"X-Api-Key": key}, None),
-              ("Api_Key header", {"Api_Key": key}, None),
-              ("API_KEY header", {"API_KEY": key}, None),
-              ("Authorization Bearer", {"Authorization": f"Bearer {key}"}, None),
-              ("query api_key", {}, {"api_key": key}),
-              ("query API_KEY", {}, {"API_KEY": key}),
-              ("Ocp-Apim-Subscription-Key", {"Ocp-Apim-Subscription-Key": key}, None),
+          endpoints = [
+              "/psd/countries",
+              "/psd/commodities",
+              "/gats/countries",
           ]
-          for name, headers, params in candidates:
-              try:
-                  r = requests.get(url, headers=headers, params=params, timeout=15)
-                  print(f"=== {name} -> {r.status_code}")
-                  print("   ", r.text[:150])
-              except Exception as e:
-                  print(name, "에러:", e)
+          for ep in endpoints:
+              url = "https://apps.fas.usda.gov/OpenData/api" + ep
+              for hname in ["API_KEY", "Api_Key", "X-Api-Key"]:
+                  headers = {hname: key, "Accept": "application/json"}
+                  try:
+                      r = requests.get(url, headers=headers, timeout=15)
+                      print(f"{ep} [{hname}] -> {r.status_code} | {r.text[:120]}")
+                  except Exception as e:
+                      print(ep, hname, "에러:", e)
           PYEOF
           cat usda_test_result.txt
       - name: 결과 커밋
@@ -44,5 +42,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add usda_test_result.txt
-          git commit -m "test: USDA 헤더 후보 테스트" || echo "변경없음"
+          git commit -m "test: USDA API_KEY 헤더 세부 테스트" || echo "변경없음"
           git push
