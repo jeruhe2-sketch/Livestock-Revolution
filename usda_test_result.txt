@@ -1,0 +1,27 @@
+### api.fas.usda.gov 테스트 ###
+https://api.fas.usda.gov/api/psd/countries -> 200 | [{"countryCode":"AF","countryName":"Afghanistan","regionCode":"R12","gencCode":"AFG"},{"countryCode":"T3","countryName":"Africa, NEC","regionCode":"R1
+https://api.fas.usda.gov/psd/countries -> 404 | {
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "The requested URL was not found on this server."
+  }
+}
+
+### ESRQS 탐색 ###
+https://apps.fas.usda.gov/esrqs/ -> 200 | <!doctype html>
+<html lang="en" data-beasties-container>
+<head>
+  <meta charset="utf-8">
+  <title>ESRQS</title>  
+  <base href="/esrqs/">
+  <meta name="viewport" content="width=device-width, ini
+https://apps.fas.usda.gov/esrqs/api/exports -> 404 | {
+  "message": "No HTTP resource was found that matches the request URI 'https://apps.fas.usda.gov/esrqs/api/exports'."
+}
+https://apps.fas.usda.gov/esrqs/#/home -> 200 | <!doctype html>
+<html lang="en" data-beasties-container>
+<head>
+  <meta charset="utf-8">
+  <title>ESRQS</title>  
+  <base href="/esrqs/">
+  <meta name="viewport" content="width=device-width, ini
