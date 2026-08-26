@@ -1,0 +1,11 @@
+  [2024] 수집 성공: 22333건
+Traceback (most recent call last):
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_eu_taxud.py", line 167, in <module>
+    main()
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_eu_taxud.py", line 120, in main
+    month = week_to_month(yr, wk)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_eu_taxud.py", line 95, in week_to_month
+    monday = date.fromisocalendar(year, week, 1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Invalid week: 53
