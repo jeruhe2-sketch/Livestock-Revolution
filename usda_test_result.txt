@@ -1,3 +1,6 @@
-UNITED KINGDOM -> [{'countryCode': 4120, 'countryName': 'U KING  ', 'countryDescription': 'UNITED KINGDOM                 ', 'regionId': 1, 'gencCode': 'GBR'}]
 JAPAN -> [{'countryCode': 5880, 'countryName': 'JAPAN   ', 'countryDescription': 'JAPAN                          ', 'regionId': 5, 'gencCode': 'JPN'}]
+UNITED KINGDOM -> [{'countryCode': 4120, 'countryName': 'U KING  ', 'countryDescription': 'UNITED KINGDOM                 ', 'regionId': 1, 'gencCode': 'GBR'}]
 PHILIPPINES -> [{'countryCode': 5650, 'countryName': 'PHIL    ', 'countryDescription': 'PHILIPPINES                    ', 'regionId': 9, 'gencCode': 'PHL'}]
+CHINA -> [{'countryCode': 5700, 'countryName': 'CHINA   ', 'countryDescription': 'CHINA, PEOPLES REPUBLIC OF     ', 'regionId': 7, 'gencCode': 'CHN'}]
+MEXICO -> [{'countryCode': 2010, 'countryName': 'MEXICO  ', 'countryDescription': 'MEXICO                         ', 'regionId': 11, 'gencCode': 'MEX'}]
+CANADA -> [{'countryCode': 1220, 'countryName': 'CANADA  ', 'countryDescription': 'CANADA                         ', 'regionId': 11, 'gencCode': 'CAN'}]
