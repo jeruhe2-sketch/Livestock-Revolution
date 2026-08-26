@@ -106,6 +106,14 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
 
         html = page.content()
         rows = parse_stock_table(html, cfg["창고명"])
+        if not rows:
+            # 0건으로 파싱되는 경우가 간헐적으로 발생(삼진1냉장 등) - DataTables
+            # 렌더링이 evaluate() 직후 2초 안에 다 안 끝났을 가능성이 있어
+            # 한 번 더 기다렸다가 재파싱해본다 (완전 재로그인은 안 함, 가벼운 재시도).
+            print(f"  -> [{cfg['창고명']}] 1차 파싱 0건, 3초 더 대기 후 재시도", file=sys.stderr)
+            page.wait_for_timeout(3000)
+            html = page.content()
+            rows = parse_stock_table(html, cfg["창고명"])
         if len(rows) == 25:
             print(
                 f"  -> 경고: 정확히 25건 수집됨. DataTables 페이지네이션이 여전히 "
