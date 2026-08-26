@@ -9,7 +9,7 @@
 // 주의: 버전을 올리지 않으면 배포해도 기존 방문자 브라우저에 캐시가 남아있을 수 있어서,
 //       index.html/manifest.json을 바꿀 때는 CACHE_VERSION도 같이 올려야 한다.
 
-const CACHE_VERSION = "v14";
+const CACHE_VERSION = "v16";
 const SHELL_CACHE = `axr-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `axr-data-${CACHE_VERSION}`;
 
