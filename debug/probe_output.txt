@@ -1,9 +1,9 @@
 
 ===== sectors =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/sectors params: None
-status: 404
+status: 200
 headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
-body: {"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+body: [ "Animal Feed And By-Products", "Apples", "Beef", "Beer", "Biodiesel", "Cereals", "Citrus Fruit", "Cocoa And Chocolate", "Coffee And Tea", "Cork", "Cotton", "Eggs", "Fertilisers", "Fish", "Flax", "Garlic", "Hemp", "Honey", "Hops", "Machinery", "Milk And Milk Products", "Non-Alcoholic Drinks", "Oilseeds", "Olive Oil", "Other", "Other Animal Products", "Other Fruit And Vegetable Juices", "Other Fruit And Vegetable Preparations", "Other Fruit And Vegetables", "Peaches And Nectarines", "Pigs", "Plant Protection", "Poultry", "Preparations Of Cereals Or Milk", "Processed Cereals And Starch", "Rice", "Seeds", "Sheep", "Spices And Herbs", "Spirits", "Sugar", "Table Olives", "Tobacco", "Tomatoes", "Wine" ]
 
 ===== importCategories =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/importCategories params: None
@@ -19,258 +19,22 @@ body: {"code":"404","type":"Status report","message":"Not Found","description":"
 
 ===== import products (no filter, small) =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/import/products params: None
+status: 200
+headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
+body (truncated to 3000 chars):
+[ "Abalone, prepared or preserved (excl. smoked)", "Active yeasts (excl. culture yeasts and bakers yeasts)", "Agar-agar, whether or not modified", "Alaska pollock \"Theragra chalcogramma\" and pollack \"Pollachius pollachius\", prepared or preserved, whole or in pieces (excl. fin", "Albumin", "Alfalfa meal and pellets", "Alfalfa seed for sowing", "Almonds, fresh or dried", "Ambergris, castoreum, civet and musk; cantharides; bile, whether or not dried; glands and other animal products used in the prep", "Ammonia", "Anchovies \"Engraulis spp.\", salted or in brine only (excl. fillets and offal)", "Animal fats, oils and their fractions, partly or wholly hydrogenated, inter-esterified, re-esterified or elaidinised, whether or", "Animal or vegetable fats and oils and their fractions, boiled, oxidised, dehydrated, sulphurised, blown, polymerised by heat in ", "Animal or vegetable fertiliser", "Animal products, n.e.s.; dead animals, unfit for human consumption (excl. fish, crustaceans, molluscs and other aquatic inverteb", "Apple juice", "Apricots, dried", "Apricots, fresh", "Apricots, prepared", "Apricots, preserved", "Aquatic invertebrates, prepared or preserved (excl. smoked, crustaceans, molluscs, sea cucumbers, sea urchins and jellyfish)", "Argol", "Aromatic bitters of an alcoholic strength of >= 44,2% but <= 49,2% vol containing >= 1,5% but <= 6% by weight of gentian, spices", "Arrowroot, fresh, chilled, frozen or dried", "Artichokes, fresh or chilled", "Artichokes, frozen", "Artichokes, prepared", "Asparagus, fresh or chilled", "Asparagus, frozen", "Asparagus, prepared", "Atlantic Halibut \"Hippoglossus Hippoglossus\", dried, even salted, not smoked (excl. fillets and offal)", "Atlantic halibut \"Hippoglossus hippoglossus\", salted or in brine only (excl. fillets and offal)", "Aubergine/eggplant, fresh or chilled", "Avocados, fresh or dried", "Badger and other brush making hair and waste thereof", "Bagasse and other waste of sugar manufacture (excl. beet pulp)", "Bakers yeast (excl. dried)", "Bamboos", "Bananas, dried", "Bananas, fresh", "Bark of African cherry \"Prunus africana\", fresh, chilled, frozen or dried, whether or not cut, crushed or powdered", "Barley", "Bay leaves", "Beans, frozen", "Beans, prepared", "Beef fats", "Beef offals", "Beef preparations", "Beef-pulp with added molasses of a kind used in animal feeding", "Beer", "Beeswax", "Beet molasses", "Beet-pulp", "Berries and currants, fresh", "Berries and currants, frozen", "Biscuits (excl. sweet biscuits)", "Blueberries, preserved", "Blueberry juice", "Bones and horn-cores and their powder and waste, unworked, defatted, degelatinised or simply prepared (excl. ossein and bones tr", "Bovine semen", "Bran, sharps and other residues of cereals, whether or not in the form of pellets, derived from sifting, milling or other workin", "Bran, sharps and other residues of leguminous plants, whether or not in the form of pellets, derived from sifting, milling or ot", "Bran, sharps and other res
+
+===== import weekly data sample =====
+URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/import params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1'}
 status: 404
 headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
 body: {"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
 
-===== import weekly data sample =====
-URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/import params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1'}
-status: 200
-headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
-body (truncated to 3000 chars):
-[ {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Pig sausages",
-  "cn8ProductCode" : "16010091",
-  "taric10ProductCode" : "1601009110",
-  "procedure" : 40,
-  "preference" : 100,
-  "euroValue" : 35.96,
-  "unitValue" : 239.73,
-  "kg" : 0.15,
-  "kgEquivalent" : 0.12,
-  "coefficient" : 0.8
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Pig sausages",
-  "cn8ProductCode" : "16010099",
-  "taric10ProductCode" : "1601009919",
-  "procedure" : 40,
-  "preference" : 320,
-  "euroValue" : 1540.0,
-  "unitValue" : 8.7,
-  "kg" : 177.0,
-  "kgEquivalent" : 150.45,
-  "coefficient" : 0.85
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Pasta, stuffed with meat or other substances, whether or not cooked or otherwise prepared, containing > 20% by weight of sausage",
-  "cn8ProductCode" : "19022030",
-  "taric10ProductCode" : "1902203099",
-  "procedure" : 40,
-  "preference" : 300,
-  "euroValue" : 95370.1,
-  "unitValue" : 4.97,
-  "kg" : 19200.0,
-  "kgEquivalent" : 5760.0,
-  "coefficient" : 0.3
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "BE",
-  "memberStateName" : "Belgium",
-  "partnerCode" : "GB",
-  "partner" : "United Kingdom",
-  "product" : "Pig offals",
-  "cn8ProductCode" : "02063000",
-  "taric10ProductCode" : "0206300010",
-  "procedure" : 40,
-  "preference" : 300,
-  "euroValue" : 12005.58,
-  "unitValue" : 0.29,
-  "kg" : 42018.6,
-  "kgEquivalent" : 42018.6,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "BE",
-  "memberStateName" : "Belgium",
-  "partnerCode" : "TH",
-  "partner" : "Thailand",
-  "product" : "Pasta, stuffed with meat or other substances, whether or not cooked or otherwise prepared, containing > 20% by weight of sausage",
-  "cn8ProductCode" : "19022030",
-  "taric10ProductCode" : "1902203091",
-  "procedure" : 42,
-  "preference" : 100,
-  "euroValue" : 20216.0,
-  "unitValue" : 3.55,
-  "kg" : 5700.0,
-  "kgEquivalent" : 1710.0,
-  "coefficient" : 0.3
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "CZ",
-  "memberStateName" : "Czechia",
-  "partnerCode" : "IL",
-  "partner" : "Israel",
-  "product" : "Pig sausages",
-  "cn8ProductCode" : "16010091",
-  "taric10ProductCode" : "1601009105",
-  "procedure" : 4000,
-  "preference" : 100,
-  "euroValue" : 2.75,
-  "unitValue" : 5.09,
-  "kg" : 0.54,
-  "kgEquivalent" : 0.43,
-  "coefficient" : 0.8
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "N
-
 ===== probe api/taxud/weeklyData/export =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/export params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1'}
-status: 200
+status: 404
 headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
-body (truncated to 3000 chars):
-[ {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Fresh pig meat",
-  "cn8ProductCode" : "02031913",
-  "taric10ProductCode" : "02031913",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 24.12,
-  "unitValue" : 6.99,
-  "kg" : 3.45,
-  "kgEquivalent" : 3.45,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Fresh pig meat",
-  "cn8ProductCode" : "02031955",
-  "taric10ProductCode" : "02031955",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 1574.79,
-  "unitValue" : 7.11,
-  "kg" : 221.47,
-  "kgEquivalent" : 287.91,
-  "coefficient" : 1.3
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Fresh non-domestic swine meat",
-  "cn8ProductCode" : "02031990",
-  "taric10ProductCode" : "02031990",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 1570.17,
-  "unitValue" : 6.11,
-  "kg" : 256.93,
-  "kgEquivalent" : 256.93,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "KR",
-  "partner" : "Korea (Republic of)",
-  "product" : "Frozen pig meat",
-  "cn8ProductCode" : "02032219",
-  "taric10ProductCode" : "02032219",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 81736.46,
-  "unitValue" : 1.85,
-  "kg" : 44113.89,
-  "kgEquivalent" : 44113.89,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "CH",
-  "partner" : "Switzerland",
-  "product" : "Frozen pig meat",
-  "cn8ProductCode" : "02032955",
-  "taric10ProductCode" : "02032955",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 476.06,
-  "unitValue" : 12.3,
-  "kg" : 38.69,
-  "kgEquivalent" : 50.3,
-  "coefficient" : 1.3
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "JP",
-  "partner" : "Japan",
-  "product" : "Frozen pig meat",
-  "cn8ProductCode" : "02032955",
-  "taric10ProductCode" : "02032955",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 509393.11,
-  "unitValue" : 3.53,
-  "kg" : 144339.89,
-  "kgEquivalent" : 187641.86,
-  "coefficient" : 1.3
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "AT",
-  "memberStateName" : "Austria",
-  "partnerCode" : "KR",
-  "partner" : "Korea (Republic of)",
-  "product" : "Frozen pig meat",
-  "cn8ProductCode" : "02032955",
-  "taric10ProductCode" : "02032955",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 254537.
+body: {"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
 
 ===== probe api/taxud/weeklyData/exports =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/exports params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1'}
@@ -280,10 +44,9 @@ body: {"code":"404","type":"Status report","message":"Not Found","description":"
 
 ===== probe api/taxud/weeklyData/export/products =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/export/products params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1'}
-status: 200
+status: 404
 headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
-body (truncated to 3000 chars):
-[ "Abalone, prepared or preserved (excl. smoked)", "Active yeasts (excl. culture yeasts and bakers yeasts)", "Agar-agar, whether or not modified", "Alaska pollock \"Theragra chalcogramma\" and pollack \"Pollachius pollachius\", prepared or preserved, whole or in pieces (excl. fin", "Albumin", "Alfalfa meal and pellets", "Alfalfa seed for sowing", "Almonds, fresh or dried", "Ambergris, castoreum, civet and musk; cantharides; bile, whether or not dried; glands and other animal products used in the prep", "Ammonia", "Anchovies \"Engraulis spp.\", salted or in brine only (excl. fillets and offal)", "Animal fats, oils and their fractions, partly or wholly hydrogenated, inter-esterified, re-esterified or elaidinised, whether or", "Animal or vegetable fats and oils and their fractions, boiled, oxidised, dehydrated, sulphurised, blown, polymerised by heat in ", "Animal or vegetable fertiliser", "Animal products, n.e.s.; dead animals, unfit for human consumption (excl. fish, crustaceans, molluscs and other aquatic inverteb", "Apple juice", "Apricots, dried", "Apricots, fresh", "Apricots, prepared", "Apricots, preserved", "Aquatic invertebrates, prepared or preserved (excl. smoked, crustaceans, molluscs, sea cucumbers, sea urchins and jellyfish)", "Argol", "Aromatic bitters of an alcoholic strength of >= 44,2% but <= 49,2% vol containing >= 1,5% but <= 6% by weight of gentian, spices", "Arrowroot, fresh, chilled, frozen or dried", "Artichokes, fresh or chilled", "Artichokes, frozen", "Artichokes, prepared", "Asparagus, fresh or chilled", "Asparagus, frozen", "Asparagus, prepared", "Atlantic Halibut \"Hippoglossus Hippoglossus\", dried, even salted, not smoked (excl. fillets and offal)", "Atlantic halibut \"Hippoglossus hippoglossus\", salted or in brine only (excl. fillets and offal)", "Aubergine/eggplant, fresh or chilled", "Avocados, fresh or dried", "Badger and other brush making hair and waste thereof", "Bagasse and other waste of sugar manufacture (excl. beet pulp)", "Bakers yeast (excl. dried)", "Bamboos", "Bananas, dried", "Bananas, fresh", "Bark of African cherry \"Prunus africana\", fresh, chilled, frozen or dried, whether or not cut, crushed or powdered", "Barley", "Bay leaves", "Beans, frozen", "Beans, prepared", "Beef fats", "Beef offals", "Beef preparations", "Beef-pulp with added molasses of a kind used in animal feeding", "Beer", "Beeswax", "Beet molasses", "Beet-pulp", "Berries and currants, fresh", "Berries and currants, frozen", "Biscuits (excl. sweet biscuits)", "Blue shark \"Prionace glauca\" fins, smoked, dried, salted or in brine", "Blueberries, preserved", "Blueberry juice", "Bones and horn-cores and their powder and waste, unworked, defatted, degelatinised or simply prepared (excl. ossein and bones tr", "Bovine semen", "Bran, sharps and other residues of cereals, whether or not in the form of pellets, derived from sifting, milling or other workin", "Bran, sharps and other residues of leguminous plants, whether or not in the form of 
+body: {"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
 
 ===== probe api/taxud/weeklyData/exportCategories =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/exportCategories params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1'}
@@ -293,128 +56,20 @@ body: {"code":"404","type":"Status report","message":"Not Found","description":"
 
 ===== export weekly data (sectors=Pigs, memberStateCodes=DK) =====
 URL: https://api.tech.ec.europa.eu/agrifood/api/taxud/weeklyData/export params: {'sectors': 'Pigs', 'marketingYears': '2024', 'weeks': '1', 'memberStateCodes': 'DK'}
-status: 200
+status: 404
 headers subset: {k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}
-body (truncated to 3000 chars):
-[ {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "UA",
-  "partner" : "Ukraine",
-  "product" : "Pure-Bred Breeding Swine",
-  "cn8ProductCode" : "01031000",
-  "taric10ProductCode" : "01031000",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 98326.02,
-  "unitValue" : 10.3,
-  "kg" : 9550.0,
-  "kgEquivalent" : 9550.0,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "XS",
-  "partner" : "Serbia",
-  "product" : "Live Swine",
-  "cn8ProductCode" : "01039110",
-  "taric10ProductCode" : "01039110",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 301022.16,
-  "unitValue" : 3.67,
-  "kg" : 82040.0,
-  "kgEquivalent" : 63991.2,
-  "coefficient" : 0.78
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "UA",
-  "partner" : "Ukraine",
-  "product" : "Live Swine",
-  "cn8ProductCode" : "01039219",
-  "taric10ProductCode" : "01039219",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 48823.55,
-  "unitValue" : 4.33,
-  "kg" : 11273.0,
-  "kgEquivalent" : 8792.94,
-  "coefficient" : 0.78
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "FO",
-  "partner" : "Faroe islands",
-  "product" : "Fresh non-domestic swine meat",
-  "cn8ProductCode" : "02031190",
-  "taric10ProductCode" : "02031190",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 111.5,
-  "unitValue" : 4.29,
-  "kg" : 26.0,
-  "kgEquivalent" : 26.0,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "GB",
-  "partner" : "United Kingdom",
-  "product" : "Fresh non-domestic swine meat",
-  "cn8ProductCode" : "02031190",
-  "taric10ProductCode" : "02031190",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 120116.47,
-  "unitValue" : 2.47,
-  "kg" : 48642.0,
-  "kgEquivalent" : 48642.0,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "FO",
-  "partner" : "Faroe islands",
-  "product" : "Fresh pig meat",
-  "cn8ProductCode" : "02031211",
-  "taric10ProductCode" : "02031211",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 32.46,
-  "unitValue" : 13.99,
-  "kg" : 2.32,
-  "kgEquivalent" : 2.32,
-  "coefficient" : 1.0
-}, {
-  "sector" : "Pigs",
-  "marketingYear" : "2024",
-  "week" : 1,
-  "memberStateCode" : "DK",
-  "memberStateName" : "Denmark",
-  "partnerCode" : "GB",
-  "partner" : "United Kingdom",
-  "product" : "Fresh pig meat",
-  "cn8ProductCode" : "02031211",
-  "taric10ProductCode" : "02031211",
-  "procedure" : 10,
-  "preference" : 0,
-  "euroValue" : 1407067
+body: {"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+
+===== products filter test =====
+status: 404
+count: 4
+parse error: AttributeError("'str' object has no attribute 'get'"), body[:500]={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+
+===== partnerCodes filter test =====
+status: 404
+body[:1500]: {"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+
+===== full year 2024, product=Frozen pig meat, no week filter =====
+status: 404
+count: 4
+parse error: AttributeError("'str' object has no attribute 'get'") body[:500]={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
