@@ -1,4 +1,5 @@
-한국 관련 국가코드: []
-2026년 돼지고기(1702) 전체국가 응답: 200
-총 행수: 1713
-한국향 행수: 0
+전체 국가수: 211
+샘플 3개: [{'countryCode': 1, 'countryName': 'EUROPEAN', 'countryDescription': 'EUROPEAN UNION - 27', 'regionId': 1, 'gencCode': None}, {'countryCode': 1010, 'countryName': 'GREENLD ', 'countryDescription': 'GREENLAND                      ', 'regionId': 11, 'gencCode': 'GRL'}, {'countryCode': 1220, 'countryName': 'CANADA  ', 'countryDescription': 'CANADA                         ', 'regionId': 11, 'gencCode': 'CAN'}]
+
+kor 포함: [{'countryCode': 5790, 'countryName': 'NO KOR  ', 'countryDescription': "KOREA, DEMOCRATIC PEOPLE'S REP ", 'regionId': 9, 'gencCode': None}, {'countryCode': 5800, 'countryName': 'KOR REP ', 'countryDescription': 'KOREA, REPUBLIC OF             ', 'regionId': 9, 'gencCode': None}]
+코드로 찾은것: [{'countryCode': 1220, 'countryName': 'CANADA  ', 'countryDescription': 'CANADA                         ', 'regionId': 11, 'gencCode': 'CAN'}, {'countryCode': 2010, 'countryName': 'MEXICO  ', 'countryDescription': 'MEXICO                         ', 'regionId': 11, 'gencCode': 'MEX'}, {'countryCode': 5700, 'countryName': 'CHINA   ', 'countryDescription': 'CHINA, PEOPLES REPUBLIC OF     ', 'regionId': 7, 'gencCode': 'CHN'}]
