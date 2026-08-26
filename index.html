@@ -857,6 +857,328 @@ function EuTradeApp() {
 return EuTradeApp;
 })();
 
+window.UsdaTradeApp = (function() {
+const { useState, useEffect, useMemo } = React;
+const COLORS = {
+  bg: "#151312", panel: "#1d1a19", panelBorder: "#2b2624", panelBorder2: "#332c29",
+  amber: "#d98b3f", amberSoft: "#e8b877", cream: "#f2ead9", mute: "#8f857a",
+  sage: "#6f9482", rust: "#c2695f", head: "#141211"
+};
+const COUNTRY_LIST = ["KR", "CN", "GB", "JP", "PH"];
+const COUNTRY_LABEL = { KR: "\uD55C\uAD6D", CN: "\uC911\uAD6D", GB: "\uC601\uAD6D", JP: "\uC77C\uBCF8", PH: "\uD544\uB9AC\uD540" };
+const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c"];
+const COUNTRY_COLOR = { KR: SERIES_PALETTE[0], CN: SERIES_PALETTE[1], GB: SERIES_PALETTE[2], JP: SERIES_PALETTE[3], PH: SERIES_PALETTE[4] };
+const YEAR_SERIES_COLORS = ["#8f857a", "#4f8fb8", "#5c8f7a", "#d98b3f", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a"];
+const COMMODITY_LABEL = { 1701: "\uC18C\uACE0\uAE30(\uBE44\uC721\uC6B0)", 1702: "\uB3C8\uC721\uC0BC\uACA8" };
+const VALUE_LABEL = {
+  weeklyExports: "\uC8FC\uAC04 \uC218\uCD9C\uB7C9",
+  outstandingSales: "\uBBF8\uC120\uC801 \uACC4\uC57D\ub7c9",
+  accumulatedExports: "\ub204\uC801 \uC218\uCD9C\ub7c9",
+};
+
+function n(v) { return Math.round(v).toLocaleString(); }
+function fmtShort(v) { return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString(); }
+function downloadXlsx(aoa, filename, sheetName) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
+  XLSX.writeFile(wb, filename);
+}
+
+function SvgLineChart({ categories, series, height = 260 }) {
+  const width = 760;
+  const manyLabels = categories.length > 16;
+  const padL = 46, padR = 12, padT = 14, padB = manyLabels ? 46 : 28;
+  const innerW = width - padL - padR, innerH = height - padT - padB;
+  const allVals = series.flatMap((s) => s.values).filter((v) => v !== null && v !== undefined);
+  const maxV = Math.max(1, ...allVals);
+  const minV = Math.min(0, ...allVals);
+  const range = maxV - minV || 1;
+  const xStep = categories.length > 1 ? innerW / (categories.length - 1) : 0;
+  const yFor = (v) => padT + innerH - ((v - minV) / range) * innerH;
+  const xFor = (i) => padL + i * xStep;
+  const ticks = 4;
+  const gridLines = Array.from({ length: ticks + 1 }, (_, i) => minV + (range * i) / ticks);
+  const [hover, setHover] = useState(null);
+  const svgRef = React.useRef(null);
+  const handleMove = (e) => {
+    if (!svgRef.current || categories.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = width / rect.width;
+    const relX = (e.clientX - rect.left) * scaleX;
+    let idx = Math.round((relX - padL) / (xStep || 1));
+    idx = Math.max(0, Math.min(categories.length - 1, idx));
+    setHover(idx);
+  };
+  return /* @__PURE__ */ React.createElement("svg", { ref: svgRef, viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height: "auto", display: "block" }, onMouseMove: handleMove, onMouseLeave: () => setHover(null) },
+    gridLines.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("line", { x1: padL, x2: width - padR, y1: yFor(v), y2: yFor(v), stroke: COLORS.panelBorder2, strokeWidth: 1 }), /* @__PURE__ */ React.createElement("text", { x: padL - 6, y: yFor(v) + 3, fontSize: 9.5, fill: COLORS.mute, textAnchor: "end" }, fmtShort(v)))),
+    categories.map((c, i) => {
+      const showLabel = manyLabels ? i % Math.ceil(categories.length / 12) === 0 : true;
+      return showLabel ? /* @__PURE__ */ React.createElement("text", { key: i, x: xFor(i), y: height - padB + (manyLabels ? 26 : 16), fontSize: 9.5, fill: COLORS.mute, textAnchor: "middle", transform: manyLabels ? `rotate(-40 ${xFor(i)} ${height - padB + 26})` : undefined }, c) : null;
+    }),
+    series.map((s, si) => {
+      const pts = s.values.map((v, i) => (v === null || v === undefined ? null : [xFor(i), yFor(v)]));
+      const segs = [];
+      let cur = [];
+      pts.forEach((p) => { if (p) cur.push(p); else { if (cur.length > 1) segs.push(cur); cur = []; } });
+      if (cur.length > 1) segs.push(cur);
+      return /* @__PURE__ */ React.createElement("g", { key: si }, segs.map((seg, gi) => /* @__PURE__ */ React.createElement("polyline", { key: gi, points: seg.map((p) => p.join(",")).join(" "), fill: "none", stroke: s.color, strokeWidth: 2 })), pts.map((p, i) => p ? /* @__PURE__ */ React.createElement("circle", { key: i, cx: p[0], cy: p[1], r: hover === i ? 4 : 2.5, fill: s.color }) : null));
+    }),
+    hover !== null && /* @__PURE__ */ React.createElement("g", null,
+      /* @__PURE__ */ React.createElement("line", { x1: xFor(hover), x2: xFor(hover), y1: padT, y2: height - padB, stroke: COLORS.panelBorder2, strokeWidth: 1 }),
+      /* @__PURE__ */ React.createElement("rect", { x: Math.min(width - padR - 150, xFor(hover) + 8), y: padT, width: 150, height: 16 * series.length + 22, fill: COLORS.head, stroke: COLORS.panelBorder, rx: 6 }),
+      /* @__PURE__ */ React.createElement("text", { x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 14, fontSize: 10.5, fill: COLORS.cream, fontWeight: 700 }, categories[hover]),
+      series.map((s, si) => /* @__PURE__ */ React.createElement("text", { key: si, x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 30 + si * 16, fontSize: 10, fill: s.color }, `${s.label}: ${s.values[hover] !== null && s.values[hover] !== undefined ? n(s.values[hover]) : "-"}`))
+    )
+  );
+}
+function ChartLegend({ series }) {
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 } }, series.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.mute } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: 2, background: s.color, display: "inline-block" } }), s.label)));
+}
+function ChipGroup({ label, options, value, onChange }) {
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
+    label && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginRight: 2 } }, label),
+    options.map((opt) => /* @__PURE__ */ React.createElement("button", {
+      key: opt, onClick: () => onChange(opt),
+      style: {
+        padding: "5px 11px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+        border: `1px solid ${value === opt ? COLORS.amber : COLORS.panelBorder}`,
+        background: value === opt ? "rgba(217,139,63,0.16)" : COLORS.panel,
+        color: value === opt ? COLORS.amber : COLORS.mute
+      }
+    }, opt))
+  );
+}
+function HoverAxisPicker({ label, value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const timer = React.useRef(null);
+  const enter = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const leave = () => { timer.current = setTimeout(() => setOpen(false), 150); };
+  const found = options.find(([v]) => v === value);
+  const currentLabel = found ? found[1] : value;
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 90, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => { onChange(v); setOpen(false); }, style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))));
+}
+function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
+  const [open, setOpen] = useState(false);
+  const timer = React.useRef(null);
+  const enter = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const leave = () => { timer.current = setTimeout(() => setOpen(false), 150); };
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600 } }, label, " ", selected.length === options.length ? "\uC804\uCCB4" : `(${selected.length})`, " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 260, maxHeight: 320, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uD574\uC81C"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map(([code, label2]) => /* @__PURE__ */ React.createElement("button", { key: code, onClick: () => onToggle(code), style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(code) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(code) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(code) ? COLORS.amberSoft : COLORS.mute } }, label2)))));
+}
+
+const XAXIS_OPTIONS = [["year", "\uC5F0\ub3C4\ubcC4"], ["month", "\uC6D4\ubcC4"], ["week", "\uC8FC\ubcC4"]];
+const MONTHS_ALL = [1,2,3,4,5,6,7,8,9,10,11,12];
+
+function dateToYearMonth(dateStr) {
+  const d = new Date(dateStr);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
+}
+function isoWeek(dateStr) {
+  const d = new Date(dateStr);
+  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNr = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNr + 3);
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((target - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return week;
+}
+
+function UsdaTradeApp() {
+  const [db, setDb] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetch("./data/usda_meat_export.json", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("fetch failed"); return r.json(); })
+      .then((d) => {
+        const objs = d.data.map((row) => {
+          const [marketYear, commodityCode, countryCode, weekEndingDate, weeklyExports, accumulatedExports, outstandingSales, grossNewSales, currentMYNetSales, currentMYTotalCommitment] = row;
+          const { year, month } = dateToYearMonth(weekEndingDate);
+          const week = isoWeek(weekEndingDate);
+          const countryAlpha = Object.entries(d.countries).find(([code]) => +code === countryCode);
+          return {
+            marketYear, commodityCode, countryCode,
+            countryAlpha: countryAlpha ? countryAlpha[1] : String(countryCode),
+            weekEndingDate, year, month, week,
+            weeklyExports, accumulatedExports, outstandingSales, grossNewSales, currentMYNetSales, currentMYTotalCommitment,
+          };
+        });
+        setDb({ ...d, data: objs });
+        setLoading(false);
+      })
+      .catch(() => { setError(true); setLoading(false); });
+  }, []);
+
+  const rows = db ? db.data : [];
+  const [commodity, setCommodity] = useState(1702); // \uae30\ubcf8: \ub3c8\uc721
+  const [countrySel, setCountrySel] = useState([...COUNTRY_LIST]);
+  const [valueKey, setValueKey] = useState("weeklyExports");
+  const [xAxis, setXAxis] = useState("year");
+  const [compareBy, setCompareBy] = useState("country");
+  const [cumulative, setCumulative] = useState(false);
+  const commodityRows = useMemo(() => rows.filter((r) => r.commodityCode === commodity), [rows, commodity]);
+  const years = useMemo(() => [...new Set(commodityRows.map((r) => r.year))].sort((a, b) => a - b), [commodityRows]);
+  const [refYear, setRefYear] = useState(null);
+  useEffect(() => { if (years.length && refYear === null) setRefYear(years[years.length - 1]); }, [years]);
+
+  const [monthFrom, setMonthFrom] = useState(1);
+  const [monthTo, setMonthTo] = useState(12);
+  const filteredRows = useMemo(() => commodityRows.filter((r) => r.month >= monthFrom && r.month <= monthTo), [commodityRows, monthFrom, monthTo]);
+
+  const toggleCountry = (code) => setCountrySel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
+  const cumsum = (arr) => { let s = 0; return arr.map((v) => { s += (v || 0); return s; }); };
+
+  const weeksInRange = useMemo(() => {
+    if (monthFrom === 1 && monthTo === 12) return Array.from({ length: 53 }, (_, i) => i + 1);
+    const set = new Set(commodityRows.filter((r) => r.month >= monthFrom && r.month <= monthTo).map((r) => r.week));
+    return [...set].sort((a, b) => a - b);
+  }, [commodityRows, monthFrom, monthTo]);
+
+  const aggBy = (list) => valueKey === "outstandingSales" || valueKey === "currentMYTotalCommitment"
+    ? (list.length ? list[list.length - 1][valueKey] : 0) // \uc2A4\ud1a1\uc131 \uac12\uc740 \ud569\uc0B0\uc774 \uc544\ub2c8\ub77c \ub9c8\uc9c0\ub9c9\uac12
+    : list.reduce((s, r) => s + (r[valueKey] || 0), 0);
+
+  const { categories, series } = useMemo(() => {
+    if (compareBy === "year") {
+      const useWeeks = xAxis === "week";
+      const cats = useWeeks ? weeksInRange.map((w) => w + "\uC8FC") : MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo).map((m) => m + "\uC6D4");
+      const ser = years.map((y, i) => {
+        let values;
+        if (useWeeks) {
+          values = weeksInRange.map((w) => aggBy(filteredRows.filter((r) => countrySel.includes(r.countryAlpha) && r.year === y && r.week === w)));
+        } else {
+          const monthsInRange = MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo);
+          values = monthsInRange.map((m) => aggBy(filteredRows.filter((r) => countrySel.includes(r.countryAlpha) && r.year === y && r.month === m)));
+        }
+        if (cumulative) values = cumsum(values);
+        return { label: String(y), color: YEAR_SERIES_COLORS[i % YEAR_SERIES_COLORS.length], values };
+      });
+      return { categories: cats, series: ser };
+    }
+    if (xAxis === "year") {
+      const cats = years.map(String);
+      const ser = countrySel.map((code) => {
+        let values = years.map((y) => aggBy(filteredRows.filter((r) => r.countryAlpha === code && r.year === y)));
+        if (cumulative) values = cumsum(values);
+        return { label: COUNTRY_LABEL[code], color: COUNTRY_COLOR[code], values };
+      });
+      return { categories: cats, series: ser };
+    }
+    if (xAxis === "month") {
+      const monthsInRange = MONTHS_ALL.filter((m) => m >= monthFrom && m <= monthTo);
+      const cats = monthsInRange.map((m) => m + "\uC6D4");
+      const ser = countrySel.map((code) => {
+        let values = monthsInRange.map((m) => aggBy(filteredRows.filter((r) => r.countryAlpha === code && r.year === refYear && r.month === m)));
+        if (cumulative) values = cumsum(values);
+        return { label: COUNTRY_LABEL[code], color: COUNTRY_COLOR[code], values };
+      });
+      return { categories: cats, series: ser };
+    }
+    const ser = countrySel.map((code) => {
+      let values = weeksInRange.map((w) => aggBy(filteredRows.filter((r) => r.countryAlpha === code && r.year === refYear && r.week === w)));
+      if (cumulative) values = cumsum(values);
+      return { label: COUNTRY_LABEL[code], color: COUNTRY_COLOR[code], values };
+    });
+    return { categories: weeksInRange.map((w) => w + "\uC8FC"), series: ser };
+  }, [filteredRows, countrySel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo, weeksInRange]);
+
+  const pivot = useMemo(() => {
+    const map = {};
+    filteredRows.filter((r) => countrySel.includes(r.countryAlpha)).forEach((r) => {
+      if (!map[r.year]) map[r.year] = {};
+      if (!map[r.year][r.month]) map[r.year][r.month] = [];
+      map[r.year][r.month].push(r);
+    });
+    return map;
+  }, [filteredRows, countrySel]);
+
+  const exportExcel = () => {
+    const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => m + "\uC6D4"), "\uCD1D\ud569\uacC4"];
+    const body = years.map((y) => {
+      const rowVals = MONTHS_ALL.map((m) => aggBy(pivot[y] && pivot[y][m] ? pivot[y][m] : []));
+      const total = rowVals.reduce((a, b) => a + b, 0);
+      return [y, ...rowVals.map(Math.round), Math.round(total)];
+    });
+    downloadXlsx([header, ...body], `\ubbf8\uad6d_${COMMODITY_LABEL[commodity]}_\uC218\uCD9C.xlsx`, "\uC5F0\ub3C4x\uC6D4\ubcC4");
+  };
+
+  if (loading) return React.createElement("div", { style: { padding: 30, color: COLORS.mute, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
+  if (error || !db) return React.createElement("div", { style: { padding: 30, color: COLORS.rust, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+
+  return React.createElement("div", { style: { padding: "14px 16px 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif", maxWidth: 1120, margin: "0 auto" } },
+    React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "\uBBF8\uAD6D \u2192 \uD55C\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
+    React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C \uD604\uD669"),
+    db.collectedAt && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft, marginBottom: 14 } }, "\uD83D\uDD52 ", db.collectedAt.slice(0, 16).replace("T", " "), " \uAE30\uC900 (USDA FAS ESR \uc8FC\uac04 \uc790\ub8CC)"),
+
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
+      React.createElement(ChipGroup, { options: [1702, 1701].map(String), value: String(commodity), onChange: (v) => setCommodity(+v) }),
+      React.createElement(HoverMultiPicker, { label: "\uC218\uC785\uAD6D", options: COUNTRY_LIST.map((c) => [c, COUNTRY_LABEL[c]]), selected: countrySel, onToggle: toggleCountry, onSelectAll: () => setCountrySel([...COUNTRY_LIST]), onClear: () => setCountrySel([]) }),
+      React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
+      React.createElement(HoverAxisPicker, { label: "\uC9C0\uD45C", value: valueKey, onChange: setValueKey, options: Object.entries(VALUE_LABEL) })
+    ),
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 6, alignItems: "center" } },
+      React.createElement(ChipGroup, { label: "\uBE44\uAD50\uAE30\uC900", options: ["\uAD6D\uAC00", "\uC5F0\ub3C4"], value: compareBy === "country" ? "\uAD6D\uAC00" : "\uC5F0\ub3C4", onChange: (v) => setCompareBy(v === "\uAD6D\uAC00" ? "country" : "year") }),
+      React.createElement(ChipGroup, { label: "X\uCD95", options: compareBy === "year" ? ["\uC6D4\ubcC4", "\uC8FC\ubcC4"] : XAXIS_OPTIONS.map((o) => o[1]), value: xAxis === "year" ? "\uC5F0\ub3C4\ubcC4" : xAxis === "month" ? "\uC6D4\ubcC4" : "\uC8FC\ubcC4", onChange: (label) => { const found = XAXIS_OPTIONS.find((o) => o[1] === label); setXAxis(found ? found[0] : "month"); } }),
+      compareBy === "country" && xAxis !== "year" && years.length > 0 && React.createElement(ChipGroup, { label: "\uAE30\uC900\uC5F0\ub3C4", options: years.map(String), value: String(refYear), onChange: (y) => setRefYear(+y) }),
+      React.createElement("button", {
+        onClick: () => setCumulative((c) => !c),
+        style: {
+          padding: "5px 11px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          border: `1px solid ${cumulative ? COLORS.sage : COLORS.panelBorder}`,
+          background: cumulative ? "rgba(111,148,130,0.18)" : COLORS.panel,
+          color: cumulative ? COLORS.sage : COLORS.mute
+        }
+      }, cumulative ? "\u2713 \uB204\uC801\ud569\uACC4" : "\uB204\uC801\ud569\uACC4\ub85C \ubcf4\uAE30")
+    ),
+    React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 6, alignItems: "center" } },
+      React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "\uC6D4\ubc94\uC704"),
+      React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: (v) => { setMonthFrom(v); if (v > monthTo) setMonthTo(v); }, options: MONTHS_ALL.map((m) => [m, m + "\uC6D4"]) }),
+      React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"),
+      React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: (v) => { setMonthTo(v); if (v < monthFrom) setMonthFrom(v); }, options: MONTHS_ALL.map((m) => [m, m + "\uC6D4"]) }),
+      (monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+        onClick: () => { setMonthFrom(1); setMonthTo(12); },
+        style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" }
+      }, "\uC804\uCCB4\uC6D4"),
+      React.createElement("span", { style: { flex: 1 } }),
+      React.createElement("button", {
+        onClick: exportExcel,
+        style: { fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder}`, background: COLORS.panel, color: COLORS.sage, cursor: "pointer" }
+      }, "\u2B07\uFE0F \uC5D1\uC140 \ub2E4\uC6B4\ub85c\ub4dc")
+    ),
+    React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "16px 12px", marginBottom: 24 } },
+      React.createElement(SvgLineChart, { categories, series }),
+      React.createElement(ChartLegend, { series })
+    ),
+
+    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, margin: "0 0 10px" } }, "\uC5F0\ub3C4 \u00D7 \uC6D4\ubcC4 \ud569\uacC4 (\uc120\ud0DD\ud55C \uAD6D\uac00 \ud569\uc0B0, \ud1A4)"),
+    React.createElement("div", { style: { overflowX: "auto", background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10 } },
+      React.createElement("table", { style: { borderCollapse: "collapse", width: "100%" } },
+        React.createElement("thead", null,
+          React.createElement("tr", null,
+            React.createElement("th", { style: { padding: "8px 10px", textAlign: "left", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}` } }, "\uC5F0\ub3C4"),
+            MONTHS_ALL.map((m) => React.createElement("th", { key: m, style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder2}`, whiteSpace: "nowrap" } }, m + "\uC6D4")),
+            React.createElement("th", { style: { padding: "8px 10px", textAlign: "right", fontSize: 11.5, fontWeight: 700, color: COLORS.amberSoft, borderBottom: `1px solid ${COLORS.panelBorder2}` } }, "\uCD1D\ud569\uacC4")
+          )
+        ),
+        React.createElement("tbody", null,
+          years.map((y) => {
+            const rowVals = MONTHS_ALL.map((m) => aggBy(pivot[y] && pivot[y][m] ? pivot[y][m] : []));
+            const total = rowVals.reduce((a, b) => a + b, 0);
+            return React.createElement("tr", { key: y },
+              React.createElement("td", { style: { padding: "7px 10px", fontSize: 13, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}` } }, y),
+              rowVals.map((v, i) => React.createElement("td", { key: i, style: { padding: "7px 10px", fontSize: 13, textAlign: "right", fontFamily: "ui-monospace,monospace", color: v ? COLORS.cream : COLORS.mute, borderBottom: `1px solid ${COLORS.panelBorder}` } }, v ? n(v) : "-")),
+              React.createElement("td", { style: { padding: "7px 10px", fontSize: 13, textAlign: "right", fontWeight: 700, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", borderBottom: `1px solid ${COLORS.panelBorder}` } }, n(total))
+            );
+          })
+        )
+      )
+    )
+  );
+}
+return UsdaTradeApp;
+})();
+
 window.WarehouseDashboardApp = (function() {
 const { useState, useMemo, useRef } = React;
 const COLORS = {
@@ -1407,6 +1729,7 @@ function ShellApp() {
     const h = window.location.hash;
     if (h === "#warehouse") return "warehouse";
     if (h === "#eutrade") return "eutrade";
+    if (h === "#usda") return "usda";
     return "quarantine";
   });
   const selectView = (v) => {
@@ -1442,12 +1765,20 @@ function ShellApp() {
   ), /* @__PURE__ */ React.createElement(
     NavItem,
     {
+      active: view === "usda",
+      onClick: () => selectView("usda"),
+      icon: "\u{1F1FA}\u{1F1F8}",
+      label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    NavItem,
+    {
       active: view === "warehouse",
       onClick: () => selectView("warehouse"),
       icon: "\u{1F3ED}",
       label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669"
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null))));
+  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null))));
 }
 function WarehousePasswordGate({ children }) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("warehouse_unlocked") === "1");
