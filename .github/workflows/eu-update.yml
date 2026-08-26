@@ -19,6 +19,7 @@ jobs:
           python-version: "3.11"
       - run: pip install requests
       - name: run
+        id: run
         continue-on-error: true
         run: mkdir -p debug && python scripts/fetch_eu_taxud.py 2>&1 | tee debug/eu_update_last.log
       - name: commit
@@ -33,3 +34,8 @@ jobs:
             git pull --rebase origin main && git push && break
             echo "retry $i"; sleep 5
           done
+      - name: 수집 실패했으면 워크플로우도 실패로 표시
+        if: steps.run.outcome == 'failure'
+        run: |
+          echo "::error::EU API 수집 스크립트가 실패했습니다. debug/eu_update_last.log 확인 필요 (데이터 파일은 갱신 안 되고 기존 값 유지됨)"
+          exit 1

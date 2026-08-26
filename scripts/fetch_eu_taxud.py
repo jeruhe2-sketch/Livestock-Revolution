@@ -47,8 +47,9 @@ PARTNER_NAMES = {
 START_YEAR = 2024
 OUTPUT_PATH = "data/eu_pigmeat_trade.json"
 
-MAX_RETRIES = 6
-RETRY_BACKOFF_SEC = 8
+MAX_RETRIES = 12
+RETRY_BACKOFF_SEC = 15
+RETRY_BACKOFF_CAP_SEC = 60
 
 
 def fetch_year(year: int) -> list:
@@ -68,7 +69,7 @@ def fetch_year(year: int) -> list:
         except Exception as e:
             last_err = f"exception: {e!r}"
             print(f"  [{year}] 시도 {attempt}/{MAX_RETRIES} 실패: {last_err}", file=sys.stderr)
-            time.sleep(RETRY_BACKOFF_SEC * attempt)
+            time.sleep(min(RETRY_BACKOFF_SEC * attempt, RETRY_BACKOFF_CAP_SEC))
             continue
 
         if r.status_code == 200:
@@ -77,14 +78,14 @@ def fetch_year(year: int) -> list:
             except Exception as e:
                 last_err = f"json parse error: {e!r}"
                 print(f"  [{year}] 시도 {attempt}/{MAX_RETRIES} JSON 파싱 실패", file=sys.stderr)
-                time.sleep(RETRY_BACKOFF_SEC * attempt)
+                time.sleep(min(RETRY_BACKOFF_SEC * attempt, RETRY_BACKOFF_CAP_SEC))
                 continue
             print(f"  [{year}] 수집 성공: {len(data)}건")
             return data
 
         last_err = f"status={r.status_code} body={r.text[:300]}"
         print(f"  [{year}] 시도 {attempt}/{MAX_RETRIES} 실패: {last_err}", file=sys.stderr)
-        time.sleep(RETRY_BACKOFF_SEC * attempt)
+        time.sleep(min(RETRY_BACKOFF_SEC * attempt, RETRY_BACKOFF_CAP_SEC))
 
     raise RuntimeError(f"{year}년 데이터 수집 최종 실패: {last_err}")
 
