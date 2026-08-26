@@ -12,13 +12,13 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install playwright && playwright install --with-deps chromium
-      - name: 필터 위젯 위치 탐색
+      - name: Sector 클릭 테스트
         run: |
           python3 << 'PYEOF' > eu_probe_result.txt 2>&1
           from playwright.sync_api import sync_playwright
           with sync_playwright() as p:
               browser = p.chromium.launch(headless=True)
-              page = browser.new_page(viewport={"width": 1800, "height": 2400})
+              page = browser.new_page(viewport={"width": 1800, "height": 1200})
               page.goto("https://agridata.ec.europa.eu/extensions/DashboardTaxud/TaxudWeeklyExport.html", wait_until="networkidle", timeout=60000)
               page.wait_for_timeout(2000)
               try:
@@ -32,27 +32,18 @@ jobs:
                   if "single/?appid" in f.url:
                       frame = f
                       break
-              print("iframe url:", frame.url if frame else None)
 
-              if frame:
-                  # 클릭 가능한 요소들 텍스트 덤프 (Sector 선택 관련 찾기)
-                  els = frame.locator("*").all()
-                  print("iframe 내부 전체 요소 수:", len(els))
+              # "Sector" 라벨을 가진 필터박스 클릭
+              sector_box = frame.locator("text=Sector").first
+              sector_box.click()
+              page.wait_for_timeout(2000)
+              page.screenshot(path="eu_after_sector_click.png", full_page=True)
 
-                  # 텍스트 컨텐츠로 "Sector"나 드롭다운스러운 것 찾기
-                  texts = frame.locator("div, span, td, li, button").all_text_contents()
-                  candidates = [t.strip() for t in texts if t.strip() and len(t.strip()) < 40]
-                  seen = set()
-                  uniq = []
-                  for t in candidates:
-                      if t not in seen:
-                          seen.add(t)
-                          uniq.append(t)
-                  print("고유 짧은 텍스트 샘플(최대 150개):")
-                  for t in uniq[:150]:
-                      print("  -", t)
+              # 클릭 후 나타난 텍스트들 확인 (Pigs 옵션 찾기)
+              texts = frame.locator("div, span, td, li").all_text_contents()
+              pigs_related = [t.strip() for t in texts if "Pig" in t]
+              print("Pig 관련 텍스트:", pigs_related[:20])
 
-              page.screenshot(path="eu_page_full.png", full_page=True)
               browser.close()
           PYEOF
           cat eu_probe_result.txt
@@ -60,6 +51,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add eu_probe_result.txt eu_page_full.png
-          git commit -m "test: EU TAXUD 필터 위젯 재탐색" || echo "변경없음"
+          git add eu_probe_result.txt eu_after_sector_click.png
+          git commit -m "test: Sector 클릭 후 상태 확인" || echo "변경없음"
           git push
