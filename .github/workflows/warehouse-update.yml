@@ -77,8 +77,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4 5 6 7 8; do
             git add data/warehouse_stock.json
-            git add debug/last_run.log
-            git add debug/snapshot_*.html 2>/dev/null || true
             if git diff --cached --quiet; then
               echo "변경 없음, 커밋 스킵"
               break
@@ -93,6 +91,17 @@ jobs:
             git reset --mixed origin/main
             sleep $((RANDOM % 10 + 3))
           done
+
+      - name: 로그/스냅샷을 아티팩트로 업로드 (git 커밋 안 함)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warehouse-update-debug
+          path: |
+            debug/last_run.log
+            debug/snapshot_*.html
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: 스크립트 실패 시 워크플로우도 실패 처리
         if: steps.run_script.outcome == 'failure'

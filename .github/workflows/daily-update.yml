@@ -42,7 +42,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4 5 6 7 8; do
-            git add data/master_flat.json debug/daily_update_last.log
+            git add data/master_flat.json
             if git diff --cached --quiet; then
               echo "변경 없음, 커밋 스킵"
               break
@@ -57,6 +57,15 @@ jobs:
             git reset --mixed origin/main
             sleep $((RANDOM % 10 + 3))
           done
+
+      - name: 로그를 아티팩트로 업로드 (git 커밋 안 함)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-update-log
+          path: debug/daily_update_last.log
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: 스크립트 실패 시 워크플로우도 실패 처리
         if: steps.run_script.outcome == 'failure'

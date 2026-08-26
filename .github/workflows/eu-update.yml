@@ -32,7 +32,7 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "github-actions"
           for i in 1 2 3 4 5 6 7 8; do
-            git add data/eu_pigmeat_trade.json debug/eu_update_last.log
+            git add data/eu_pigmeat_trade.json
             if git diff --cached --quiet; then
               echo "변경 없음"
               break
@@ -47,6 +47,14 @@ jobs:
             git reset --mixed origin/main
             sleep $((RANDOM % 10 + 3))
           done
+      - name: 로그를 아티팩트로 업로드 (git 커밋 안 함)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eu-update-log
+          path: debug/eu_update_last.log
+          retention-days: 14
+          if-no-files-found: ignore
       - name: 수집 실패했으면 워크플로우도 실패로 표시
         if: steps.run.outcome == 'failure'
         run: |
