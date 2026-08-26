@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: 돼지/소고기 커모디티 코드 및 실데이터 탐색
+      - name: 한국 국가코드 확인 + 실제 돼지고기 수출 데이터 조회
         env:
           USDA_KEY: ${{ secrets.USDA_API_KEY }}
         run: |
@@ -22,26 +22,28 @@ jobs:
           base = "https://api.fas.usda.gov/api"
           headers = {"X-Api-Key": key}
 
-          # PSD 커모디티 목록에서 돼지/소 관련 찾기
-          r = requests.get(f"{base}/psd/commodities", headers=headers, timeout=20)
-          commodities = r.json()
-          print("PSD 커모디티 총", len(commodities), "개")
-          for c in commodities:
-              name = c.get("commodityName","")
-              if "Pork" in name or "Swine" in name or "Beef" in name or "Cattle" in name or "Meat" in name:
-                  print(" ", c)
+          # 한국 국가코드 찾기
+          r = requests.get(f"{base}/esr/countries", headers=headers, timeout=20)
+          countries = r.json()
+          korea = [c for c in countries if "Korea" in c.get("countryName","")]
+          print("한국 관련 국가코드:", korea)
 
-          print()
-          # ESR 커모디티 목록에서도 확인
-          r2 = requests.get(f"{base}/esr/commodities", headers=headers, timeout=20)
-          print("ESR 상태:", r2.status_code)
+          # 최신 마켓이어 확인
+          r2 = requests.get(f"{base}/esr/exports/commodityCode/1702/allCountries/marketYear/2026", headers=headers, timeout=20)
+          print("2026년 돼지고기(1702) 전체국가 응답:", r2.status_code)
           if r2.status_code == 200:
-              esr_commodities = r2.json()
-              print("ESR 커모디티 총", len(esr_commodities), "개")
-              for c in esr_commodities:
-                  name = c.get("commodityName","")
-                  if "Pork" in name or "Swine" in name or "Beef" in name or "Cattle" in name or "Meat" in name:
-                      print(" ", c)
+              data = r2.json()
+              print("총 행수:", len(data))
+              korea_code = korea[0]["countryCode"] if korea else None
+              korea_rows = [d for d in data if d.get("countryCode")==korea_code]
+              print("한국향 행수:", len(korea_rows))
+              if korea_rows:
+                  korea_rows.sort(key=lambda x: x.get("weekEndingDate",""))
+                  print("최근 3건:")
+                  for row in korea_rows[-3:]:
+                      print(" ", row)
+          else:
+              print(r2.text[:300])
           PYEOF
           cat usda_test_result.txt
       - name: 결과 커밋
@@ -49,5 +51,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add usda_test_result.txt
-          git commit -m "test: 돼지/소고기 커모디티 코드 탐색" || echo "변경없음"
+          git commit -m "test: 한국향 돼지고기 ESR 실데이터 확인" || echo "변경없음"
           git push
