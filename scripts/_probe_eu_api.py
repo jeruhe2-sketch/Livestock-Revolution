@@ -59,6 +59,47 @@ def main():
          f"{BASE}/api/taxud/weeklyData/export",
          {"sectors": "Pigs", "marketingYears": "2024", "weeks": "1", "memberStateCodes": "DK"})
 
+    # 7. products filter exact match test
+    r = requests.get(f"{BASE}/api/taxud/weeklyData/export",
+                      params={"sectors": "Pigs", "marketingYears": "2024", "weeks": "1",
+                              "products": "Frozen pig meat"},
+                      headers={"Accept": "application/json"}, timeout=30)
+    OUT.append("\n===== products filter test =====")
+    OUT.append(f"status: {r.status_code}")
+    try:
+        data = r.json()
+        OUT.append(f"count: {len(data)}")
+        products_seen = sorted(set(d.get('product') for d in data))
+        OUT.append(f"distinct products in response: {products_seen}")
+        partners_seen = sorted(set(d.get('partnerCode') for d in data))
+        OUT.append(f"distinct partnerCodes in response: {partners_seen}")
+    except Exception as e:
+        OUT.append(f"parse error: {e!r}, body[:500]={r.text[:500]}")
+
+    # 8. partnerCodes filter test
+    r2 = requests.get(f"{BASE}/api/taxud/weeklyData/export",
+                       params={"sectors": "Pigs", "marketingYears": "2024", "weeks": "1",
+                               "products": "Frozen pig meat", "partnerCodes": "KR,CN,JP,PH,US,GB"},
+                       headers={"Accept": "application/json"}, timeout=30)
+    OUT.append("\n===== partnerCodes filter test =====")
+    OUT.append(f"status: {r2.status_code}")
+    OUT.append(f"body[:1500]: {r2.text[:1500]}")
+
+    # 9. full-year no-week-filter size test (no week filter -> full weeks)
+    r3 = requests.get(f"{BASE}/api/taxud/weeklyData/export",
+                       params={"sectors": "Pigs", "marketingYears": "2024",
+                               "products": "Frozen pig meat"},
+                       headers={"Accept": "application/json"}, timeout=60)
+    OUT.append("\n===== full year 2024, product=Frozen pig meat, no week filter =====")
+    OUT.append(f"status: {r3.status_code}")
+    try:
+        data3 = r3.json()
+        OUT.append(f"count: {len(data3)}")
+        weeks_seen = sorted(set(d.get('week') for d in data3))
+        OUT.append(f"weeks present: min={min(weeks_seen)} max={max(weeks_seen)} n_distinct={len(weeks_seen)}")
+    except Exception as e:
+        OUT.append(f"parse error: {e!r} body[:500]={r3.text[:500]}")
+
 
 if __name__ == "__main__":
     main()
