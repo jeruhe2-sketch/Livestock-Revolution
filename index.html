@@ -838,12 +838,17 @@ function EuTradeApp() {
     React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU \u2192 \uD55C\uAD6D \u00B7 \uBBF8\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
     React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC720\uB7FD\uC0B0 \uB3C8\uC721(\uB0C9\uB3D9) \uC218\uCD9C \uD604\uD669"),
     db.sourceMostRecentData && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft, marginBottom: 14 } }, "\uD83D\uDD52 ", db.sourceMostRecentData, " \uAE30\uC900 (EU TAXUD \uC8FC\uAC04 \uC7A0\uC815\uCE58)"),
-    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: COLORS.amber, marginBottom: 14 } },
+    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: COLORS.amber, marginBottom: 4 } },
       "\uD569\uACC4 ", valueKey === "euro" ? fmtMillionEuro(grandTotalCurrent) : (Math.round(grandTotalCurrent).toLocaleString() + " \uD1A4"),
       valueKey === "euro" && exRates && exRates.eurKrw
         ? React.createElement("span", { style: { color: COLORS.mute, fontWeight: 600, fontSize: 12.5, marginLeft: 8 } }, "(\uc6d0\ud654 \ud658\uc0b0 \uc57d ", fmtWon(grandTotalCurrent * exRates.eurKrw), ")")
         : null
     ),
+    valueKey === "euro" && exRates && exRates.eurKrw
+      ? React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 14 } },
+          "* \ud658\uc728\uc740 \uc870\ud68c \uc2dc\uc810(", (() => { try { return new Date(exRates.updatedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch (e) { return "\ucd5c\uadfc"; } })(), ") \uae30\uC900 1\uC720\ub85c = ", Math.round(exRates.eurKrw).toLocaleString(), "\uc6d0\uc73c\ub85c \uc77c\uad04 \ud658\uc0b0\ub41c \uac12\uc785\ub2c8\ub2e4. \uacfc\uac70 \uc2dc\uc810\uc758 \uc2e4\uc81c \ud658\uc728\uACfc\ub294 \ub2e4\ub985\ub2c8\ub2e4."
+        )
+      : null,
 
     React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
       React.createElement(HoverMultiPicker, { label: "\uC218\uCD9C\uAD6D(EU \ud68C\uc6D0\uAD6D)", options: msOptions, selected: msSel, onToggle: toggleMs, onSelectAll: () => setMsSel([...MS_LIST]), onClear: () => setMsSel([]) }),
