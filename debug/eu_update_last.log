@@ -1,11 +1,12 @@
+  [2024] 시도 1/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2025] 시도 1/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2025] 시도 2/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2025] 시도 3/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2026] 시도 1/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2026] 시도 2/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2026] 시도 3/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2026] 시도 4/6 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
   [2024] 수집 성공: 22333건
-Traceback (most recent call last):
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_eu_taxud.py", line 167, in <module>
-    main()
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_eu_taxud.py", line 120, in main
-    month = week_to_month(yr, wk)
-            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_eu_taxud.py", line 95, in week_to_month
-    monday = date.fromisocalendar(year, week, 1)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-ValueError: Invalid week: 53
+  [2025] 수집 성공: 22258건
+  [2026] 수집 성공: 14339건
+완료: 총 7069행 저장 -> data/eu_pigmeat_trade.json
