@@ -718,12 +718,16 @@ function Dashboard({ db, exRates }) {
 
   const initParams = useMemo(() => readParams(), []);
   const p = (key, fallback) => { const v = initParams.get(key); return v != null ? v : fallback; };
+  // URL에 남아있는 옛날/잘못된 값(예: 이전 버전 파라미터, 공유링크 꼬임)이 지금 옵션 목록에
+  // 없으면 원시값이 화면에 그대로 새는 버그(예: 행이 "partner"/"country" 텍스트로 뜨는 것)를
+  // 막기 위해, 허용된 값 목록에 있을 때만 쓰고 아니면 기본값으로 떨어뜨림.
+  const pOneOf = (key, fallback, validValues) => { const v = p(key, fallback); return validValues.includes(v) ? v : fallback; };
   const pList = (key) => { const v = initParams.get(key); return v ? v.split(",").filter(Boolean) : []; };
   const pInt = (key, fallback) => { const v = initParams.get(key); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : fallback; };
 
-  const [mainTab, setMainTab] = useState(() => p("tab", "table"));
-  const [chartSub, setChartSub] = useState(() => p("csub", "group"));
-  const [valueKey, setValueKey] = useState(() => p("vk", "kg"));
+  const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
+  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "group", ["group", "overlay"]));
+  const [valueKey, setValueKey] = useState(() => pOneOf("vk", "kg", ["kg", "euro"]));
   const [msFilter, setMsFilter] = useState(() => pList("ms"));
   const [partnerFilter, setPartnerFilter] = useState(() => pList("pt"));
   const [yearFilter, setYearFilter] = useState(() => pList("yr"));
@@ -732,13 +736,13 @@ function Dashboard({ db, exRates }) {
   const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
   const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
-  const [rowDim, setRowDim] = useState(() => p("rd", "partner"));
-  const [colDim, setColDim] = useState(() => p("cd", "year"));
-  const [displayMode, setDisplayMode] = useState(() => p("dm", "abs"));
-  const [groupBy, setGroupBy] = useState(() => p("gb", "year"));
+  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "partner", ["ms", "partner", "year", "month"]));
+  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["ms", "partner", "year", "month"]));
+  const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
+  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["ms", "partner", "year", "month"]));
   const [sortDesc, setSortDesc] = useState(true);
-  const [overlayDim, setOverlayDim] = useState(() => p("od", "year"));
-  const [overlayXAxis, setOverlayXAxis] = useState(() => p("oxa", "month"));
+  const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "ms", "partner"]));
+  const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
 
   const val = (r) => (valueKey === "kg" ? r.kg / 1000 : r.euro);
   const unitLabel = valueKey === "kg" ? "톤" : "유로(€)";
@@ -1255,10 +1259,14 @@ function Dashboard({ db }) {
 
   const initParams = useMemo(() => readParams(), []);
   const p = (key, fallback) => { const v = initParams.get(key); return v != null ? v : fallback; };
+  // URL에 남아있는 옛날/잘못된 값(예: 이전 버전 파라미터, 공유링크 꼬임)이 지금 옵션 목록에
+  // 없으면 원시값이 화면에 그대로 새는 버그(예: 행이 "partner"/"country" 텍스트로 뜨는 것)를
+  // 막기 위해, 허용된 값 목록에 있을 때만 쓰고 아니면 기본값으로 떨어뜨림.
+  const pOneOf = (key, fallback, validValues) => { const v = p(key, fallback); return validValues.includes(v) ? v : fallback; };
   const pList = (key) => { const v = initParams.get(key); return v ? v.split(",").filter(Boolean) : []; };
   const pInt = (key, fallback) => { const v = initParams.get(key); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : fallback; };
 
-  const [commodity, setCommodity] = useState(() => pInt("cm", 1702));
+  const [commodity, setCommodity] = useState(() => { const v = pInt("cm", 1702); return [1701, 1702].includes(v) ? v : 1702; });
   const commodityRows = useMemo(() => ROWS.filter((r) => r.commodityCode === commodity), [ROWS, commodity]);
   const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
     const set = new Set();
@@ -1268,9 +1276,9 @@ function Dashboard({ db }) {
   }, [commodityRows]);
   const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
 
-  const [mainTab, setMainTab] = useState(() => p("tab", "table"));
-  const [chartSub, setChartSub] = useState(() => p("csub", "group"));
-  const [valueKey, setValueKey] = useState(() => p("vk", "weeklyExports"));
+  const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
+  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "group", ["group", "overlay"]));
+  const [valueKey, setValueKey] = useState(() => pOneOf("vk", "weeklyExports", ["weeklyExports", "outstandingSales", "accumulatedExports"]));
   const [countryFilter, setCountryFilter] = useState(() => pList("c"));
   const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
   const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
@@ -1281,13 +1289,13 @@ function Dashboard({ db }) {
   const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
   const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
 
-  const [rowDim, setRowDim] = useState(() => p("rd", "country"));
-  const [colDim, setColDim] = useState(() => p("cd", "year"));
-  const [displayMode, setDisplayMode] = useState(() => p("dm", "abs"));
-  const [groupBy, setGroupBy] = useState(() => p("gb", "year"));
+  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "country", ["country", "year", "month"]));
+  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["country", "year", "month"]));
+  const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
+  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["country", "year", "month"]));
   const [sortDesc, setSortDesc] = useState(true);
-  const [overlayDim, setOverlayDim] = useState(() => p("od", "year"));
-  const [overlayXAxis, setOverlayXAxis] = useState(() => p("oxa", "month"));
+  const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "country"]));
+  const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
 
   const aggBy = (list) => (valueKey === "outstandingSales" || valueKey === "currentMYTotalCommitment")
     ? (list.length ? list[list.length - 1][valueKey] : 0)
