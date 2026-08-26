@@ -1117,15 +1117,22 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
   const [accSearch, setAccSearch] = useState("");
   const [accGrade, setAccGrade] = useState("\uC804\uCCB4");
   const [accEst, setAccEst] = useState("\uC804\uCCB4");
-  const warehouses = useMemo(() => [...new Set(ROWS.map((r) => r.\uCC3D\uACE0\uBA85))].sort(), []);
-  const animalTypes = useMemo(() => [...new Set(ROWS.map((r) => r.\uCD95\uC885))].sort(), []);
+  const warehouses = useMemo(() => {
+    const subset = ROWS.filter((r) => (supplierFilter.length === 0 || supplierFilter.includes(r.\uACF5\uAE09\uC0AC)) && (animalFilter.length === 0 || animalFilter.includes(r.\uCD95\uC885)));
+    return [...new Set(subset.map((r) => r.\uCC3D\uACE0\uBA85))].sort();
+  }, [ROWS, supplierFilter, animalFilter]);
+  const animalTypes = useMemo(() => {
+    const subset = ROWS.filter((r) => (warehouseFilter.length === 0 || warehouseFilter.includes(r.\uCC3D\uACE0\uBA85)) && (supplierFilter.length === 0 || supplierFilter.includes(r.\uACF5\uAE09\uC0AC)));
+    return [...new Set(subset.map((r) => r.\uCD95\uC885))].sort();
+  }, [ROWS, warehouseFilter, supplierFilter]);
   const suppliers = useMemo(() => {
+    const subset = ROWS.filter((r) => (warehouseFilter.length === 0 || warehouseFilter.includes(r.\uCC3D\uACE0\uBA85)) && (animalFilter.length === 0 || animalFilter.includes(r.\uCD95\uC885)));
     const totals = {};
-    ROWS.forEach((r) => {
+    subset.forEach((r) => {
       totals[r.\uACF5\uAE09\uC0AC] = (totals[r.\uACF5\uAE09\uC0AC] || 0) + r.\uC7AC\uACE0\uC218\uB7C9;
     });
     return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
-  }, []);
+  }, [ROWS, warehouseFilter, animalFilter]);
   const toggle = (list, setList, v) => setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const filtered = useMemo(() => {
     return ROWS.filter((r) => {
