@@ -696,13 +696,7 @@ function Dashboard({ db, exRates }) {
   const ROWS = useMemo(() => db.data.map((row) => ({ year: row[0], week: row[1], month: row[2], partnerCode: row[3], msCode: row[4], kg: row[5], euro: row[6] })), [db]);
   const msNames = db.msNames || {};
   const MS_LIST = useMemo(() => Object.keys(msNames).sort((a, b) => msNames[a].localeCompare(msNames[b])), [msNames]);
-  const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
-    const set = new Set();
-    ROWS.forEach((r) => set.add(r.year * 100 + r.month));
-    const all = [...set].sort((a, b) => a - b);
-    return { ALL_YM: all, YM_MIN: all[0], YM_MAX: all[all.length - 1] };
-  }, [ROWS]);
-  const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
+  const YEARS_ALL = useMemo(() => [...new Set(ROWS.map((r) => String(r.year)))].sort(), [ROWS]);
   function dimValue(r, dimKey) {
     if (dimKey === "ms") return msNames[r.msCode] || r.msCode;
     if (dimKey === "partner") return PARTNER_LABEL[r.partnerCode] || r.partnerCode;
@@ -721,14 +715,11 @@ function Dashboard({ db, exRates }) {
   const [valueKey, setValueKey] = useState(() => p("vk", "kg"));
   const [msFilter, setMsFilter] = useState(() => pList("ms"));
   const [partnerFilter, setPartnerFilter] = useState(() => pList("pt"));
-  const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
-  const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
+  const [yearFilter, setYearFilter] = useState(() => pList("yr"));
   const [monthFrom, setMonthFrom] = useState(() => pInt("ms2", 1));
   const [monthTo, setMonthTo] = useState(() => pInt("me", 12));
   const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
   const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
-  const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
-  const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
 
   const [rowDim, setRowDim] = useState(() => p("rd", "partner"));
   const [colDim, setColDim] = useState(() => p("cd", "year"));
@@ -737,7 +728,7 @@ function Dashboard({ db, exRates }) {
   const [sortDesc, setSortDesc] = useState(true);
   const [overlayDim, setOverlayDim] = useState(() => p("od", "year"));
   const [overlayXAxis, setOverlayXAxis] = useState(() => p("oxa", "month"));
-  const [overlayYearCtx, setOverlayYearCtx] = useState(() => pInt("oyc", Math.floor(YM_MAX / 100)));
+  const [overlayYearCtx, setOverlayYearCtx] = useState(() => pInt("oyc", +YEARS_ALL[YEARS_ALL.length - 1] || 0));
   const [overlaySel, setOverlaySel] = useState(() => ({ dim: p("od", "year"), list: pList("ol") }));
 
   const val = (r) => (valueKey === "kg" ? r.kg / 1000 : r.euro);
@@ -748,12 +739,11 @@ function Dashboard({ db, exRates }) {
     return ROWS.filter((r) => {
       if (msFilter.length && !msFilter.includes(msNames[r.msCode])) return false;
       if (partnerFilter.length && !partnerFilter.includes(PARTNER_LABEL[r.partnerCode])) return false;
-      const ym = r.year * 100 + r.month;
-      if (ym < ymStart || ym > ymEnd) return false;
+      if (yearFilter.length && !yearFilter.includes(String(r.year))) return false;
       if (r.month < monthFrom || r.month > monthTo) return false;
       return true;
     });
-  }, [ROWS, msFilter, partnerFilter, ymStart, ymEnd, monthFrom, monthTo, msNames]);
+  }, [ROWS, msFilter, partnerFilter, yearFilter, monthFrom, monthTo, msNames]);
   const years = useMemo(() => [...new Set(baseFilteredRows.map((r) => r.year))].sort((a, b) => a - b), [baseFilteredRows]);
   const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + val(r), 0), [baseFilteredRows, valueKey]);
   const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
@@ -864,8 +854,7 @@ function Dashboard({ db, exRates }) {
     const sp = new URLSearchParams();
     if (msFilter.length) sp.set("ms", msFilter.join(","));
     if (partnerFilter.length) sp.set("pt", partnerFilter.join(","));
-    sp.set("ys", ymStart);
-    sp.set("ye", ymEnd);
+    if (yearFilter.length) sp.set("yr", yearFilter.join(","));
     if (monthFrom !== 1) sp.set("ms2", monthFrom);
     if (monthTo !== 12) sp.set("me", monthTo);
     if (valueKey !== "kg") sp.set("vk", valueKey);
@@ -886,7 +875,7 @@ function Dashboard({ db, exRates }) {
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [msFilter, partnerFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, overlayYearCtx, overlaySel]);
+  }, [msFilter, partnerFilter, yearFilter, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, overlayYearCtx, overlaySel]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -914,26 +903,23 @@ function Dashboard({ db, exRates }) {
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } },
         React.createElement(HoverMultiPicker, { label: "수출국(EU 회원국)", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
-        React.createElement(HoverMultiPicker, { label: "수입국", options: partnerOptions, selected: partnerFilter, onToggle: (v) => toggleFilter(partnerFilter, setPartnerFilter, v), onSelectAll: () => setPartnerFilter([...partnerOptions]), onClear: () => setPartnerFilter([]) })
+        React.createElement(HoverMultiPicker, { label: "수입국", options: partnerOptions, selected: partnerFilter, onToggle: (v) => toggleFilter(partnerFilter, setPartnerFilter, v), onSelectAll: () => setPartnerFilter([...partnerOptions]), onClear: () => setPartnerFilter([]) }),
+        React.createElement(HoverMultiPicker, { label: "연도", options: YEARS_ALL, selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) })
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
-        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
-        React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
-        React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-        React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
-        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
+        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "월별"),
         React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
         React.createElement("span", { style: { color: COLORS.mute } }, "–"),
         React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-        React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
-          style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+        (monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setMonthFrom(1); setMonthTo(12); },
+          style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체월")
       ),
       React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
         React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } },
           "EU 돈육(냉동)",
           msFilter.length ? ` · 수출국 ${msFilter.length}개` : "",
           partnerFilter.length ? ` · 수입국 ${partnerFilter.length}개` : "",
-          " · ", ymLabel(ymStart), "~", ymLabel(ymEnd),
+          yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "",
           (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
         ),
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
@@ -1051,43 +1037,39 @@ function ToggleBtn({ active, onClick, label }) {
   return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
 }
 function HoverAxisPicker({ label, value, onChange, options }) {
-  const [open, setOpen] = useState(false);
-  const found = options.find(([v]) => v === value);
-  const currentLabel = found ? found[1] : value;
-  return React.createElement("div", { style: { position: "relative" } },
-    React.createElement("div", { onClick: () => setOpen((o) => !o), style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
-      React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
-      React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
-      React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
+  // \ub124\uc774\ud2f0\ube0c <select> \uc0ac\uc6a9 - \ubc0c\ub85c\uc800\uac00 \uc9c1\uc811 \uc5f4\uace0/\ub2eb\uc74c/\ud0ed \ucc98\ub9ac\ud558\ubbc0\ub85c \ucee4\uc2a4\ud140 \ub4dc\ub86d\ub2e4\uc6b4\uc758 \ud074\ub9ad \uc720\uc2e4/\uc7ac\uc624\ud504\ub9e4 \ubc84\uadf8\uac00 \uad6c\uc870\uc801\uc73c\ub85c \ubd88\uac00\ub2a5\ud568
+  const strValue = String(value);
+  const handleChange = (e) => {
+    const found = options.find(([v]) => String(v) === e.target.value);
+    onChange(found ? found[0] : e.target.value);
+  };
+  return React.createElement("label", { style: { display: "inline-flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
+    React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
+    React.createElement("select", {
+      value: strValue, onChange: handleChange,
+      style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber, background: "transparent", border: "none", outline: "none", cursor: "pointer", appearance: "none", WebkitAppearance: "none", paddingRight: 2 }
+    },
+      options.map(([v, l]) => React.createElement("option", { key: v, value: String(v), style: { background: "#141211", color: COLORS.cream } }, l))
     ),
-    open && React.createElement(React.Fragment, null,
-      React.createElement("div", { onClick: () => setOpen(false), style: { position: "fixed", inset: 0, zIndex: 19 } }),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); setOpen(false); },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
-      )
-    )
+    React.createElement("span", { style: { fontSize: 10, color: COLORS.mute, pointerEvents: "none" } }, "▾")
   );
 }
 function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-  const [open, setOpen] = useState(false);
-  return React.createElement("div", { style: { position: "relative" } },
-    React.createElement("div", { onClick: () => setOpen((o) => !o), style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer" } },
+  // \ub124\uc774\ud2f0\ube0c <details>/<summary> \uc0ac\uc6a9 - \ube0c\ub77c\uc6b0\uc800\uac00 \uc5f4\uace0/\ub2eb\uae30\ub97c \uc9c1\uc811 \ucc98\ub9ac\ud574\uc11c \ucee4\uc2a4\ud140 open/close state\uc640 \uad00\ub828\ub41c \ubc84\uadf8\uac00 \uc544\uc608 \uc0dd\uae38 \uc218 \uc5c6\uc74c
+  return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
+    React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
       label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 10 } }, "▾")),
-    open && React.createElement(React.Fragment, null,
-      React.createElement("div", { onClick: () => setOpen(false), style: { position: "fixed", inset: 0, zIndex: 19 } }),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
-          React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
-          )
-        ),
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
-          options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
-            style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
+        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
+        React.createElement("div", { style: { display: "flex", gap: 8 } },
+          React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
+          React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
         )
+      ),
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
+        options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
+          style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
       )
     )
   );
@@ -1610,43 +1592,39 @@ function ToggleBtn({ active, onClick, label }) {
   return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
 }
 function HoverAxisPicker({ label, value, onChange, options }) {
-  const [open, setOpen] = useState(false);
-  const found = options.find(([v]) => v === value);
-  const currentLabel = found ? found[1] : value;
-  return React.createElement("div", { style: { position: "relative" } },
-    React.createElement("div", { onClick: () => setOpen((o) => !o), style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
-      React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
-      React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
-      React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
+  // \ub124\uc774\ud2f0\ube0c <select> \uc0ac\uc6a9 - \ubc0c\ub85c\uc800\uac00 \uc9c1\uc811 \uc5f4\uace0/\ub2eb\uc74c/\ud0ed \ucc98\ub9ac\ud558\ubbc0\ub85c \ucee4\uc2a4\ud140 \ub4dc\ub86d\ub2e4\uc6b4\uc758 \ud074\ub9ad \uc720\uc2e4/\uc7ac\uc624\ud504\ub9e4 \ubc84\uadf8\uac00 \uad6c\uc870\uc801\uc73c\ub85c \ubd88\uac00\ub2a5\ud568
+  const strValue = String(value);
+  const handleChange = (e) => {
+    const found = options.find(([v]) => String(v) === e.target.value);
+    onChange(found ? found[0] : e.target.value);
+  };
+  return React.createElement("label", { style: { display: "inline-flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
+    React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
+    React.createElement("select", {
+      value: strValue, onChange: handleChange,
+      style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber, background: "transparent", border: "none", outline: "none", cursor: "pointer", appearance: "none", WebkitAppearance: "none", paddingRight: 2 }
+    },
+      options.map(([v, l]) => React.createElement("option", { key: v, value: String(v), style: { background: "#141211", color: COLORS.cream } }, l))
     ),
-    open && React.createElement(React.Fragment, null,
-      React.createElement("div", { onClick: () => setOpen(false), style: { position: "fixed", inset: 0, zIndex: 19 } }),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); setOpen(false); },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
-      )
-    )
+    React.createElement("span", { style: { fontSize: 10, color: COLORS.mute, pointerEvents: "none" } }, "▾")
   );
 }
 function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-  const [open, setOpen] = useState(false);
-  return React.createElement("div", { style: { position: "relative" } },
-    React.createElement("div", { onClick: () => setOpen((o) => !o), style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer" } },
+  // \ub124\uc774\ud2f0\ube0c <details>/<summary> \uc0ac\uc6a9 - \ube0c\ub77c\uc6b0\uc800\uac00 \uc5f4\uace0/\ub2eb\uae30\ub97c \uc9c1\uc811 \ucc98\ub9ac\ud574\uc11c \ucee4\uc2a4\ud140 open/close state\uc640 \uad00\ub828\ub41c \ubc84\uadf8\uac00 \uc544\uc608 \uc0dd\uae38 \uc218 \uc5c6\uc74c
+  return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
+    React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
       label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 10 } }, "▾")),
-    open && React.createElement(React.Fragment, null,
-      React.createElement("div", { onClick: () => setOpen(false), style: { position: "fixed", inset: 0, zIndex: 19 } }),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
-          React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
-          )
-        ),
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
-          options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
-            style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
+        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
+        React.createElement("div", { style: { display: "flex", gap: 8 } },
+          React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
+          React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
         )
+      ),
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
+        options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
+          style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
       )
     )
   );
