@@ -659,6 +659,14 @@ function EuTradeApp() {
   const [db, setDb] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [exRates, setExRates] = useState(null);
+
+  useEffect(() => {
+    fetch("./data/exchange_rates.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setExRates)
+      .catch(() => setExRates(null));
+  }, []);
 
   useEffect(() => {
     fetch("./data/eu_pigmeat_trade.json", { cache: "no-store" })
@@ -783,6 +791,25 @@ function EuTradeApp() {
     return map;
   }, [filteredRows, partnerSel, valueKey]);
 
+  const grandTotalCurrent = useMemo(
+    () => filteredRows.filter((r) => partnerSel.includes(r.partnerCode)).reduce((s, r) => s + (r[valueKey] || 0), 0),
+    [filteredRows, partnerSel, valueKey]
+  );
+
+  function fmtWon(krw) {
+    if (krw == null || !isFinite(krw)) return null;
+    const abs = Math.abs(krw);
+    if (abs >= 1e12) return (krw / 1e12).toFixed(1) + "조원";
+    if (abs >= 1e8) return (krw / 1e8).toFixed(1) + "억원";
+    if (abs >= 1e4) return Math.round(krw / 1e4).toLocaleString() + "만원";
+    return Math.round(krw).toLocaleString() + "원";
+  }
+  function fmtMillionEuro(v) {
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + "백만 유로";
+    if (Math.abs(v) >= 1e4) return (v / 1e4).toFixed(1) + "만 유로";
+    return Math.round(v).toLocaleString() + " 유로";
+  }
+
   const exportExcel = () => {
     const unitTag = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C";
     const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => `${m}\uC6D4(${unitTag})`), `\uCD1D\ud569\uacC4(${unitTag})`];
@@ -804,6 +831,12 @@ function EuTradeApp() {
     React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU \u2192 \uD55C\uAD6D \u00B7 \uBBF8\uAD6D \u00B7 \uC601\uAD6D \u00B7 \uC911\uAD6D \u00B7 \uC77C\uBCF8 \u00B7 \uD544\uB9AC\uD540"),
     React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC720\uB7FD\uC0B0 \uB3C8\uC721(\uB0C9\uB3D9) \uC218\uCD9C \uD604\uD669"),
     db.sourceMostRecentData && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft, marginBottom: 14 } }, "\uD83D\uDD52 ", db.sourceMostRecentData, " \uAE30\uC900 (EU TAXUD \uC8FC\uAC04 \uC7A0\uC815\uCE58)"),
+    React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: COLORS.amber, marginBottom: 14 } },
+      "\uD569\uACC4 ", valueKey === "euro" ? fmtMillionEuro(grandTotalCurrent) : (Math.round(grandTotalCurrent).toLocaleString() + " \uD1A4"),
+      valueKey === "euro" && exRates && exRates.eurKrw
+        ? React.createElement("span", { style: { color: COLORS.mute, fontWeight: 600, fontSize: 12.5, marginLeft: 8 } }, "(\uc6d0\ud654 \ud658\uc0b0 \uc57d ", fmtWon(grandTotalCurrent * exRates.eurKrw), ")")
+        : null
+    ),
 
     React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
       React.createElement(HoverMultiPicker, { label: "\uC218\uCD9C\uAD6D(EU \ud68C\uc6D0\uAD6D)", options: msOptions, selected: msSel, onToggle: toggleMs, onSelectAll: () => setMsSel([...MS_LIST]), onClear: () => setMsSel([]) }),
