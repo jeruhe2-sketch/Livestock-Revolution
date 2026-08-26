@@ -68,4 +68,4 @@ jobs:
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d parse_mode="HTML" \
             --data-urlencode text="⚠️ <b>[축산레이더] EU 돈육 자동 갱신 실패</b>
-로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
