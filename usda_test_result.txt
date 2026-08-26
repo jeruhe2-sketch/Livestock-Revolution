@@ -1,12 +1,3 @@
-=== 돼지고기(코드1702) 한국향 2026 -> 200
-  총 행수: 33
-   {'commodityCode': 1702, 'countryCode': 5800, 'weeklyExports': 2655, 'accumulatedExports': 100228, 'outstandingSales': 19827, 'grossNewSales': 2090, 'currentMYNetSales': 1779, 'currentMYTotalCommitment': 120055, 'nextMYOutstandingSales': 0, 'nextMYNetSales': 0, 'unitId': 1, 'weekEndingDate': '2026-07-30T00:00:00'}
-   {'commodityCode': 1702, 'countryCode': 5800, 'weeklyExports': 1571, 'accumulatedExports': 101799, 'outstandingSales': 22376, 'grossNewSales': 4167, 'currentMYNetSales': 4120, 'currentMYTotalCommitment': 124175, 'nextMYOutstandingSales': 0, 'nextMYNetSales': 0, 'unitId': 1, 'weekEndingDate': '2026-08-06T00:00:00'}
-   {'commodityCode': 1702, 'countryCode': 5800, 'weeklyExports': 1693, 'accumulatedExports': 103492, 'outstandingSales': 24211, 'grossNewSales': 3586, 'currentMYNetSales': 3528, 'currentMYTotalCommitment': 127703, 'nextMYOutstandingSales': 0, 'nextMYNetSales': 0, 'unitId': 1, 'weekEndingDate': '2026-08-13T00:00:00'}
-
-=== 소고기(코드1701) 한국향 2026 -> 200
-  총 행수: 33
-   {'commodityCode': 1701, 'countryCode': 5800, 'weeklyExports': 3786, 'accumulatedExports': 122985, 'outstandingSales': 30231, 'grossNewSales': 9630, 'currentMYNetSales': 9317, 'currentMYTotalCommitment': 153216, 'nextMYOutstandingSales': 0, 'nextMYNetSales': 0, 'unitId': 1, 'weekEndingDate': '2026-07-30T00:00:00'}
-   {'commodityCode': 1701, 'countryCode': 5800, 'weeklyExports': 3294, 'accumulatedExports': 126279, 'outstandingSales': 32213, 'grossNewSales': 5655, 'currentMYNetSales': 5276, 'currentMYTotalCommitment': 158492, 'nextMYOutstandingSales': 0, 'nextMYNetSales': 0, 'unitId': 1, 'weekEndingDate': '2026-08-06T00:00:00'}
-   {'commodityCode': 1701, 'countryCode': 5800, 'weeklyExports': 3634, 'accumulatedExports': 129913, 'outstandingSales': 30019, 'grossNewSales': 1756, 'currentMYNetSales': 1440, 'currentMYTotalCommitment': 159932, 'nextMYOutstandingSales': 0, 'nextMYNetSales': 0, 'unitId': 1, 'weekEndingDate': '2026-08-13T00:00:00'}
-
+UNITED KINGDOM -> [{'countryCode': 4120, 'countryName': 'U KING  ', 'countryDescription': 'UNITED KINGDOM                 ', 'regionId': 1, 'gencCode': 'GBR'}]
+JAPAN -> [{'countryCode': 5880, 'countryName': 'JAPAN   ', 'countryDescription': 'JAPAN                          ', 'regionId': 5, 'gencCode': 'JPN'}]
+PHILIPPINES -> [{'countryCode': 5650, 'countryName': 'PHIL    ', 'countryDescription': 'PHILIPPINES                    ', 'regionId': 9, 'gencCode': 'PHL'}]
