@@ -1,5 +1,35 @@
-Sector 텍스트 매칭 요소 수: 4
-  [0] box={'x': 43, 'y': 263.65625, 'width': 431, 'height': 20}
-  [1] box={'x': 816.5, 'y': 671.65625, 'width': 171, 'height': 21}
-  [2] box={'x': 42, 'y': 176.328125, 'width': 40.5625, 'height': 17}
-  [3] box={'x': 37, 'y': 102.390625, 'width': 1271, 'height': 43.390625}
+Pig 관련 텍스트: []
+
+전체 짧은 텍스트(50자 이하) 최근 변화:
+ - .
+ - .ὰ
+ - Please select one sector.
+ - Sector
+ - Last Update Date24/07/2026
+ - Last Update Date
+ - 24/07/2026
+ - Re-Set Selections
+ - Most recent data19/07/2026
+ - Most recent data
+ - 19/07/2026
+ - CN8 Product Code
+ - TARIC10 Product Code
+ - Product group
+ - Marketing Year
+ - Week
+ - Member State
+ - Partner
+ - ​​
+ - ​
+ - There is one selected value.
+ - *Select one sector*
+ - Animal Feed And By-Products
+ - Apples
+ - Beef
+ - Beer
+ - Biodiesel
+ - Cereals
+ - Citrus Fruit
+ - Cocoa And Chocolate
+ - Coffee And Tea
+ - Cork
