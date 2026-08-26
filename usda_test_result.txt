@@ -1,4 +1,0 @@
-MEXICO -> [{'countryCode': 2010, 'countryName': 'MEXICO  ', 'countryDescription': 'MEXICO                         ', 'regionId': 11, 'gencCode': 'MEX'}]
-CANADA -> [{'countryCode': 1220, 'countryName': 'CANADA  ', 'countryDescription': 'CANADA                         ', 'regionId': 11, 'gencCode': 'CAN'}]
-TAIWAN -> [{'countryCode': 5830, 'countryName': 'TAIWAN  ', 'countryDescription': 'TAIWAN                         ', 'regionId': 6, 'gencCode': 'TWN'}]
-VIETNAM -> [{'countryCode': 5510, 'countryName': 'S VETNM ', 'countryDescription': 'VIETNAM, REPUBLIC OF (SOUTH)   ', 'regionId': 9, 'gencCode': None}, {'countryCode': 5520, 'countryName': 'VIETNAM ', 'countryDescription': 'VIETNAM                        ', 'regionId': 9, 'gencCode': 'VNM'}]

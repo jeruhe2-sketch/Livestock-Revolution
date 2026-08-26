@@ -864,12 +864,12 @@ const COLORS = {
   amber: "#d98b3f", amberSoft: "#e8b877", cream: "#f2ead9", mute: "#8f857a",
   sage: "#6f9482", rust: "#c2695f", head: "#141211"
 };
-const COUNTRY_LIST = ["KR", "CN", "GB", "JP", "PH"];
-const COUNTRY_LABEL = { KR: "\uD55C\uAD6D", CN: "\uC911\uAD6D", GB: "\uC601\uAD6D", JP: "\uC77C\uBCF8", PH: "\uD544\uB9AC\uD540" };
-const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c"];
-const COUNTRY_COLOR = { KR: SERIES_PALETTE[0], CN: SERIES_PALETTE[1], GB: SERIES_PALETTE[2], JP: SERIES_PALETTE[3], PH: SERIES_PALETTE[4] };
+const COUNTRY_LIST = ["KR", "CN", "GB", "JP", "PH", "MX", "CA", "TW", "VN"];
+const COUNTRY_LABEL = { KR: "\uD55C\uAD6D", CN: "\uC911\uAD6D", GB: "\uC601\uAD6D", JP: "\uC77C\uBCF8", PH: "\uD544\uB9AC\uD540", MX: "\uba55\uc2dc\ucf54", CA: "\uce90\ub098\ub2e4", TW: "\ub300\ub9cc", VN: "\ubca0\ud2b8\ub0a8" };
+const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a", "#e0985a", "#7ea0c4"];
+const COUNTRY_COLOR = { KR: SERIES_PALETTE[0], CN: SERIES_PALETTE[1], GB: SERIES_PALETTE[2], JP: SERIES_PALETTE[3], PH: SERIES_PALETTE[4], MX: SERIES_PALETTE[5], CA: SERIES_PALETTE[6], TW: SERIES_PALETTE[7], VN: SERIES_PALETTE[8] };
 const YEAR_SERIES_COLORS = ["#8f857a", "#4f8fb8", "#5c8f7a", "#d98b3f", "#c2695f", "#a06a9c", "#b0a25c", "#5fa88a"];
-const COMMODITY_LABEL = { 1701: "\uC18C\uACE0\uAE30(\uBE44\uC721\uC6B0)", 1702: "\uB3C8\uC721\uC0BC\uACA8" };
+const COMMODITY_LABEL = { 1701: "\uC18C\uACE0\uAE30", 1702: "\uB3C8\uC721" };
 const VALUE_LABEL = {
   weeklyExports: "\uC8FC\uAC04 \uC218\uCD9C\uB7C9",
   outstandingSales: "\uBBF8\uC120\uC801 \uACC4\uC57D\ub7c9",
@@ -1094,13 +1094,14 @@ function UsdaTradeApp() {
   }, [filteredRows, countrySel]);
 
   const exportExcel = () => {
-    const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => m + "\uC6D4"), "\uCD1D\ud569\uacC4"];
+    const unitTag = "\uD1A4";
+    const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => `${m}\uC6D4(${unitTag})`), `\uCD1D\ud569\uacC4(${unitTag})`];
     const body = years.map((y) => {
-      const rowVals = MONTHS_ALL.map((m) => aggBy(pivot[y] && pivot[y][m] ? pivot[y][m] : []));
+      const rowVals = MONTHS_ALL.map((m) => Math.round(aggBy(pivot[y] && pivot[y][m] ? pivot[y][m] : [])));
       const total = rowVals.reduce((a, b) => a + b, 0);
-      return [y, ...rowVals.map(Math.round), Math.round(total)];
+      return [y, ...rowVals, total];
     });
-    downloadXlsx([header, ...body], `\ubbf8\uad6d_${COMMODITY_LABEL[commodity]}_\uC218\uCD9C.xlsx`, "\uC5F0\ub3C4x\uC6D4\ubcC4");
+    downloadXlsx([header, ...body], `\ubbf8\uad6d_${COMMODITY_LABEL[commodity]}_\uC218\uCD9C_${countrySel.map((c) => COUNTRY_LABEL[c]).join("-")}.xlsx`, "\uC5F0\ub3C4x\uC6D4\ubcC4");
   };
 
   if (loading) return React.createElement("div", { style: { padding: 30, color: COLORS.mute, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
@@ -1112,7 +1113,7 @@ function UsdaTradeApp() {
     db.collectedAt && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft, marginBottom: 14 } }, "\uD83D\uDD52 ", db.collectedAt.slice(0, 16).replace("T", " "), " \uAE30\uC900 (USDA FAS ESR \uc8FC\uac04 \uc790\ub8CC)"),
 
     React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
-      React.createElement(ChipGroup, { options: [1702, 1701].map(String), value: String(commodity), onChange: (v) => setCommodity(+v) }),
+      React.createElement(ChipGroup, { options: [1702, 1701].map((c) => COMMODITY_LABEL[c]), value: COMMODITY_LABEL[commodity], onChange: (label) => { const found = Object.entries(COMMODITY_LABEL).find(([k, l]) => l === label); setCommodity(found ? +found[0] : 1702); } }),
       React.createElement(HoverMultiPicker, { label: "\uC218\uC785\uAD6D", options: COUNTRY_LIST.map((c) => [c, COUNTRY_LABEL[c]]), selected: countrySel, onToggle: toggleCountry, onSelectAll: () => setCountrySel([...COUNTRY_LIST]), onClear: () => setCountrySel([]) }),
       React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
       React.createElement(HoverAxisPicker, { label: "\uC9C0\uD45C", value: valueKey, onChange: setValueKey, options: Object.entries(VALUE_LABEL) })
