@@ -25,7 +25,12 @@ jobs:
       - name: run
         id: run
         continue-on-error: true
-        run: mkdir -p debug && python scripts/fetch_eu_taxud.py 2>&1 | tee debug/eu_update_last.log
+        run: |
+          mkdir -p debug
+          python scripts/fetch_eu_taxud.py > debug/eu_update_last.log 2>&1
+          code=$?
+          cat debug/eu_update_last.log
+          exit $code
       - name: commit
         if: always()
         run: |
