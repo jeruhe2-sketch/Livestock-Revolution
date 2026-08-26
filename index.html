@@ -572,7 +572,9 @@ function downloadXlsx(aoa, filename, sheetName) {
   XLSX.writeFile(wb, filename);
 }
 
-function SvgLineChart({ categories, series, height = 260 }) {
+function SvgLineChart({ categories, series, height = 260, formatValue }) {
+  const fmtAxis = formatValue || fmtShort;
+  const fmtTip = formatValue || n;
   const width = 760;
   const manyLabels = categories.length > 16;
   const padL = 46, padR = 12, padT = 14, padB = manyLabels ? 46 : 28;
@@ -598,7 +600,7 @@ function SvgLineChart({ categories, series, height = 260 }) {
     setHover(idx);
   };
   return /* @__PURE__ */ React.createElement("svg", { ref: svgRef, viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height: "auto", display: "block" }, onMouseMove: handleMove, onMouseLeave: () => setHover(null) },
-    gridLines.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("line", { x1: padL, x2: width - padR, y1: yFor(v), y2: yFor(v), stroke: COLORS.panelBorder2, strokeWidth: 1 }), /* @__PURE__ */ React.createElement("text", { x: padL - 6, y: yFor(v) + 3, fontSize: 9.5, fill: COLORS.mute, textAnchor: "end" }, fmtShort(v)))),
+    gridLines.map((v, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("line", { x1: padL, x2: width - padR, y1: yFor(v), y2: yFor(v), stroke: COLORS.panelBorder2, strokeWidth: 1 }), /* @__PURE__ */ React.createElement("text", { x: padL - 6, y: yFor(v) + 3, fontSize: 9.5, fill: COLORS.mute, textAnchor: "end" }, fmtAxis(v)))),
     categories.map((c, i) => {
       const showLabel = manyLabels ? i % Math.ceil(categories.length / 12) === 0 : true;
       return showLabel ? /* @__PURE__ */ React.createElement("text", { key: i, x: xFor(i), y: height - padB + (manyLabels ? 26 : 16), fontSize: 9.5, fill: COLORS.mute, textAnchor: "middle", transform: manyLabels ? `rotate(-40 ${xFor(i)} ${height - padB + 26})` : undefined }, c) : null;
@@ -615,7 +617,7 @@ function SvgLineChart({ categories, series, height = 260 }) {
       /* @__PURE__ */ React.createElement("line", { x1: xFor(hover), x2: xFor(hover), y1: padT, y2: height - padB, stroke: COLORS.panelBorder2, strokeWidth: 1 }),
       /* @__PURE__ */ React.createElement("rect", { x: Math.min(width - padR - 150, xFor(hover) + 8), y: padT, width: 150, height: 16 * series.length + 22, fill: COLORS.head, stroke: COLORS.panelBorder, rx: 6 }),
       /* @__PURE__ */ React.createElement("text", { x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 14, fontSize: 10.5, fill: COLORS.cream, fontWeight: 700 }, categories[hover]),
-      series.map((s, si) => /* @__PURE__ */ React.createElement("text", { key: si, x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 30 + si * 16, fontSize: 10, fill: s.color }, `${s.label}: ${s.values[hover] !== null && s.values[hover] !== undefined ? n(s.values[hover]) : "-"}`))
+      series.map((s, si) => /* @__PURE__ */ React.createElement("text", { key: si, x: Math.min(width - padR - 150, xFor(hover) + 8) + 8, y: padT + 30 + si * 16, fontSize: 10, fill: s.color }, `${s.label}: ${s.values[hover] !== null && s.values[hover] !== undefined ? fmtTip(s.values[hover]) : "-"}`))
     )
   );
 }
@@ -798,17 +800,16 @@ function EuTradeApp() {
 
   function fmtWon(krw) {
     if (krw == null || !isFinite(krw)) return null;
-    const abs = Math.abs(krw);
-    if (abs >= 1e12) return (krw / 1e12).toFixed(1) + "조원";
-    if (abs >= 1e8) return (krw / 1e8).toFixed(1) + "억원";
-    if (abs >= 1e4) return Math.round(krw / 1e4).toLocaleString() + "만원";
-    return Math.round(krw).toLocaleString() + "원";
+    return (krw / 1e8).toFixed(1) + "억원";
   }
   function fmtMillionEuro(v) {
     if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + "백만 유로";
     if (Math.abs(v) >= 1e4) return (v / 1e4).toFixed(1) + "만 유로";
     return Math.round(v).toLocaleString() + " 유로";
   }
+  const chartFormatValue = (valueKey === "euro" && exRates && exRates.eurKrw)
+    ? (v) => fmtWon(v * exRates.eurKrw)
+    : undefined;
 
   const exportExcel = () => {
     const unitTag = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C";
@@ -882,7 +883,7 @@ function EuTradeApp() {
       }, "\u2B07\uFE0F \uC5D1\uC140 \ub2E4\uC6B4\ub85c\ub4dc")
     ),
     React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "16px 12px", marginBottom: 24 } },
-      React.createElement(SvgLineChart, { categories, series }),
+      React.createElement(SvgLineChart, { categories, series, formatValue: chartFormatValue }),
       React.createElement(ChartLegend, { series })
     ),
 
