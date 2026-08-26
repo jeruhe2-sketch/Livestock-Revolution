@@ -1,6 +1,6 @@
 {
-  "name": "리브스톡 레볼루션",
-  "short_name": "리브스톡",
+  "name": "축산레이더",
+  "short_name": "축산레이더",
   "description": "수입검역 / EU·미국 축산물 수출 / 종합창고현황 대시보드",
   "start_url": "./index.html",
   "scope": "./",
