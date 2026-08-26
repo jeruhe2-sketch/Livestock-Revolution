@@ -373,7 +373,7 @@ function Dashboard({ db }) {
     return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
   }, [overlayDim, baseFilteredRows, years]);
   const effectiveXAxis = overlayDim === "year" ? "month" : overlayXAxis;
-  const currentOverlayList = overlaySel.dim === overlayDim && overlaySel.list.length ? overlaySel.list.filter((v) => overlayCandidates.includes(v)) : overlayCandidates.slice(0, overlayDim === "year" ? Math.min(3, overlayCandidates.length) : 5);
+  const currentOverlayList = overlaySel.dim === overlayDim ? overlaySel.list.filter((v) => overlayCandidates.includes(v)) : [];
   useEffect(() => {
     const sp = new URLSearchParams();
     sp.set("meat", meat);
