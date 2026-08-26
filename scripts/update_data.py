@@ -28,14 +28,23 @@ if not SERVICE_KEY:
     raise SystemExit("환경변수 OPEN_API_KEY가 설정되어 있지 않습니다. (GitHub Actions Secret 또는 로컬 환경변수로 지정하세요)")
 
 
-def fetch_page(page_no: int) -> dict:
+def fetch_page(page_no: int, retries: int = 5) -> dict:
     url = (
         f"{BASE_URL}?serviceKey={SERVICE_KEY}"
         f"&pageNo={page_no}&numOfRows={NUM_OF_ROWS}&type=json"
     )
-    with urllib.request.urlopen(url, timeout=20) as resp:
-        raw = resp.read().decode("utf-8")
-    return json.loads(raw)
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            with urllib.request.urlopen(url, timeout=20) as resp:
+                raw = resp.read().decode("utf-8")
+            return json.loads(raw)
+        except Exception as e:
+            last_err = e
+            wait = min(5 * attempt, 30)
+            print(f"  페이지 {page_no} 시도 {attempt}/{retries} 실패: {e!r} ({wait}초 후 재시도)")
+            time.sleep(wait)
+    raise RuntimeError(f"페이지 {page_no} 최종 실패: {last_err!r}")
 
 
 def fetch_all() -> list[dict]:
