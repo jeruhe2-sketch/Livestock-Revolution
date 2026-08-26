@@ -1,0 +1,8 @@
+=== /gats/countries -> 403
+  응답: "Bad API Key"
+=== /gats/commodities -> 403
+  응답: "Bad API Key"
+=== /psd/commodities -> 403
+  응답: "Bad API Key"
+=== /psd/countries -> 403
+  응답: "Bad API Key"
