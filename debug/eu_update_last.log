@@ -1,4 +1,5 @@
   [2026] 시도 1/12 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
+  [2026] 시도 2/12 실패: status=404 body={"code":"404","type":"Status report","message":"Not Found","description":"The requested resource is not available."}
   [2024] 수집 성공: 22333건
   [2025] 수집 성공: 22258건
   [2026] 수집 성공: 14339건
