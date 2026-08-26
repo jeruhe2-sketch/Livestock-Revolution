@@ -872,7 +872,7 @@ function EuTradeApp() {
     React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC720\uB7FD\uC0B0 \uB3C8\uC721(\uB0C9\uB3D9) \uC218\uCD9C \uD604\uD669"),
     db.sourceMostRecentData && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft, marginBottom: 14 } }, "\uD83D\uDD52 ", db.sourceMostRecentData, " \uAE30\uC900 (EU TAXUD \uC8FC\uAC04 \uC7A0\uC815\uCE58)"),
     React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: COLORS.amber, marginBottom: 4 } },
-      "\uD569\uACC4 ", valueKey === "euro" ? fmtMillionEuro(grandTotalCurrent) : (Math.round(grandTotalCurrent).toLocaleString() + " \uD1A4"),
+      "\uD569\uACC4 ", valueKey === "euro" ? fmtMillionEuro(grandTotalCurrent) : (toTon(grandTotalCurrent).toLocaleString() + " \uD1A4"),
       valueKey === "euro" && exRates && exRates.eurKrw
         ? React.createElement("span", { style: { color: COLORS.mute, fontWeight: 600, fontSize: 12.5, marginLeft: 8 } }, "(\uc6d0\ud654 \ud658\uc0b0 \uc57d ", fmtWon(grandTotalCurrent * exRates.eurKrw), ")")
         : null
