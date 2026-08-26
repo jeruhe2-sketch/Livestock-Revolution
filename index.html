@@ -706,7 +706,12 @@ function EuTradeApp() {
 
   const [monthFrom, setMonthFrom] = useState(1);
   const [monthTo, setMonthTo] = useState(12);
-  const filteredRows = useMemo(() => rows.filter((r) => r.month >= monthFrom && r.month <= monthTo && msSel.includes(r.msCode)), [rows, monthFrom, monthTo, msSel]);
+  const [yearFilter, setYearFilter] = useState("all");
+  const visibleYears = useMemo(() => (yearFilter === "all" ? years : [yearFilter]), [years, yearFilter]);
+  const filteredRows = useMemo(
+    () => rows.filter((r) => r.month >= monthFrom && r.month <= monthTo && msSel.includes(r.msCode) && (yearFilter === "all" || r.year === yearFilter)),
+    [rows, monthFrom, monthTo, msSel, yearFilter]
+  );
 
   const togglePartner = (code) => setPartnerSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
   const toggleMs = (code) => setMsSel((prev) => prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
@@ -747,9 +752,9 @@ function EuTradeApp() {
       return { categories: cats, series: ser };
     }
     if (xAxis === "year") {
-      const cats = years.map(String);
+      const cats = visibleYears.map(String);
       const ser = partnerSel.map((code) => {
-        let values = years.map((y) => {
+        let values = visibleYears.map((y) => {
           const vals = filteredRows.filter((r) => r.partnerCode === code && r.year === y);
           return vals.length ? toTon(vals.reduce((s, r) => s + (r[valueKey] || 0), 0)) : 0;
         });
@@ -782,7 +787,7 @@ function EuTradeApp() {
       return { label: msLabel + PARTNER_LABEL[code], color: PARTNER_COLOR[code], values };
     });
     return { categories: cats, series: ser };
-  }, [filteredRows, partnerSel, xAxis, years, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo, weeksInRange, msLabel]);
+  }, [filteredRows, partnerSel, xAxis, years, visibleYears, refYear, valueKey, compareBy, cumulative, monthFrom, monthTo, weeksInRange, msLabel]);
 
   const pivot = useMemo(() => {
     const map = {};
@@ -820,7 +825,7 @@ function EuTradeApp() {
   const exportExcel = () => {
     const unitTag = valueKey === "kg" ? "\uD1A4" : "\uC720\uB85C";
     const header = ["\uC5F0\ub3C4", ...MONTHS_ALL.map((m) => `${m}\uC6D4(${unitTag})`), `\uCD1D\ud569\uacC4(${unitTag})`];
-    const body = years.map((y) => {
+    const body = visibleYears.map((y) => {
       const rowVals = MONTHS_ALL.map((m) => toTon((pivot[y] && pivot[y][m]) || 0));
       const total = rowVals.reduce((a, b) => a + b, 0);
       return [y, ...rowVals, total];
@@ -853,6 +858,11 @@ function EuTradeApp() {
     React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
       React.createElement(HoverMultiPicker, { label: "\uC218\uCD9C\uAD6D(EU \ud68C\uc6D0\uAD6D)", options: msOptions, selected: msSel, onToggle: toggleMs, onSelectAll: () => setMsSel([...MS_LIST]), onClear: () => setMsSel([]) }),
       React.createElement(HoverMultiPicker, { label: "\uC218\uC785\uAD6D", options: PARTNER_LIST.map((c) => [c, PARTNER_LABEL[c]]), selected: partnerSel, onToggle: togglePartner, onSelectAll: () => setPartnerSel([...PARTNER_LIST]), onClear: () => setPartnerSel([]) }),
+      years.length > 0 && React.createElement(ChipGroup, {
+        label: "\uC5F0\uB3C4", options: ["\uC804\uCCB4", ...years.map(String)],
+        value: yearFilter === "all" ? "\uC804\uCCB4" : String(yearFilter),
+        onChange: (v) => setYearFilter(v === "\uC804\uCCB4" ? "all" : +v)
+      }),
       React.createElement("span", { style: { width: 1, height: 20, background: COLORS.panelBorder, margin: "0 4px" } }),
       ["kg", "euro"].map((k) => React.createElement("button", {
         key: k, onClick: () => setValueKey(k),
@@ -909,7 +919,7 @@ function EuTradeApp() {
           )
         ),
         React.createElement("tbody", null,
-          years.map((y) => {
+          visibleYears.map((y) => {
             const rowVals = MONTHS_ALL.map((m) => toTon((pivot[y] && pivot[y][m]) || 0));
             const total = rowVals.reduce((a, b) => a + b, 0);
             return React.createElement("tr", { key: y },
