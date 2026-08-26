@@ -1,27 +1,18 @@
-### api.fas.usda.gov 테스트 ###
-https://api.fas.usda.gov/api/psd/countries -> 200 | [{"countryCode":"AF","countryName":"Afghanistan","regionCode":"R12","gencCode":"AFG"},{"countryCode":"T3","countryName":"Africa, NEC","regionCode":"R1
-https://api.fas.usda.gov/psd/countries -> 404 | {
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "The requested URL was not found on this server."
-  }
-}
+PSD 커모디티 총 63 개
+  {'commodityCode': '0011000', 'commodityName': 'Animal Numbers, Cattle'}
+  {'commodityCode': '0013000', 'commodityName': 'Animal Numbers, Swine'}
+  {'commodityCode': '0111000', 'commodityName': 'Meat, Beef and Veal'}
+  {'commodityCode': '0115000', 'commodityName': 'Meat, Chicken'}
+  {'commodityCode': '0113000', 'commodityName': 'Meat, Swine'}
+  {'commodityCode': '0114200', 'commodityName': 'Poultry, Meat, Broiler'}
 
-### ESRQS 탐색 ###
-https://apps.fas.usda.gov/esrqs/ -> 200 | <!doctype html>
-<html lang="en" data-beasties-container>
-<head>
-  <meta charset="utf-8">
-  <title>ESRQS</title>  
-  <base href="/esrqs/">
-  <meta name="viewport" content="width=device-width, ini
-https://apps.fas.usda.gov/esrqs/api/exports -> 404 | {
-  "message": "No HTTP resource was found that matches the request URI 'https://apps.fas.usda.gov/esrqs/api/exports'."
-}
-https://apps.fas.usda.gov/esrqs/#/home -> 200 | <!doctype html>
-<html lang="en" data-beasties-container>
-<head>
-  <meta charset="utf-8">
-  <title>ESRQS</title>  
-  <base href="/esrqs/">
-  <meta name="viewport" content="width=device-width, ini
+ESR 상태: 200
+ESR 커모디티 총 44 개
+  {'commodityCode': 1601, 'commodityName': 'Cattle Hides - Whole - Excluding Wet Blues', 'unitId': 3}
+  {'commodityCode': 1604, 'commodityName': 'Cattle Hides-Cut into Croupons, etc-excl Wet Blues', 'unitId': 4}
+  {'commodityCode': 1605, 'commodityName': 'Cattle Hides and Skins-other-excluding Wet Blues', 'unitId': 5}
+  {'commodityCode': 1606, 'commodityName': 'Cattle Wet Blues-Unsplit (Whole or Sided)', 'unitId': 4}
+  {'commodityCode': 1607, 'commodityName': 'Cattle Wet Blues-Grain Splits (Whole or Sided)', 'unitId': 4}
+  {'commodityCode': 1608, 'commodityName': 'Cattle Wet Blues-Splits-Excluding Grain Splits', 'unitId': 5}
+  {'commodityCode': 1701, 'commodityName': 'Fresh, Chilled, or Frozen Muscle Cuts of Beef', 'unitId': 1}
+  {'commodityCode': 1702, 'commodityName': 'Fresh, Chilled, or Frozen Muscle Cuts of Pork', 'unitId': 1}
