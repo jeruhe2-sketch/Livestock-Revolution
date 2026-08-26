@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: 한국향 돼지고기/소고기 ESR 실데이터
+      - name: 국가코드 확인
         env:
           USDA_KEY: ${{ secrets.USDA_API_KEY }}
         run: |
@@ -21,19 +21,11 @@ jobs:
           key = os.environ["USDA_KEY"]
           base = "https://api.fas.usda.gov/api"
           headers = {"X-Api-Key": key}
-
-          for commodity, name in [(1702,"돼지고기"), (1701,"소고기")]:
-              r = requests.get(f"{base}/esr/exports/commodityCode/{commodity}/countryCode/5800/marketYear/2026", headers=headers, timeout=20)
-              print(f"=== {name}(코드{commodity}) 한국향 2026 -> {r.status_code}")
-              if r.status_code == 200:
-                  data = r.json()
-                  print("  총 행수:", len(data))
-                  data.sort(key=lambda x: x.get("weekEndingDate",""))
-                  for row in data[-3:]:
-                      print("  ", row)
-              else:
-                  print("  ", r.text[:300])
-              print()
+          r = requests.get(f"{base}/esr/countries", headers=headers, timeout=20)
+          countries = r.json()
+          for target in ["UNITED KINGDOM", "JAPAN", "PHILIPPINES"]:
+              matches = [c for c in countries if target in c.get("countryDescription","").upper()]
+              print(target, "->", matches)
           PYEOF
           cat usda_test_result.txt
       - name: 결과 커밋
@@ -41,5 +33,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add usda_test_result.txt
-          git commit -m "test: 한국향 돼지/소고기 ESR 실데이터" || echo "변경없음"
+          git commit -m "test: UK/일본/필리핀 국가코드" || echo "변경없음"
           git push
