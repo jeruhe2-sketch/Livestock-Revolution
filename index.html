@@ -94,7 +94,7 @@ function n(v) {
   return Math.round(v).toLocaleString();
 }
 function fmtShort(v) {
-  return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString();
+  return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "\uB9CC" : Math.round(v).toLocaleString();
 }
 function pct(v) {
   if (v === null) return "\u2014";
@@ -564,7 +564,7 @@ const YEAR_SERIES_COLORS = ["#8f857a", "#4f8fb8", "#5c8f7a", "#d98b3f", "#c2695f
 const MONTHS_ALL = [1,2,3,4,5,6,7,8,9,10,11,12];
 
 function n(v) { return Math.round(v).toLocaleString(); }
-function fmtShort(v) { return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString(); }
+function fmtShort(v) { return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "\uB9CC" : Math.round(v).toLocaleString(); }
 function downloadXlsx(aoa, filename, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
@@ -800,15 +800,21 @@ function EuTradeApp() {
 
   function fmtWon(krw) {
     if (krw == null || !isFinite(krw)) return null;
-    return (krw / 1e8).toFixed(1) + "억원";
+    return (krw / 1e12).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "조원";
+  }
+  function fmtWonChart(krw) {
+    // \ucc28\ud2b8\ub294 \uc8fc\uac04 \uac1c\ubcc4\uac12\uc774\ub77c \uc870 \ub2e8\uc704\ub85c \ubcf4\uba74 \uac70\uc758 \ub2e4 0.0\uc870\uc6d0\uc73c\ub85c \ubb49\uac1c\uc9c0\uae30 \ub54c\ubb38\uc5d0
+    // \uc5ec\uae30\ub9cc \uc5b5\uc6d0 \ub2e8\uc704\ub85c \ud45c\uc2dc (\ud569\uacc4\ub294 \uc704 fmtWon\uc73c\ub85c \uc870\uc6d0 \ub2e8\uc704 \uadf8\ub300\ub85c \uc720\uc9c0)
+    if (krw == null || !isFinite(krw)) return null;
+    return (krw / 1e8).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "억원";
   }
   function fmtMillionEuro(v) {
-    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + "백만 유로";
-    if (Math.abs(v) >= 1e4) return (v / 1e4).toFixed(1) + "만 유로";
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "백만 유로";
+    if (Math.abs(v) >= 1e4) return (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "만 유로";
     return Math.round(v).toLocaleString() + " 유로";
   }
   const chartFormatValue = (valueKey === "euro" && exRates && exRates.eurKrw)
-    ? (v) => fmtWon(v * exRates.eurKrw)
+    ? (v) => fmtWonChart(v * exRates.eurKrw)
     : undefined;
 
   const exportExcel = () => {
@@ -935,7 +941,7 @@ const VALUE_LABEL = {
 };
 
 function n(v) { return Math.round(v).toLocaleString(); }
-function fmtShort(v) { return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString(); }
+function fmtShort(v) { return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "\uB9CC" : Math.round(v).toLocaleString(); }
 function downloadXlsx(aoa, filename, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
@@ -1262,7 +1268,7 @@ function nWeight(v) {
   return (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtShort(v) {
-  return Math.abs(v) >= 1e4 ? (v / 1e4).toFixed(1) + "\uB9CC" : Math.round(v).toLocaleString();
+  return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "\uB9CC" : Math.round(v).toLocaleString();
 }
 function fmtCollectedAt(iso) {
   if (!iso) return null;
