@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install playwright && playwright install --with-deps chromium
-      - name: Sector 박스[2] 정확히 클릭
+      - name: Sector 목록에서 Pigs 클릭
         run: |
           python3 << 'PYEOF' > eu_probe_result.txt 2>&1
           from playwright.sync_api import sync_playwright
@@ -36,19 +36,23 @@ jobs:
               sector_box = frame.locator("text=Sector").nth(2)
               sector_box.click()
               page.wait_for_timeout(2000)
-              page.screenshot(path="eu_after_sector_click.png", full_page=True)
+
+              # Pigs 클릭 (정확히 일치하는 텍스트)
+              pigs_option = frame.get_by_text("Pigs", exact=True).first
+              pigs_option.click()
+              page.wait_for_timeout(2000)
+              page.screenshot(path="eu_after_pigs_click.png", full_page=True)
 
               texts = frame.locator("div, span, td, li").all_text_contents()
-              pigs_related = [t.strip() for t in texts if "Pig" in t or "PIG" in t.upper()]
-              print("Pig 관련 텍스트:", pigs_related[:20])
+              print("Frozen pig meat 관련:", [t.strip() for t in texts if "rozen" in t and "pig" in t.lower()][:10])
               print()
-              print("전체 짧은 텍스트(50자 이하) 최근 변화:")
-              short = [t.strip() for t in texts if t.strip() and len(t.strip())<50]
+              short = [t.strip() for t in texts if t.strip() and len(t.strip())<60]
               seen=set(); uniq=[]
               for t in short:
                   if t not in seen:
                       seen.add(t); uniq.append(t)
-              for t in uniq[:80]:
+              print("고유 텍스트 100개:")
+              for t in uniq[:100]:
                   print(" -", t)
 
               browser.close()
@@ -58,6 +62,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add eu_probe_result.txt eu_after_sector_click.png
-          git commit -m "test: Sector[2] 클릭 후 상태" || echo "변경없음"
+          git add eu_probe_result.txt eu_after_pigs_click.png
+          git commit -m "test: Pigs 선택 후 상태" || echo "변경없음"
           git push
