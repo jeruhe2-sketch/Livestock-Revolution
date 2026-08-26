@@ -1,0 +1,21 @@
+iframe url: https://agridata.ec.europa.eu/single/?appid=e29cf4f7-1b60-4e61-ab9c-a6758adbc090&sheet=ca755c7c-8eff-45a3-a0d3-9e485fb339e0&identity=418161411&opt=ctxmenu
+iframe 내부 전체 요소 수: 436
+고유 짧은 텍스트 샘플(최대 150개):
+  - .
+  - .ὰ
+  - Please select one sector.
+  - Sector
+  - Last Update Date24/07/2026
+  - Last Update Date
+  - 24/07/2026
+  - Re-Set Selections
+  - Most recent data19/07/2026
+  - Most recent data
+  - 19/07/2026
+  - CN8 Product Code
+  - TARIC10 Product Code
+  - Product group
+  - Marketing Year
+  - Week
+  - Member State
+  - Partner
