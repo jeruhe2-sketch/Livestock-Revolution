@@ -1,14 +1,10 @@
-=== X-Api-Key header -> 403
-    "Bad API Key"
-=== Api_Key header -> 500
-    {"message":"An error has occurred."}
-=== API_KEY header -> 500
-    {"message":"An error has occurred."}
-=== Authorization Bearer -> 403
-    "Bad API Key"
-=== query api_key -> 403
-    "Bad API Key"
-=== query API_KEY -> 403
-    "Bad API Key"
-=== Ocp-Apim-Subscription-Key -> 403
-    "Bad API Key"
+키 길이: 40 앞4글자: o6V9
+/psd/countries [API_KEY] -> 500 | {"message":"An error has occurred."}
+/psd/countries [Api_Key] -> 500 | {"message":"An error has occurred."}
+/psd/countries [X-Api-Key] -> 403 | "Bad API Key"
+/psd/commodities [API_KEY] -> 500 | {"message":"An error has occurred."}
+/psd/commodities [Api_Key] -> 500 | {"message":"An error has occurred."}
+/psd/commodities [X-Api-Key] -> 403 | "Bad API Key"
+/gats/countries [API_KEY] -> 500 | {"message":"An error has occurred."}
+/gats/countries [Api_Key] -> 500 | {"message":"An error has occurred."}
+/gats/countries [X-Api-Key] -> 403 | "Bad API Key"
