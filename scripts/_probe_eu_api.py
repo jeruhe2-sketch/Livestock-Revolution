@@ -5,26 +5,29 @@ GitHub Actions 러너에서 직접 찔러보고 결과를 stdout에 찍는다.
 작업 끝나면 워크플로우와 함께 삭제할 예정.
 """
 import json
+import sys
 import requests
 
 BASE = "https://api.tech.ec.europa.eu/agrifood"
 
+OUT = []
+
 
 def show(label, url, params=None):
-    print(f"\n===== {label} =====")
-    print("URL:", url, "params:", params)
+    OUT.append(f"\n===== {label} =====")
+    OUT.append(f"URL: {url} params: {params}")
     try:
         r = requests.get(url, params=params, headers={"Accept": "application/json"}, timeout=30)
-        print("status:", r.status_code)
-        print("headers subset:", {k: v for k, v in r.headers.items() if k.lower() in ("content-type", "www-authenticate")})
+        OUT.append(f"status: {r.status_code}")
+        OUT.append(f"headers subset: {{k: v for k, v in r.headers.items() if k.lower() in ('content-type','www-authenticate')}}")
         text = r.text
         if len(text) > 3000:
-            print("body (truncated to 3000 chars):")
-            print(text[:3000])
+            OUT.append("body (truncated to 3000 chars):")
+            OUT.append(text[:3000])
         else:
-            print("body:", text)
+            OUT.append(f"body: {text}")
     except Exception as e:
-        print("EXCEPTION:", repr(e))
+        OUT.append(f"EXCEPTION: {e!r}")
 
 
 def main():
@@ -59,3 +62,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    with open("debug/probe_output.txt", "w", encoding="utf-8") as f:
+        f.write("\n".join(OUT))
+    print("wrote debug/probe_output.txt")

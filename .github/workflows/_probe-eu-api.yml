@@ -3,6 +3,9 @@ name: _probe-eu-api
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -12,4 +15,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - run: python scripts/_probe_eu_api.py
+      - run: mkdir -p debug && python scripts/_probe_eu_api.py
+      - run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+          git add debug/probe_output.txt
+          git commit -m "probe: EU API output" || echo "no changes"
+          git push
