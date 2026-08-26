@@ -727,7 +727,6 @@ function Dashboard({ db, exRates }) {
   const [sortDesc, setSortDesc] = useState(true);
   const [overlayDim, setOverlayDim] = useState(() => p("od", "year"));
   const [overlayXAxis, setOverlayXAxis] = useState(() => p("oxa", "month"));
-  const [overlaySel, setOverlaySel] = useState(() => ({ dim: p("od", "year"), list: pList("ol") }));
 
   const val = (r) => (valueKey === "kg" ? r.kg / 1000 : r.euro);
   const unitLabel = valueKey === "kg" ? "톤" : "유로(€)";
@@ -819,7 +818,9 @@ function Dashboard({ db, exRates }) {
     return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
   }, [overlayDim, baseFilteredRows, years, valueKey]);
   const effectiveXAxis = overlayDim === "year" ? "month" : overlayXAxis;
-  const currentOverlayList = overlaySel.dim === overlayDim ? overlaySel.list.filter((v) => overlayCandidates.includes(v)) : [];
+  // 상단 필터(수출국/수입국/연도)에서 이미 고른 걸 그대로 겹쳐그림 - 별도로 또 고를 필요 없음.
+  // 너무 많으면(상단필터를 전체로 둔 경우) 상위 10개까지만 보여줘서 차트가 안 뒤엉키게 함.
+  const currentOverlayList = overlayCandidates.slice(0, 10);
   // overlayDim==="year"일 땐 연도가 각각 하나의 선이라 X축은 1~12월 그대로.
   // overlayDim이 수출국/수입국일 땐 국가가 선이니, 기준연도 하나에 가두지 않고
   // 선택된 전체 기간(여러 연도)을 월 단위로 쭉 이어붙여서 다년간 추세를 한 선으로 보여줌.
@@ -853,13 +854,6 @@ function Dashboard({ db, exRates }) {
     downloadXlsx([header, ...body], `EU돈육_${DIM_LABEL[overlayDim]}겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
   }
   const groupSeries = useMemo(() => [{ name: DIM_LABEL[groupBy], color: COLORS.amber, data: grouped.map((g) => g.v) }], [grouped, groupBy]);
-  const toggleOverlay = (v) => {
-    const list = currentOverlayList.includes(v) ? currentOverlayList.filter((x) => x !== v) : [...currentOverlayList, v];
-    setOverlaySel({ dim: overlayDim, list });
-  };
-  const selectAllOverlay = () => setOverlaySel({ dim: overlayDim, list: [...overlayCandidates] });
-  const clearOverlay = () => setOverlaySel({ dim: overlayDim, list: [] });
-
   useEffect(() => {
     const sp = new URLSearchParams();
     if (msFilter.length) sp.set("ms", msFilter.join(","));
@@ -879,12 +873,11 @@ function Dashboard({ db, exRates }) {
       if (chartSub === "overlay") {
         sp.set("od", overlayDim);
         if (overlayDim !== "year") sp.set("oxa", overlayXAxis);
-        if (overlaySel.list.length) sp.set("ol", overlaySel.list.join(","));
       }
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [msFilter, partnerFilter, yearFilter, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, overlaySel]);
+  }, [msFilter, partnerFilter, yearFilter, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1004,24 +997,12 @@ function Dashboard({ db, exRates }) {
         ),
         chartSub === "overlay" && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
-            React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: (v) => { setOverlayDim(v); setOverlaySel({ dim: v, list: [] }); }, options: [["year", "연도"], ["ms", "수출국"], ["partner", "수입국"]] }),
+            React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: setOverlayDim, options: [["year", "연도"], ["ms", "수출국"], ["partner", "수입국"]] }),
             overlayDim !== "year" && React.createElement(HoverAxisPicker, { label: "X축", value: overlayXAxis, onChange: setOverlayXAxis, options: [["month", "월별"], ["year", "연도별"]] }),
             React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
           ),
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, alignItems: "center" } },
-            React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "겹쳐볼 ", DIM_LABEL[overlayDim], " 선택:"),
-            React.createElement("button", { onClick: selectAllOverlay, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("span", { style: { color: COLORS.panelBorder2 } }, "|"),
-            React.createElement("button", { onClick: clearOverlay, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 해제")
-          ),
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } },
-            overlayCandidates.map((v) => React.createElement("button", {
-              key: v, onClick: () => toggleOverlay(v),
-              style: { padding: "5px 11px", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                border: `1px solid ${currentOverlayList.includes(v) ? COLORS.amber : COLORS.panelBorder}`,
-                background: currentOverlayList.includes(v) ? "rgba(217,139,63,0.14)" : COLORS.panel,
-                color: currentOverlayList.includes(v) ? COLORS.amber : COLORS.mute }
-            }, v))
+          React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
+            "* 위쪽 ", DIM_LABEL[overlayDim], " 필터에서 고른 항목이 그대로 겹쳐그려집니다", overlayCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${overlayCandidates.length}개)` : "", "."
           ),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
             React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 300, formatValue: chartFormatValue }),
@@ -1285,7 +1266,6 @@ function Dashboard({ db }) {
   const [sortDesc, setSortDesc] = useState(true);
   const [overlayDim, setOverlayDim] = useState(() => p("od", "year"));
   const [overlayXAxis, setOverlayXAxis] = useState(() => p("oxa", "month"));
-  const [overlaySel, setOverlaySel] = useState(() => ({ dim: p("od", "year"), list: pList("ol") }));
 
   const aggBy = (list) => (valueKey === "outstandingSales" || valueKey === "currentMYTotalCommitment")
     ? (list.length ? list[list.length - 1][valueKey] : 0)
@@ -1387,7 +1367,9 @@ function Dashboard({ db }) {
     return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
   }, [overlayDim, baseFilteredRows, years, valueKey]);
   const effectiveXAxis = overlayDim === "year" ? "month" : overlayXAxis;
-  const currentOverlayList = overlaySel.dim === overlayDim ? overlaySel.list.filter((v) => overlayCandidates.includes(v)) : [];
+  // 상단 필터(수출국/수입국/연도)에서 이미 고른 걸 그대로 겹쳐그림 - 별도로 또 고를 필요 없음.
+  // 너무 많으면(상단필터를 전체로 둔 경우) 상위 10개까지만 보여줘서 차트가 안 뒤엉키게 함.
+  const currentOverlayList = overlayCandidates.slice(0, 10);
   // overlayDim==="year"일 땐 연도가 각각 하나의 선이라 X축은 1~12월 그대로.
   // overlayDim이 수입국일 땐 국가가 선이니, 기준연도 하나에 가두지 않고
   // 선택된 전체 기간(여러 연도)을 월 단위로 쭉 이어붙여서 다년간 추세를 한 선으로 보여줌.
@@ -1422,13 +1404,6 @@ function Dashboard({ db }) {
     downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_${DIM_LABEL[overlayDim] || "연도"}겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
   }
   const groupSeries = useMemo(() => [{ name: DIM_LABEL[groupBy], color: COLORS.amber, data: grouped.map((g) => g.v) }], [grouped, groupBy]);
-  const toggleOverlay = (v) => {
-    const list = currentOverlayList.includes(v) ? currentOverlayList.filter((x) => x !== v) : [...currentOverlayList, v];
-    setOverlaySel({ dim: overlayDim, list });
-  };
-  const selectAllOverlay = () => setOverlaySel({ dim: overlayDim, list: [...overlayCandidates] });
-  const clearOverlay = () => setOverlaySel({ dim: overlayDim, list: [] });
-
   useEffect(() => {
     const sp = new URLSearchParams();
     sp.set("cm", commodity);
@@ -1449,12 +1424,11 @@ function Dashboard({ db }) {
       if (chartSub === "overlay") {
         sp.set("od", overlayDim);
         if (overlayDim !== "year") sp.set("oxa", overlayXAxis);
-        if (overlaySel.list.length) sp.set("ol", overlaySel.list.join(","));
       }
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [commodity, countryFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, overlaySel]);
+  }, [commodity, countryFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1569,24 +1543,12 @@ function Dashboard({ db }) {
         ),
         chartSub === "overlay" && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
-            React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: (v) => { setOverlayDim(v); setOverlaySel({ dim: v, list: [] }); }, options: [["year", "연도"], ["country", "수입국"]] }),
+            React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: setOverlayDim, options: [["year", "연도"], ["country", "수입국"]] }),
             overlayDim !== "year" && React.createElement(HoverAxisPicker, { label: "X축", value: overlayXAxis, onChange: setOverlayXAxis, options: [["month", "월별"], ["year", "연도별"]] }),
             React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
           ),
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, alignItems: "center" } },
-            React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "겹쳐볼 ", overlayDim === "year" ? "연도" : "수입국", " 선택:"),
-            React.createElement("button", { onClick: selectAllOverlay, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("span", { style: { color: COLORS.panelBorder2 } }, "|"),
-            React.createElement("button", { onClick: clearOverlay, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 해제")
-          ),
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } },
-            overlayCandidates.map((v) => React.createElement("button", {
-              key: v, onClick: () => toggleOverlay(v),
-              style: { padding: "5px 11px", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                border: `1px solid ${currentOverlayList.includes(v) ? COLORS.amber : COLORS.panelBorder}`,
-                background: currentOverlayList.includes(v) ? "rgba(217,139,63,0.14)" : COLORS.panel,
-                color: currentOverlayList.includes(v) ? COLORS.amber : COLORS.mute }
-            }, v))
+          React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
+            "* 위쪽 ", overlayDim === "year" ? "연도" : "수입국", " 필터에서 고른 항목이 그대로 겹쳐그려집니다", overlayCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${overlayCandidates.length}개)` : "", "."
           ),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
             React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 300 }),
