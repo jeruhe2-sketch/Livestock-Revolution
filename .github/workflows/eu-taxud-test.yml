@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install playwright && playwright install --with-deps chromium
-      - name: Sector 클릭 테스트
+      - name: Sector 박스 정확한 위치로 클릭
         run: |
           python3 << 'PYEOF' > eu_probe_result.txt 2>&1
           from playwright.sync_api import sync_playwright
@@ -33,16 +33,15 @@ jobs:
                       frame = f
                       break
 
-              # "Sector" 라벨을 가진 필터박스 클릭
-              sector_box = frame.locator("text=Sector").first
-              sector_box.click()
-              page.wait_for_timeout(2000)
-              page.screenshot(path="eu_after_sector_click.png", full_page=True)
-
-              # 클릭 후 나타난 텍스트들 확인 (Pigs 옵션 찾기)
-              texts = frame.locator("div, span, td, li").all_text_contents()
-              pigs_related = [t.strip() for t in texts if "Pig" in t]
-              print("Pig 관련 텍스트:", pigs_related[:20])
+              # "Sector" 텍스트를 가진 모든 요소의 위치(bounding box) 확인
+              elements = frame.locator("text=Sector").all()
+              print("Sector 텍스트 매칭 요소 수:", len(elements))
+              for i, el in enumerate(elements):
+                  try:
+                      box = el.bounding_box()
+                      print(f"  [{i}] box={box}")
+                  except Exception as e:
+                      print(f"  [{i}] 에러: {e}")
 
               browser.close()
           PYEOF
@@ -51,6 +50,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add eu_probe_result.txt eu_after_sector_click.png
-          git commit -m "test: Sector 클릭 후 상태 확인" || echo "변경없음"
+          git add eu_probe_result.txt
+          git commit -m "test: Sector 요소들 좌표 확인" || echo "변경없음"
           git push
