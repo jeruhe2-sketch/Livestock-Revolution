@@ -121,7 +121,7 @@ def fetch_one_with_browser(playwright, cfg: dict) -> list:
                 file=sys.stderr,
             )
         if not rows:
-            debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}.html"
+            debug_path = f"debug/snapshot_{cfg['창고명']}_{cfg['계정용도']}.html"
             with open(debug_path, "w", encoding="utf-8") as f:
                 f.write(html)
             print(
@@ -161,7 +161,7 @@ def fetch_one_acecs(playwright, cfg: dict) -> list:
         try:
             return _run_acecs_flow(page, cfg, login_id, login_pw)
         except Exception:
-            debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}_실패시점.html"
+            debug_path = f"debug/snapshot_{cfg['창고명']}_{cfg['계정용도']}_실패시점.html"
             try:
                 with open(debug_path, "w", encoding="utf-8") as f:
                     f.write(page.content())
@@ -241,7 +241,7 @@ def _run_acecs_flow(page, cfg: dict, login_id: str, login_pw: str) -> list:
         seen_page_html.add(fingerprint)
 
     if not all_rows:
-        debug_path = f"debug_{cfg['창고명']}_{cfg['계정용도']}.html"
+        debug_path = f"debug/snapshot_{cfg['창고명']}_{cfg['계정용도']}.html"
         with open(debug_path, "w", encoding="utf-8") as f:
             f.write(page.content())
         print(

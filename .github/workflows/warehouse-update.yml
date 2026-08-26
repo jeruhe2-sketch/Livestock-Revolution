@@ -74,7 +74,7 @@ jobs:
           for i in 1 2 3 4 5 6 7 8; do
             git add data/warehouse_stock.json
             git add debug/last_run.log
-            git add debug_*.html 2>/dev/null || true
+            git add debug/snapshot_*.html 2>/dev/null || true
             if git diff --cached --quiet; then
               echo "변경 없음, 커밋 스킵"
               break
