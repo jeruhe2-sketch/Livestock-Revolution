@@ -7,6 +7,10 @@ on:
   # (\uc911\ubcf5 \uC2E4\ud589 \ubc29\uc9c0)
   workflow_dispatch: {}  # \"Run workflow\" 버튼(또는 API 호출)으로 실행
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 

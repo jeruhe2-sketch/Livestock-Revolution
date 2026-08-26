@@ -6,6 +6,10 @@ on:
   # 누락되는 문제가 있어 다른 워크플로우들도 이 방식으로 통일함)
   workflow_dispatch: {}
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
