@@ -1,18 +1,4 @@
-PSD 커모디티 총 63 개
-  {'commodityCode': '0011000', 'commodityName': 'Animal Numbers, Cattle'}
-  {'commodityCode': '0013000', 'commodityName': 'Animal Numbers, Swine'}
-  {'commodityCode': '0111000', 'commodityName': 'Meat, Beef and Veal'}
-  {'commodityCode': '0115000', 'commodityName': 'Meat, Chicken'}
-  {'commodityCode': '0113000', 'commodityName': 'Meat, Swine'}
-  {'commodityCode': '0114200', 'commodityName': 'Poultry, Meat, Broiler'}
-
-ESR 상태: 200
-ESR 커모디티 총 44 개
-  {'commodityCode': 1601, 'commodityName': 'Cattle Hides - Whole - Excluding Wet Blues', 'unitId': 3}
-  {'commodityCode': 1604, 'commodityName': 'Cattle Hides-Cut into Croupons, etc-excl Wet Blues', 'unitId': 4}
-  {'commodityCode': 1605, 'commodityName': 'Cattle Hides and Skins-other-excluding Wet Blues', 'unitId': 5}
-  {'commodityCode': 1606, 'commodityName': 'Cattle Wet Blues-Unsplit (Whole or Sided)', 'unitId': 4}
-  {'commodityCode': 1607, 'commodityName': 'Cattle Wet Blues-Grain Splits (Whole or Sided)', 'unitId': 4}
-  {'commodityCode': 1608, 'commodityName': 'Cattle Wet Blues-Splits-Excluding Grain Splits', 'unitId': 5}
-  {'commodityCode': 1701, 'commodityName': 'Fresh, Chilled, or Frozen Muscle Cuts of Beef', 'unitId': 1}
-  {'commodityCode': 1702, 'commodityName': 'Fresh, Chilled, or Frozen Muscle Cuts of Pork', 'unitId': 1}
+한국 관련 국가코드: []
+2026년 돼지고기(1702) 전체국가 응답: 200
+총 행수: 1713
+한국향 행수: 0
