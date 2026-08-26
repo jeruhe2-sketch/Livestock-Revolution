@@ -60,3 +60,12 @@ jobs:
         run: |
           echo "::error::EU API 수집 스크립트가 실패했습니다. debug/eu_update_last.log 확인 필요 (데이터 파일은 갱신 안 되고 기존 값 유지됨)"
           exit 1
+
+      - name: 실패 시 텔레그램 알림
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            --data-urlencode text="⚠️ <b>[축산레이더] EU 돈육 자동 갱신 실패</b>
+로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

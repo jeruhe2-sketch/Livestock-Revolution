@@ -40,3 +40,12 @@ jobs:
             git reset --mixed origin/main
             sleep $((RANDOM % 10 + 3))
           done
+
+      - name: 실패 시 텔레그램 알림
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            --data-urlencode text="⚠️ <b>[축산레이더] 미국 축산물(USDA) 자동 갱신 실패</b>
+로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
