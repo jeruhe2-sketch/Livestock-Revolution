@@ -89,10 +89,23 @@ def fetch_year(year: int) -> list:
     raise RuntimeError(f"{year}년 데이터 수집 최종 실패: {last_err}")
 
 
+def _iso_week1_monday(year: int) -> date:
+    """ISO 8601 기준 해당 연도 1주차의 월요일 (1/4가 속한 주의 월요일)."""
+    jan4 = date(year, 1, 4)
+    return jan4 - timedelta(days=jan4.isoweekday() - 1)
+
+
 def week_to_month(year: int, week: int) -> int:
-    """ISO 연/주 -> 그 주(월~일) 중 더 많은 날짜가 속한 달의 번호.
-    기존 데이터(Qlik에서 수동 처리하던 방식)와 동일한 규칙으로 맞춤."""
-    monday = date.fromisocalendar(year, week, 1)
+    """연/주 -> 그 주(월~일) 중 더 많은 날짜가 속한 달의 번호.
+    date.fromisocalendar은 그 해가 진짜 ISO 53주짜리가 아니면 week=53에서
+    예외를 던지는데, EU TAXUD 쪽 week 번호는 그 규칙을 따르지 않고
+    52주 넘는 잔여일을 53주차로 붙이는 경우가 있어 직접 계산한다
+    (1주차 월요일 + (week-1)*7일)."""
+    monday = _iso_week1_monday(year) + timedelta(weeks=week - 1)
+    if week == 53:
+        # 53주차(연도 마지막에 붙는 잔여주)는 1월로 넘어가는 날이 더 많아도
+        # 항상 그 해의 12월로 고정한다 (기존 데이터/원본 Qlik 처리 방식과 동일하게 확인됨)
+        return 12
     counts = {}
     for i in range(7):
         d = monday + timedelta(days=i)
@@ -138,7 +151,7 @@ def main():
     # 소스 최신데이터 시점 추정: 수집된 데이터 중 가장 최근 (year,week)의 일요일
     if final_rows:
         last_year, last_week = max((r[0], r[1]) for r in final_rows)
-        last_sunday = date.fromisocalendar(last_year, last_week, 7)
+        last_sunday = _iso_week1_monday(last_year) + timedelta(weeks=last_week - 1, days=6)
         source_most_recent = last_sunday.isoformat()
     else:
         source_most_recent = None
