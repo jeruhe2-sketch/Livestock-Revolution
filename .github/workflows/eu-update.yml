@@ -1,10 +1,10 @@
 name: eu-update
 
 on:
+  # 창고/USDA와 동일하게 GitHub 자체 schedule 대신 cron-job.org에서
+  # workflow_dispatch API를 호출하는 방식 사용 (자체 schedule은 비활성 레포에서
+  # 누락되는 문제가 있어 다른 워크플로우들도 이 방식으로 통일함)
   workflow_dispatch: {}
-  schedule:
-    # 매주 화/목 07:10 UTC(한국시간 16:10) — TAXUD Weekly는 주간 데이터라 하루 1~2회면 충분
-    - cron: "10 7 * * 2,4"
 
 permissions:
   contents: write
