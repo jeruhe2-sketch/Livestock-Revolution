@@ -1,8 +1,14 @@
-=== /gats/countries -> 403
-  응답: "Bad API Key"
-=== /gats/commodities -> 403
-  응답: "Bad API Key"
-=== /psd/commodities -> 403
-  응답: "Bad API Key"
-=== /psd/countries -> 403
-  응답: "Bad API Key"
+=== X-Api-Key header -> 403
+    "Bad API Key"
+=== Api_Key header -> 500
+    {"message":"An error has occurred."}
+=== API_KEY header -> 500
+    {"message":"An error has occurred."}
+=== Authorization Bearer -> 403
+    "Bad API Key"
+=== query api_key -> 403
+    "Bad API Key"
+=== query API_KEY -> 403
+    "Bad API Key"
+=== Ocp-Apim-Subscription-Key -> 403
+    "Bad API Key"
