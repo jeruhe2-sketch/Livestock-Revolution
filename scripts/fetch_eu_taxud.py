@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-raise RuntimeError("텔레그램 알림 테스트용 강제 실패")
 """
 EU 집행위 Agri-food Data Portal 공식 REST API로 TAXUD Weekly Export(돈육) 데이터를 수집한다.
 기존에는 Qlik 대시보드에서 사용자가 수동으로 엑셀을 다운받아 처리했으나(scripts/import_manual_export.py류),
