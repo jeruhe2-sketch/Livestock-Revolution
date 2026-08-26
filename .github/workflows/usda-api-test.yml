@@ -12,19 +12,18 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: 필요 국가코드 전체 확인
+      - name: 국가코드 확인
         env:
           USDA_KEY: ${{ secrets.USDA_API_KEY }}
         run: |
           python3 << 'PYEOF' > usda_test_result.txt 2>&1
-          import requests, os, json
+          import requests, os
           key = os.environ["USDA_KEY"]
           base = "https://api.fas.usda.gov/api"
           headers = {"X-Api-Key": key}
           r = requests.get(f"{base}/esr/countries", headers=headers, timeout=20)
           countries = r.json()
-          targets = ["JAPAN", "UNITED KINGDOM", "PHILIPPINES", "CHINA", "MEXICO", "CANADA"]
-          for t in targets:
+          for t in ["MEXICO", "CANADA", "TAIWAN", "VIETNAM"]:
               matches = [c for c in countries if t in c.get("countryDescription","").upper()]
               print(t, "->", matches)
           PYEOF
@@ -34,5 +33,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add usda_test_result.txt
-          git commit -m "test: 필요 국가코드 확인" || echo "변경없음"
+          git commit -m "test: 멕시코/캐나다/대만/베트남 국가코드 확인" || echo "변경없음"
           git push
