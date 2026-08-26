@@ -1045,21 +1045,22 @@ function ToggleBtn({ active, onClick, label }) {
   return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
 }
 function HoverAxisPicker({ label, value, onChange, options }) {
-  // \ub124\uc774\ud2f0\ube0c <select> \uc0ac\uc6a9 - \ubc0c\ub85c\uc800\uac00 \uc9c1\uc811 \uc5f4\uace0/\ub2eb\uc74c/\ud0ed \ucc98\ub9ac\ud558\ubbc0\ub85c \ucee4\uc2a4\ud140 \ub4dc\ub86d\ub2e4\uc6b4\uc758 \ud074\ub9ad \uc720\uc2e4/\uc7ac\uc624\ud504\ub9e4 \ubc84\uadf8\uac00 \uad6c\uc870\uc801\uc73c\ub85c \ubd88\uac00\ub2a5\ud568
-  const strValue = String(value);
-  const handleChange = (e) => {
-    const found = options.find(([v]) => String(v) === e.target.value);
-    onChange(found ? found[0] : e.target.value);
-  };
-  return React.createElement("label", { style: { display: "inline-flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
-    React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
-    React.createElement("select", {
-      value: strValue, onChange: handleChange,
-      style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber, background: "transparent", border: "none", outline: "none", cursor: "pointer", appearance: "none", WebkitAppearance: "none", paddingRight: 2 }
-    },
-      options.map(([v, l]) => React.createElement("option", { key: v, value: String(v), style: { background: "#141211", color: COLORS.cream } }, l))
+  // HoverMultiPicker\uc640 \ub3d9\uc77c\ud558\uac8c <details>/<summary> \ubc30\ub108 \ubc29\uc2dd\uc73c\ub85c \ud1b5\uc77c.
+  // \uc5f4\uace0/\ub2eb\uae30\ub294 \ube0c\ub77c\uc6b0\uc800 \ub124\uc774\ud2f0\ube0c \ub3d9\uc791(summary \ud074\ub9ad)\uc774\ub77c \uc548\uc815\uc801\uc774\uace0,
+  // \uc635\uc158 \uc120\ud0dd\uc2dc\ub9cc ref\ub85c details.open=false\ub97c \uc9c1\uc811 \ub048\uc11c \ub2eb\uc544\uc900\ub2e4.
+  const detailsRef = useRef(null);
+  const found = options.find(([v]) => v === value);
+  const currentLabel = found ? found[1] : value;
+  return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
+    React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
+      React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
+      React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
+      React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
     ),
-    React.createElement("span", { style: { fontSize: 10, color: COLORS.mute, pointerEvents: "none" } }, "▾")
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
+        style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
+    )
   );
 }
 function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
@@ -1609,21 +1610,22 @@ function ToggleBtn({ active, onClick, label }) {
   return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
 }
 function HoverAxisPicker({ label, value, onChange, options }) {
-  // \ub124\uc774\ud2f0\ube0c <select> \uc0ac\uc6a9 - \ubc0c\ub85c\uc800\uac00 \uc9c1\uc811 \uc5f4\uace0/\ub2eb\uc74c/\ud0ed \ucc98\ub9ac\ud558\ubbc0\ub85c \ucee4\uc2a4\ud140 \ub4dc\ub86d\ub2e4\uc6b4\uc758 \ud074\ub9ad \uc720\uc2e4/\uc7ac\uc624\ud504\ub9e4 \ubc84\uadf8\uac00 \uad6c\uc870\uc801\uc73c\ub85c \ubd88\uac00\ub2a5\ud568
-  const strValue = String(value);
-  const handleChange = (e) => {
-    const found = options.find(([v]) => String(v) === e.target.value);
-    onChange(found ? found[0] : e.target.value);
-  };
-  return React.createElement("label", { style: { display: "inline-flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
-    React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
-    React.createElement("select", {
-      value: strValue, onChange: handleChange,
-      style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber, background: "transparent", border: "none", outline: "none", cursor: "pointer", appearance: "none", WebkitAppearance: "none", paddingRight: 2 }
-    },
-      options.map(([v, l]) => React.createElement("option", { key: v, value: String(v), style: { background: "#141211", color: COLORS.cream } }, l))
+  // HoverMultiPicker\uc640 \ub3d9\uc77c\ud558\uac8c <details>/<summary> \ubc30\ub108 \ubc29\uc2dd\uc73c\ub85c \ud1b5\uc77c.
+  // \uc5f4\uace0/\ub2eb\uae30\ub294 \ube0c\ub77c\uc6b0\uc800 \ub124\uc774\ud2f0\ube0c \ub3d9\uc791(summary \ud074\ub9ad)\uc774\ub77c \uc548\uc815\uc801\uc774\uace0,
+  // \uc635\uc158 \uc120\ud0dd\uc2dc\ub9cc ref\ub85c details.open=false\ub97c \uc9c1\uc811 \ub048\uc11c \ub2eb\uc544\uc900\ub2e4.
+  const detailsRef = useRef(null);
+  const found = options.find(([v]) => v === value);
+  const currentLabel = found ? found[1] : value;
+  return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
+    React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
+      React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
+      React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
+      React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
     ),
-    React.createElement("span", { style: { fontSize: 10, color: COLORS.mute, pointerEvents: "none" } }, "▾")
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
+        style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
+    )
   );
 }
 function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
