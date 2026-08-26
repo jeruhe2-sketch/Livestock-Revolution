@@ -1,0 +1,50 @@
+name: USDA API 진단 테스트 (임시)
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: API 테스트
+        env:
+          USDA_KEY: ${{ secrets.USDA_API_KEY }}
+        run: |
+          python3 << 'PYEOF' > usda_test_result.txt 2>&1
+          import requests, os, json
+          key = os.environ["USDA_KEY"]
+          base = "https://apps.fas.usda.gov/OpenData/api"
+          headers = {"X-Api-Key": key}
+
+          endpoints = [
+              "/gats/countries",
+              "/gats/commodities",
+              "/psd/commodities",
+              "/psd/countries",
+          ]
+          for ep in endpoints:
+              try:
+                  r = requests.get(base+ep, headers=headers, timeout=20)
+                  print("===", ep, "->", r.status_code)
+                  if r.status_code == 200:
+                      data = r.json()
+                      print("  총", len(data), "건, 샘플:", json.dumps(data[:3], ensure_ascii=False))
+                  else:
+                      print("  응답:", r.text[:300])
+              except Exception as e:
+                  print(ep, "에러:", e)
+          PYEOF
+          cat usda_test_result.txt
+      - name: 결과 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add usda_test_result.txt
+          git commit -m "test: USDA API 진단 결과" || echo "변경없음"
+          git push
