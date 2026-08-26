@@ -1,0 +1,64 @@
+name: 환율 자동 갱신
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: run
+        id: run
+        continue-on-error: true
+        run: |
+          python scripts/fetch_exchange_rates.py > /tmp/exrate.log 2>&1
+          code=$?
+          cat /tmp/exrate.log
+          exit $code
+
+      - name: 변경사항 커밋 및 푸시
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3 4 5 6 7 8; do
+            git add data/exchange_rates.json
+            if git diff --cached --quiet; then
+              echo "변경 없음"
+              break
+            fi
+            git commit -m "chore: 환율 자동 갱신 $(date -u +%Y-%m-%d)"
+            if git push; then
+              echo "push 성공"
+              break
+            fi
+            echo "push 충돌, 재시도 $i"
+            git fetch origin main
+            git reset --mixed origin/main
+            sleep $((RANDOM % 10 + 3))
+          done
+
+      - name: 스크립트 실패 시 워크플로우도 실패 처리
+        if: steps.run.outcome == 'failure'
+        run: exit 1
+
+      - name: 실패 시 텔레그램 알림
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            --data-urlencode text="⚠️ <b>[축산레이더] 환율 자동 갱신 실패</b>
+            로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
