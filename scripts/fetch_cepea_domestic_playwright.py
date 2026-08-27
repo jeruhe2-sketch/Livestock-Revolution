@@ -106,18 +106,37 @@ def download_xls_bytes(playwright, url: str) -> bytes:
                 print("  스크린샷 저장: debug/cepea_challenge.png")
             except Exception as e:
                 print(f"  스크린샷 실패: {e!r}")
-            # 체크박스형 challenge(Turnstile)가 있는지 iframe 탐색
+            # 체크박스형 challenge(Turnstile) 클릭 시도
+            clicked = False
             try:
-                for frame in page.frames:
-                    if "challenges.cloudflare.com" in (frame.url or ""):
-                        print(f"  Turnstile iframe 발견: {frame.url}")
-                        cb = frame.locator("input[type=checkbox], .cb-lb, #challenge-stage")
-                        if cb.count() > 0:
-                            cb.first.click(timeout=5000)
-                            print("  체크박스 클릭 시도함")
-                            wait_out_challenge(page, max_seconds=20)
+                fl = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
+                cb = fl.locator("input[type='checkbox']")
+                cb.wait_for(state="visible", timeout=8000)
+                cb.click(timeout=5000, force=True)
+                clicked = True
+                print("  체크박스 클릭 성공(frame_locator)")
             except Exception as e:
-                print(f"  Turnstile 탐색/클릭 실패: {e!r}")
+                print(f"  frame_locator 클릭 실패({e!r}), 좌표 클릭으로 폴백")
+            if not clicked:
+                try:
+                    cf_iframe_el = page.query_selector("iframe[src*='challenges.cloudflare.com']")
+                    box = cf_iframe_el.bounding_box() if cf_iframe_el else None
+                    if box:
+                        x = box["x"] + 30
+                        y = box["y"] + box["height"] / 2
+                        page.mouse.click(x, y)
+                        clicked = True
+                        print(f"  체크박스 좌표 클릭 시도: ({x:.0f},{y:.0f})")
+                except Exception as e:
+                    print(f"  좌표 클릭도 실패: {e!r}")
+            if clicked:
+                wait_out_challenge(page, max_seconds=25)
+                print(f"  클릭 후 챌린지 통과 여부: {not is_challenge_page(page)} (title={page.title()!r})")
+                if is_challenge_page(page):
+                    try:
+                        page.screenshot(path="debug/cepea_challenge_after_click.png", full_page=True)
+                    except Exception:
+                        pass
 
         # 2) 실제 다운로드 URL로 이동
         try:
