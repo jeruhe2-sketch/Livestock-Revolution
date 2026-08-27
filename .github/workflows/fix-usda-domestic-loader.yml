@@ -10,25 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Load USDA domestic app before main script
+      - name: Repair USDA domestic loader and cache
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          tag = '<script src="./scripts/usda_domestic_app.js?v=2"></script>'
-          if tag not in s:
-              marker = '<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>'
-              if marker not in s:
-                  raise SystemExit('React script marker not found')
-              s = s.replace(marker, marker + '\n<script src="./scripts/usda_domestic_app.js?v=2"></script>', 1)
-              p.write_text(s, encoding='utf-8')
-          else:
-              print('loader already present')
+          # Remove both historical loader tags. Keep exactly one loader immediately before the app code.
+          import re
+          s = re.sub(r'\n?<script src="\./scripts/usda_domestic_app\.js\?v=[^"]+"></script>', '', s)
+          marker = '<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>'
+          loader = '<script src="./scripts/usda_domestic_app.js?v=4"></script>'
+          if marker not in s:
+              raise SystemExit('XLSX marker not found')
+          s = s.replace(marker, marker + '\n' + loader, 1)
+          s = s.replace('React.createElement(UsdaDomesticApp, null)', 'React.createElement(window.UsdaDomesticApp, null)', 1)
+          p.write_text(s, encoding='utf-8')
+          sw = Path('sw.js')
+          w = sw.read_text(encoding='utf-8')
+          w = re.sub(r'const CACHE_VERSION = "v\d+";', 'const CACHE_VERSION = "v27";', w, count=1)
+          sw.write_text(w, encoding='utf-8')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "fix: load USDA domestic app before shell render"
+          git add index.html sw.js
+          git commit -m "fix: repair duplicate USDA domestic loader and cache" || exit 0
           git push
