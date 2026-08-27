@@ -118,10 +118,12 @@ def extract_records(payload):
     for p in payloads:
         if not isinstance(p, dict):
             continue
-        sections = p.get("reportSection") or []
+        sections = p.get("reportSections") or []
         results = p.get("results") or []
         for i, rows in enumerate(results):
             sec_name = sections[i] if i < len(sections) else None
+            if isinstance(rows, dict):
+                rows = [rows]
             if not rows or not isinstance(rows, list):
                 continue
             for row in rows:
@@ -179,12 +181,14 @@ def fetch_range(start: dt.date, end: dt.date):
             p0 = payload[0] if isinstance(payload, list) else payload
             print("DEBUG type:", type(payload).__name__)
             print("DEBUG top-level keys:", list(p0.keys()) if isinstance(p0, dict) else "N/A")
-            secs = p0.get("reportSection") if isinstance(p0, dict) else None
-            print("DEBUG reportSection:", secs)
+            secs = p0.get("reportSections") if isinstance(p0, dict) else None
+            print("DEBUG reportSections:", secs)
             results = p0.get("results") if isinstance(p0, dict) else None
             if isinstance(results, list):
                 for i, rows in enumerate(results):
                     sec_name = secs[i] if secs and i < len(secs) else None
+                    if isinstance(rows, dict):
+                        rows = [rows]
                     print(f"DEBUG section[{i}]={sec_name!r} rows={len(rows) if isinstance(rows, list) else rows}")
                     if isinstance(rows, list) and rows:
                         print(f"  sample row: {json.dumps(rows[0], ensure_ascii=False)[:500]}")
