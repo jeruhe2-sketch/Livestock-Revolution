@@ -31,13 +31,13 @@ MAX_RETRIES = 6
 ITEMS = {
     "Bnls CC Strap-off": "등심",
     "Picnic Cushion Meat Vac": "전지",
-    "1/4 Trim Bnls Butt VAC": "목전지",
+    "1/4 Trim Butt VAC": "목전지",
 }
 # 위 3개 품목이 실제로 위치하는 리포트 섹션 (usdampr 패키지 slugInfo로 확인됨)
 SECTIONS = {
     "Bnls CC Strap-off": "Loin Cuts",
     "Picnic Cushion Meat Vac": "Picnic Cuts",
-    "1/4 Trim Bnls Butt VAC": "Butt Cuts",
+    "1/4 Trim Butt VAC": "Butt Cuts",
 }
 
 
@@ -149,7 +149,8 @@ def extract_records_for_item(payload, item: str):
             continue
         price = None
         for k, v in row.items():
-            if "wtd" in k.lower():
+            kl = k.lower()
+            if "wtd" in kl or "weight" in kl:
                 price = num(v)
                 if price is not None:
                     break
@@ -181,18 +182,18 @@ def fetch_range(start: dt.date, end: dt.date):
 
     for section, items in items_by_section.items():
         cur = start
+        section_dumped = False
         while cur <= end:
             chunk_end = min(cur + dt.timedelta(days=CHUNK_DAYS - 1), end)
             print(f"수집 중 [{section}]: {cur} ~ {chunk_end}")
             payload = fetch_chunk(section, cur, chunk_end)
-            if os.environ.get("PK602_DEBUG_DUMP") and payload:
+            if os.environ.get("PK602_DEBUG_DUMP") and payload and not section_dumped:
+                section_dumped = True
                 sample = payload if isinstance(payload, dict) else (payload[0] if isinstance(payload, list) else None)
                 print(f"DEBUG[{section}] type={type(payload).__name__} sample_keys={list(sample.keys()) if isinstance(sample, dict) else 'N/A'}")
                 rows_seen = [r for r, _d in _iter_row_dicts(payload)]
-                item_rows = [r for r in rows_seen if any(isinstance(v, str) and "wtd" not in str(v).lower() and len(str(v)) < 60 for v in r.values())]
-                print(f"DEBUG[{section}] total row-dicts seen: {len(rows_seen)}")
-                for r in rows_seen[:3]:
-                    print(f"  sample: {json.dumps(r, ensure_ascii=False)[:400]}")
+                item_names = sorted({r.get("Item_Description") for r in rows_seen if r.get("Item_Description")})
+                print(f"DEBUG[{section}] total row-dicts seen: {len(rows_seen)}, unique Item_Description values ({len(item_names)}): {item_names}")
             chunk_recs = []
             for item in items:
                 try:
