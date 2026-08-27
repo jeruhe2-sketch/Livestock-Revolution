@@ -29,6 +29,20 @@ jobs:
           code=$?
           cat debug/usda_domestic_last.log
           exit $code
+      - name: 실패 로그를 저장소에도 커밋 (디버그, 임시)
+        if: steps.fetch.outcome == 'failure'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/usda_domestic_last.log
+          git commit -m "debug: usda_domestic 실패 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git reset --mixed origin/main
+            git add -f debug/usda_domestic_last.log
+            sleep 3
+          done
       - name: 실패 로그를 Actions 아티팩트로 보관 (git 커밋 안 함)
         if: steps.fetch.outcome == 'failure'
         uses: actions/upload-artifact@v4
