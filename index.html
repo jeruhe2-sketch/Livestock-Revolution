@@ -2313,7 +2313,7 @@ function ShellApp() {
       icon: "\u{1F1E7}\u{1F1F7}",
       label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669"
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null))));
+  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
 }
 function WarehousePasswordGate({ children }) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("warehouse_unlocked") === "1");
@@ -2322,7 +2322,7 @@ function WarehousePasswordGate({ children }) {
   if (unlocked) return children;
   const submit = (e) => {
     e.preventDefault();
-    if (input === "1998") {
+    if (input === "1004") {
       sessionStorage.setItem("warehouse_unlocked", "1");
       setUnlocked(true);
     } else {
