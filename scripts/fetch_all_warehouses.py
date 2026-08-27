@@ -123,7 +123,7 @@ def extract_supplier(품목명: str, raw_brand: str) -> str:
 WAREHOUSE_CONFIGS = [
     {
         "창고명": "대청냉장",
-        "base_url": "http://211.239.173.91:8080/dchdst",
+        "base_url": "http://211.239.173.90/dchdst",
         "id_env": "NWILL_DAECHEONG_UNCLEARED_ID",
         "pw_env": "NWILL_DAECHEONG_UNCLEARED_PW",
         "계정용도": "미통관",
@@ -151,7 +151,7 @@ WAREHOUSE_CONFIGS = [
     },
     {
         "창고명": "대청냉장",
-        "base_url": "http://211.239.173.91:8080/dchdst",
+        "base_url": "http://211.239.173.90/dchdst",
         "id_env": "NWILL_DAECHEONG_CLEARED_ID",
         "pw_env": "NWILL_DAECHEONG_CLEARED_PW",
         "계정용도": "통관",
