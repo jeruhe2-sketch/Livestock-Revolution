@@ -54,8 +54,9 @@ def download_xls_bytes(playwright, url: str) -> bytes:
         page = context.new_page()
 
         # 1) 홈페이지 먼저 방문해서 Cloudflare 챌린지를 통과하고 쿠키를 확보
-        page.goto("https://www.cepea.esalq.usp.br/br/", wait_until="networkidle", timeout=90000)
-        time.sleep(3)  # 챌린지 리다이렉트/JS 실행 여유 시간
+        # networkidle은 계속 붙는 스크립트/트래킹 때문에 타임아웃 나서 domcontentloaded로 완화
+        page.goto("https://www.cepea.esalq.usp.br/br/", wait_until="domcontentloaded", timeout=60000)
+        time.sleep(6)  # 챌린지 리다이렉트/JS 실행 여유 시간
 
         # 2) 실제 다운로드 URL로 이동 (파일 다운로드로 처리될 것으로 예상)
         try:
