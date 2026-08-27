@@ -34,12 +34,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f debug/cepea_domestic_last.log
+          [ -f debug/cepea_challenge.png ] && git add -f debug/cepea_challenge.png
           git commit -m "debug: cepea_domestic 실패 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
           for i in 1 2 3; do
             git push && break
             git fetch origin main
             git reset --mixed origin/main
             git add -f debug/cepea_domestic_last.log
+            [ -f debug/cepea_challenge.png ] && git add -f debug/cepea_challenge.png
             sleep 3
           done
       - name: 실패 로그를 Actions 아티팩트로 보관 (git 커밋 안 함)
