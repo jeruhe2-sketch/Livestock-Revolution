@@ -159,7 +159,7 @@ window.UsdaDomesticApp = (function () {
         React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" } }), item.label
       ),
       React.createElement("div", { style: { fontSize: "clamp(20px,5vw,28px)", fontWeight: 800, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", marginTop: 6 } }, v == null ? "—" : `${money(v)}/lb`),
-      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(v * 100)} / 100 lb · Wtd Avg`),
+      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(v * 100)} / 100 lb · ${money(v / 0.45359237)}/kg 환산 · Wtd Avg`),
       React.createElement("div", { style: { display: "flex", gap: 12, marginTop: 9, fontSize: 10.5 } },
         React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && prev?.[item.key]?.usdPerLb ? (v - prev[item.key].usdPerLb) / prev[item.key].usdPerLb * 100 : null))),
         React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && week?.[item.key]?.usdPerLb ? (v - week[item.key].usdPerLb) / week[item.key].usdPerLb * 100 : null)))
@@ -411,7 +411,7 @@ window.UsdaDomesticApp = (function () {
                 ? React.createElement(React.Fragment, null, React.createElement(SvgLineChart, { categories: trendCategories, series: trendSeries, height: 300 }), React.createElement(ChartLegend, { series: trendSeries }))
                 : React.createElement("div", { style: { padding: 40, textAlign: "center", color: COLORS.mute } }, "표시할 품목을 하나 이상 선택하세요.")
             ),
-            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10 } }, "※ USDA 원자료 Wtd Avg는 $/100 lb입니다. 예: $145.00/100 lb = $1.45/lb.")
+            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10 } }, "※ USDA 원자료 Wtd Avg는 $/100 lb입니다. 예: $145.00/100 lb = $1.45/lb. 카드의 kg 환산치는 1 lb = 0.453592 kg 기준 단순 환산(참고용)입니다.")
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },

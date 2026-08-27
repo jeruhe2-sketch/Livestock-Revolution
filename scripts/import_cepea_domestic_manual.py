@@ -109,6 +109,26 @@ def load_existing() -> dict:
     return {}
 
 
+def apply_pork_usd(by_date: dict) -> int:
+    """계육 데이터에 CEPEA가 같이 주는 R$/US$ 비율(=그날의 BRL/USD 환율)을 역산해서
+    돈육에도 참고용 US$/kg을 채운다. 날짜가 정확히 안 맞으면 가장 가까운 과거 환율을
+    앞으로 그대로 사용(forward-fill)한다."""
+    dates = sorted(by_date.keys())
+    last_rate = None
+    filled = 0
+    for d in dates:
+        row = by_date[d]
+        chicken = row.get("chicken") or {}
+        brl, usd = chicken.get("valueBRL"), chicken.get("valueUSD")
+        if brl and usd:
+            last_rate = brl / usd  # BRL per USD
+        pork = row.get("pork")
+        if pork and pork.get("value") is not None and last_rate:
+            pork["valueUSD"] = round(pork["value"] / last_rate, 4)
+            filled += 1
+    return filled
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pork", help="돈육(carcaça especial) xls 파일 경로")
@@ -125,6 +145,9 @@ def main():
     if args.chicken:
         for d, v in load_chicken(args.chicken).items():
             by_date.setdefault(d, {"date": d})["chicken"] = v
+
+    filled = apply_pork_usd(by_date)
+    print(f"[돈육] 계육 환율 역산으로 US$/kg {filled}건 채움")
 
     merged = [by_date[d] for d in sorted(by_date.keys())]
     out = {

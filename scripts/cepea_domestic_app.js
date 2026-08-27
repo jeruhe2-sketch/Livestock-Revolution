@@ -155,13 +155,13 @@ window.CepeaDomesticApp = (function () {
 
   function Card({ item, cur, prev, week }) {
     const v = itemVal(cur, item);
-    const usd = item.key === "chicken" ? cur?.chicken?.valueUSD : null;
+    const usd = cur?.[item.key]?.valueUSD;
     return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "14px 16px" } },
       React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, display: "flex", alignItems: "center", gap: 6 } },
         React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" } }), item.label
       ),
       React.createElement("div", { style: { fontSize: "clamp(20px,5vw,28px)", fontWeight: 800, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", marginTop: 6 } }, v == null ? "—" : `${money(v)}/kg`),
-      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, usd != null ? `US$${usd.toFixed(2)}/kg (참고환산)` : "\u00A0"),
+      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, usd != null ? `US$${usd.toFixed(2)}/kg (${item.key === "pork" ? "계육 환율 역산 참고치" : "참고환산"})` : "\u00A0"),
       React.createElement("div", { style: { display: "flex", gap: 12, marginTop: 9, fontSize: 10.5 } },
         React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && itemVal(prev, item) ? (v - itemVal(prev, item)) / itemVal(prev, item) * 100 : null))),
         React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && itemVal(week, item) ? (v - itemVal(week, item)) / itemVal(week, item) * 100 : null)))
@@ -414,7 +414,7 @@ window.CepeaDomesticApp = (function () {
                 ? React.createElement(React.Fragment, null, React.createElement(SvgLineChart, { categories: trendCategories, series: trendSeries, height: 300 }), React.createElement(ChartLegend, { series: trendSeries }))
                 : React.createElement("div", { style: { padding: 40, textAlign: "center", color: COLORS.mute } }, "표시할 품목을 하나 이상 선택하세요.")
             ),
-            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10 } }, "※ 계육 카드의 US$/kg은 CEPEA가 함께 제공하는 참고환산 값입니다(환율 변동을 반영해 R$ 추이와는 별도로 움직일 수 있음).")
+            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10 } }, "※ US$/kg은 참고환산 값입니다 — 계육은 CEPEA 원자료의 US$ 컬럼을 그대로 쓰고, 돈육은 그날 계육의 R$/US$ 비율(환율)을 역산해 곱한 근사치입니다(환율 변동을 반영해 R$ 추이와는 별도로 움직일 수 있음).")
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
