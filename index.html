@@ -71,6 +71,7 @@
 </head>
 <body>
 <div id="root"></div>
+<script src="./scripts/usda_domestic_app.js?v=1"></script>
 <script>
 
 window.QuarantineApp = (function() {
@@ -2214,6 +2215,7 @@ function ShellApp() {
     if (h === "#warehouse") return "warehouse";
     if (h === "#eutrade") return "eutrade";
     if (h === "#usda") return "usda";
+    if (h === "#usdedomestic") return "usdedomestic";
     return "quarantine";
   });
   const selectView = (v) => {
@@ -2262,7 +2264,15 @@ function ShellApp() {
       icon: "\u{1F3ED}",
       label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669"
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null))));
+  ), /* USDA domestic */ React.createElement(
+    NavItem,
+    {
+      active: view === "usdedomestic",
+      onClick: () => selectView("usdedomestic"),
+      icon: "\u{1F1FA}\u{1F1F8}",
+      label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null))));
 }
 function WarehousePasswordGate({ children }) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("warehouse_unlocked") === "1");
