@@ -4,9 +4,9 @@ ERROR: 다운로드 실패: status=403 bytes=6322 head=b'<!DOCTYPE html><html la
   스크린샷 저장: debug/cepea_challenge.png
   전체 프레임 수: 2
     frame: https://www.cepea.org.br/br/
-    frame: https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/g/turnstile/f/av0/rch/v05kh/0x4AAAAAAADnPIDROrmt1Wwj/light/fbE/new/normal?lang=auto
-  cloudflare 프레임 HTML 저장 (248165 bytes)
-  체크박스 클릭 성공: frame=https://www.cepea.org.br/br/ sel=body
+    frame: https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile/f/av0/rch/uh8fm/0x4AAAAAAADnPIDROrmt1Wwj/light/fbE/new/normal?lang=auto
+  cloudflare 프레임 HTML 저장 (267580 bytes)
+  체크박스 좌표 클릭 시도(frame_element): (265,336)
   클릭 후 챌린지 통과 여부: False (title='Um momento…')
   expect_download 실패(TimeoutError('Timeout 20000ms exceeded while waiting for event "download"\n=========================== logs ===========================\nwaiting for event "download"\n============================================================')), page.goto 응답 바디로 폴백 시도
   (goto 응답 바디) status=403 bytes=6322 title='Just a moment...'
