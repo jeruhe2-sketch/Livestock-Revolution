@@ -34,7 +34,14 @@ RETRY_BACKOFF_SEC = 10
 
 
 def iso_monday(year: int, week: int) -> dt.date:
-    return dt.date.fromisocalendar(year, week, 1)
+    try:
+        return dt.date.fromisocalendar(year, week, 1)
+    except ValueError:
+        # 일부 데이터소스는 그 해에 없는 week=53을 내보내기도 함(ISO 기준으로는 무효).
+        # 조회용 근사 날짜만 있으면 되므로, ISO 1주차 월요일에서 (week-1)주를 더해 수동 계산.
+        jan4 = dt.date(year, 1, 4)
+        week1_monday = jan4 - dt.timedelta(days=jan4.isoweekday() - 1)
+        return week1_monday + dt.timedelta(weeks=week - 1)
 
 
 def weeks_needed():
