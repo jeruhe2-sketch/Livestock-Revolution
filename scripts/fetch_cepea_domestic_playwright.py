@@ -106,27 +106,48 @@ def download_xls_bytes(playwright, url: str) -> bytes:
                 print("  스크린샷 저장: debug/cepea_challenge.png")
             except Exception as e:
                 print(f"  스크린샷 실패: {e!r}")
-            # 체크박스형 challenge(Turnstile) 클릭 시도
-            clicked = False
+            # 디버그: 모든 프레임 URL 나열 + cloudflare 프레임 HTML 덤프
             try:
-                fl = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-                cb = fl.locator("input[type='checkbox']")
-                cb.wait_for(state="visible", timeout=8000)
-                cb.click(timeout=5000, force=True)
-                clicked = True
-                print("  체크박스 클릭 성공(frame_locator)")
+                print(f"  전체 프레임 수: {len(page.frames)}")
+                for fr in page.frames:
+                    print(f"    frame: {fr.url}")
+                for fr in page.frames:
+                    if "challenges.cloudflare.com" in (fr.url or ""):
+                        html = fr.content()
+                        with open("debug/cepea_cf_frame.html", "w", encoding="utf-8") as fh:
+                            fh.write(html)
+                        print(f"  cloudflare 프레임 HTML 저장 ({len(html)} bytes)")
             except Exception as e:
-                print(f"  frame_locator 클릭 실패({e!r}), 좌표 클릭으로 폴백")
+                print(f"  프레임 디버그 실패: {e!r}")
+
+            # 체크박스형 challenge(Turnstile) 클릭 시도: 모든 프레임을 순회하며 직접 시도
+            clicked = False
+            for fr in page.frames:
+                if clicked:
+                    break
+                for sel in ["input[type='checkbox']", "[role='checkbox']", "label", ".cb-lb", "#challenge-stage", "body"]:
+                    try:
+                        loc = fr.locator(sel)
+                        if loc.count() > 0 and loc.first.is_visible():
+                            loc.first.click(timeout=4000, force=True)
+                            clicked = True
+                            print(f"  체크박스 클릭 성공: frame={fr.url} sel={sel}")
+                            break
+                    except Exception:
+                        continue
             if not clicked:
                 try:
-                    cf_iframe_el = page.query_selector("iframe[src*='challenges.cloudflare.com']")
-                    box = cf_iframe_el.bounding_box() if cf_iframe_el else None
-                    if box:
-                        x = box["x"] + 30
-                        y = box["y"] + box["height"] / 2
-                        page.mouse.click(x, y)
-                        clicked = True
-                        print(f"  체크박스 좌표 클릭 시도: ({x:.0f},{y:.0f})")
+                    for fr in page.frames:
+                        if "challenges.cloudflare.com" in (fr.url or ""):
+                            el = fr.frame_element()
+                            box = el.bounding_box() if el else None
+                            if box:
+                                x = box["x"] + 30
+                                y = box["y"] + box["height"] / 2
+                                page.mouse.click(x, y)
+                                clicked = True
+                                print(f"  체크박스 좌표 클릭 시도(frame_element): ({x:.0f},{y:.0f})")
+                                break
                 except Exception as e:
                     print(f"  좌표 클릭도 실패: {e!r}")
             if clicked:

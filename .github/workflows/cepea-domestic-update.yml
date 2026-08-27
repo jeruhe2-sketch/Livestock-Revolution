@@ -36,6 +36,7 @@ jobs:
           git add -f debug/cepea_domestic_last.log
           [ -f debug/cepea_challenge.png ] && git add -f debug/cepea_challenge.png
           [ -f debug/cepea_challenge_after_click.png ] && git add -f debug/cepea_challenge_after_click.png
+          [ -f debug/cepea_cf_frame.html ] && git add -f debug/cepea_cf_frame.html
           git commit -m "debug: cepea_domestic 실패 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
           for i in 1 2 3; do
             git push && break
@@ -44,6 +45,7 @@ jobs:
             git add -f debug/cepea_domestic_last.log
             [ -f debug/cepea_challenge.png ] && git add -f debug/cepea_challenge.png
             [ -f debug/cepea_challenge_after_click.png ] && git add -f debug/cepea_challenge_after_click.png
+            [ -f debug/cepea_cf_frame.html ] && git add -f debug/cepea_cf_frame.html
             sleep 3
           done
       - name: 실패 로그를 Actions 아티팩트로 보관 (git 커밋 안 함)
