@@ -39,6 +39,8 @@ jobs:
           python scripts/fetch_fx_history.py > debug/fx_history_last.log 2>&1
           code=$?
           cat debug/fx_history_last.log
+          echo "---ls data---"
+          ls -la data/ || true
           exit $code
       - name: commit
         id: commit
@@ -76,12 +78,14 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "github-actions"
           git add -f debug/eu_commit_last.log
+          [ -f debug/fx_history_last.log ] && git add -f debug/fx_history_last.log
           git commit -m "debug: eu commit 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
           for i in 1 2 3; do
             git push && break
             git fetch origin main
             git reset --mixed origin/main
             git add -f debug/eu_commit_last.log
+            [ -f debug/fx_history_last.log ] && git add -f debug/fx_history_last.log
             sleep 3
           done
       - name: 환율이력 로그를 아티팩트로 업로드 (git 커밋 안 함)
