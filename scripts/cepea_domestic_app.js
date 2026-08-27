@@ -392,6 +392,7 @@ window.CepeaDomesticApp = (function () {
           ),
           React.createElement("button", { onClick: copyShareLink, style: { fontSize: 11, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사")
         ),
+        React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: -6, marginBottom: 14 } }, "※ 카드의 US$/kg은 '오늘' 환율이 아니라 각 날짜별 계육 R$/US$ 비율(그날 CEPEA 환율)로 환산한 값입니다 — 과거 날짜는 그 날짜 당시 환율 기준입니다."),
 
         React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
           React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "차트" }),

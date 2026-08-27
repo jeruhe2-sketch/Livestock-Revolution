@@ -159,7 +159,7 @@ window.UsdaDomesticApp = (function () {
         React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" } }), item.label
       ),
       React.createElement("div", { style: { fontSize: "clamp(20px,5vw,28px)", fontWeight: 800, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", marginTop: 6 } }, v == null ? "—" : `${money(v)}/lb`),
-      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(v * 100)} / 100 lb · ${money(v / 0.45359237)}/kg 환산 · Wtd Avg`),
+      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(v / 0.45359237)}/kg 환산 · Wtd Avg`),
       React.createElement("div", { style: { display: "flex", gap: 12, marginTop: 9, fontSize: 10.5 } },
         React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && prev?.[item.key]?.usdPerLb ? (v - prev[item.key].usdPerLb) / prev[item.key].usdPerLb * 100 : null))),
         React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && week?.[item.key]?.usdPerLb ? (v - week[item.key].usdPerLb) / week[item.key].usdPerLb * 100 : null)))
