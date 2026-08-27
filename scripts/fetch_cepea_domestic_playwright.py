@@ -99,6 +99,25 @@ def download_xls_bytes(playwright, url: str) -> bytes:
         page.goto("https://www.cepea.esalq.usp.br/br/", wait_until="domcontentloaded", timeout=60000)
         passed = wait_out_challenge(page, max_seconds=40)
         print(f"  홈페이지 챌린지 통과 여부: {passed} (title={page.title()!r})")
+        if not passed:
+            os.makedirs("debug", exist_ok=True)
+            try:
+                page.screenshot(path="debug/cepea_challenge.png", full_page=True)
+                print("  스크린샷 저장: debug/cepea_challenge.png")
+            except Exception as e:
+                print(f"  스크린샷 실패: {e!r}")
+            # 체크박스형 challenge(Turnstile)가 있는지 iframe 탐색
+            try:
+                for frame in page.frames:
+                    if "challenges.cloudflare.com" in (frame.url or ""):
+                        print(f"  Turnstile iframe 발견: {frame.url}")
+                        cb = frame.locator("input[type=checkbox], .cb-lb, #challenge-stage")
+                        if cb.count() > 0:
+                            cb.first.click(timeout=5000)
+                            print("  체크박스 클릭 시도함")
+                            wait_out_challenge(page, max_seconds=20)
+            except Exception as e:
+                print(f"  Turnstile 탐색/클릭 실패: {e!r}")
 
         # 2) 실제 다운로드 URL로 이동
         try:
