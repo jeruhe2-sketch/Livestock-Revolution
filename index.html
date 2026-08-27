@@ -575,8 +575,8 @@ function pct(v) {
 }
 const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH", "VN", "MY"];
 const PARTNER_LABEL = { KR: "한국", US: "미국", GB: "영국", CN: "중국", JP: "일본", PH: "필리핀", VN: "베트남", MY: "말레이시아" };
-const DIM_LABEL = { ms: "수출국", partner: "수입국", year: "연도", month: "월" };
-const DIM_OPTIONS = [["ms", "수출국"], ["partner", "수입국"], ["year", "연도"], ["month", "월"]];
+const DIM_LABEL = { ms: "수출국", partner: "수입국", year: "연도", month: "월", yearMonth: "연월" };
+const DIM_OPTIONS = [["ms", "수출국"], ["partner", "수입국"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"]];
 function downloadXlsx(aoa, filename, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
@@ -712,6 +712,7 @@ function Dashboard({ db, exRates }) {
     if (dimKey === "ms") return msNames[r.msCode] || r.msCode;
     if (dimKey === "partner") return PARTNER_LABEL[r.partnerCode] || r.partnerCode;
     if (dimKey === "year") return String(r.year);
+    if (dimKey === "yearMonth") return `${r.year}-${String(r.month).padStart(2, "0")}`;
     return `${r.month}월`;
   }
   function monthNum(label) { return parseInt(label, 10); }
@@ -736,10 +737,10 @@ function Dashboard({ db, exRates }) {
   const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
   const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
-  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "partner", ["ms", "partner", "year", "month"]));
-  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["ms", "partner", "year", "month"]));
+  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "partner", ["ms", "partner", "year", "month", "yearMonth"]));
+  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["ms", "partner", "year", "month", "yearMonth"]));
   const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
-  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["ms", "partner", "year", "month"]));
+  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["ms", "partner", "year", "month", "yearMonth"]));
   const [sortDesc, setSortDesc] = useState(true);
   const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "ms", "partner"]));
   const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
@@ -764,6 +765,7 @@ function Dashboard({ db, exRates }) {
   function sortLabels(dimKey, labels, totalsMap) {
     if (dimKey === "year") return [...labels].sort((a, b) => +a - +b);
     if (dimKey === "month") return [...labels].sort((a, b) => monthNum(a) - monthNum(b));
+    if (dimKey === "yearMonth") return [...labels].sort((a, b) => a.localeCompare(b));
     return [...labels].sort((a, b) => (totalsMap[b] || 0) - (totalsMap[a] || 0));
   }
   const { rowLabels, colLabels, matrix, rowTotals, colTotals, grandTotal } = useMemo(() => {
@@ -813,10 +815,11 @@ function Dashboard({ db, exRates }) {
     let arr = [...map.entries()].map(([key, v]) => ({ key, v }));
     if (groupBy === "year") arr.sort((a, b) => +a.key - +b.key);
     else if (groupBy === "month") arr.sort((a, b) => monthNum(a.key) - monthNum(b.key));
+    else if (groupBy === "yearMonth") arr.sort((a, b) => a.key.localeCompare(b.key));
     else arr.sort((a, b) => sortDesc ? b.v - a.v : a.v - b.v);
     return arr;
   }, [baseFilteredRows, groupBy, sortDesc, valueKey]);
-  const isTimeGroup = groupBy === "year" || groupBy === "month";
+  const isTimeGroup = groupBy === "year" || groupBy === "month" || groupBy === "yearMonth";
   function exportGroupXlsx() {
     const header = [DIM_LABEL[groupBy], `EU돈육수출(${unitLabel})`];
     const body = grouped.map((g) => [g.key, Math.round(g.v * 100) / 100]);
@@ -1105,8 +1108,8 @@ const COUNTRY_LIST = ["KR", "CN", "GB", "JP", "PH", "MX", "CA", "TW", "VN"];
 const COUNTRY_LABEL = { KR: "한국", CN: "중국", GB: "영국", JP: "일본", PH: "필리핀", MX: "멕시코", CA: "캐나다", TW: "대만", VN: "베트남" };
 const COMMODITY_LABEL = { 1701: "소고기", 1702: "돈육" };
 const VALUE_LABEL = { weeklyExports: "주간 수출량", outstandingSales: "미선적 계약량", accumulatedExports: "누적 수출량" };
-const DIM_LABEL = { country: "수입국", year: "연도", month: "월" };
-const DIM_OPTIONS = [["country", "수입국"], ["year", "연도"], ["month", "월"]];
+const DIM_LABEL = { country: "수입국", year: "연도", month: "월", yearMonth: "연월" };
+const DIM_OPTIONS = [["country", "수입국"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"]];
 function downloadXlsx(aoa, filename, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
@@ -1253,6 +1256,7 @@ function Dashboard({ db }) {
   function dimValue(r, dimKey) {
     if (dimKey === "country") return COUNTRY_LABEL[r.countryAlpha] || r.countryAlpha;
     if (dimKey === "year") return String(r.year);
+    if (dimKey === "yearMonth") return `${r.year}-${String(r.month).padStart(2, "0")}`;
     return `${r.month}월`;
   }
   function monthNum(label) { return parseInt(label, 10); }
@@ -1289,10 +1293,10 @@ function Dashboard({ db }) {
   const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
   const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
 
-  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "country", ["country", "year", "month"]));
-  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["country", "year", "month"]));
+  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "country", ["country", "year", "month", "yearMonth"]));
+  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["country", "year", "month", "yearMonth"]));
   const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
-  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["country", "year", "month"]));
+  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["country", "year", "month", "yearMonth"]));
   const [sortDesc, setSortDesc] = useState(true);
   const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "country"]));
   const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
@@ -1318,6 +1322,7 @@ function Dashboard({ db }) {
   function sortLabels(dimKey, labels, totalsMap) {
     if (dimKey === "year") return [...labels].sort((a, b) => +a - +b);
     if (dimKey === "month") return [...labels].sort((a, b) => monthNum(a) - monthNum(b));
+    if (dimKey === "yearMonth") return [...labels].sort((a, b) => a.localeCompare(b));
     return [...labels].sort((a, b) => (totalsMap[b] || 0) - (totalsMap[a] || 0));
   }
   const { rowLabels, colLabels, matrix, rowTotals, colTotals, grandTotal } = useMemo(() => {
@@ -1374,10 +1379,11 @@ function Dashboard({ db }) {
     let arr = [...map.entries()].map(([key, list]) => ({ key, v: aggBy(list) }));
     if (groupBy === "year") arr.sort((a, b) => +a.key - +b.key);
     else if (groupBy === "month") arr.sort((a, b) => monthNum(a.key) - monthNum(b.key));
+    else if (groupBy === "yearMonth") arr.sort((a, b) => a.key.localeCompare(b.key));
     else arr.sort((a, b) => sortDesc ? b.v - a.v : a.v - b.v);
     return arr;
   }, [baseFilteredRows, groupBy, sortDesc, valueKey]);
-  const isTimeGroup = groupBy === "year" || groupBy === "month";
+  const isTimeGroup = groupBy === "year" || groupBy === "month" || groupBy === "yearMonth";
   function exportGroupXlsx() {
     const header = [DIM_LABEL[groupBy], `${VALUE_LABEL[valueKey] || valueKey}(${unitLabel})`];
     const body = grouped.map((g) => [g.key, Math.round(g.v * 100) / 100]);
