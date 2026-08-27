@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 from typing import Any
 
 import requests
@@ -80,13 +81,19 @@ def three_years_ago(day: dt.date) -> dt.date:
         return day.replace(year=day.year - 3, month=2, day=28)
 
 
-def fetch_chunk(start: dt.date, end: dt.date):
+def fetch_chunk(section: str, start: dt.date, end: dt.date):
+    """특정 섹션(예: 'Loin Cuts')을 지정해서 날짜범위로 조회.
+    allSections=true + 날짜범위 조합은 Summary만 반복 반환하는 것으로 확인되어(실제 응답 검증됨),
+    공식 가이드 예시처럼 섹션명을 URL 경로에 직접 지정하는 방식으로 전환함:
+      https://mpr.datamart.ams.usda.gov/services/v1.1/reports/2498/Loin%20Cuts?q=report_date=...
+    """
     report_time = f"{start.strftime('%m/%d/%Y')}:{end.strftime('%m/%d/%Y')}"
-    params = {"q": f"report_date={report_time}", "allSections": "true"}
+    url = f"{BASE}/{urllib.parse.quote(section)}"
+    params = {"q": f"report_date={report_time}"}
     last_err = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            r = requests.get(BASE, params=params, headers={"Accept": "application/json"}, timeout=90)
+            r = requests.get(url, params=params, headers={"Accept": "application/json"}, timeout=90)
         except Exception as e:  # 네트워크 에러
             last_err = repr(e)
             time.sleep(min(5 * attempt, 30))
@@ -99,110 +106,103 @@ def fetch_chunk(start: dt.date, end: dt.date):
         else:
             last_err = f"status={r.status_code} body={r.text[:300]}"
         time.sleep(min(5 * attempt, 30))
-    print(f"경고: {report_time} 구간 수집 실패, 건너뜀 ({last_err})", file=sys.stderr)
+    print(f"경고: [{section}] {report_time} 구간 수집 실패, 건너뜀 ({last_err})", file=sys.stderr)
     return None
 
 
-def extract_records(payload):
-    """payload에서 우리가 추적하는 3개 품목의 (date, item, pounds, wtdAvgCwt) 레코드를 뽑는다.
+def _iter_row_dicts(node, inherited_date=None):
+    """응답 JSON 구조(dict/list 임의 중첩)를 재귀적으로 순회하며 '행처럼 보이는' dict를
+    (row, 상속된 report_date) 쌍으로 전부 yield. 행 자체에 report_date가 없고 상위 dict에만
+    있는 경우(예: {report_date:..., results:[{item...}, ...]})를 위해 날짜를 하위로 물려준다."""
+    if isinstance(node, dict):
+        local_date = None
+        for key in ("report_date", "published_date", "date"):
+            if node.get(key):
+                local_date = parse_date(node[key])
+                break
+        effective_date = local_date or inherited_date
+        yield node, effective_date
+        for v in node.values():
+            yield from _iter_row_dicts(v, effective_date)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _iter_row_dicts(v, inherited_date)
 
-    보통 payload는 {"reportSection": [...], "results": [...]} 형태의 dict이지만,
-    일부 좁은 날짜범위/응답에서는 여러 날짜의 그런 dict들이 담긴 list로 오는 경우가
-    실제로 확인되어(list.get 오류) 두 형태 모두 처리하도록 방어적으로 작성함.
-    """
+
+def extract_records_for_item(payload, item: str):
+    """payload(특정 섹션 응답)에서 item과 일치하는 행들을 전부 뽑는다."""
     out = []
     if not payload:
         return out
-    payloads = payload if isinstance(payload, list) else [payload]
-    target_norms = {item: norm(item) for item in ITEMS}
-    for p in payloads:
-        if not isinstance(p, dict):
+    tnorm = norm(item)
+    for row, inherited_date in _iter_row_dicts(payload):
+        is_match = any(isinstance(v, str) and norm(v) == tnorm for v in row.values())
+        if not is_match:
             continue
-        sections = p.get("reportSections") or []
-        results = p.get("results") or []
-        for i, rows in enumerate(results):
-            sec_name = sections[i] if i < len(sections) else None
-            if isinstance(rows, dict):
-                rows = [rows]
-            if not rows or not isinstance(rows, list):
-                continue
-            for row in rows:
-                if not isinstance(row, dict):
-                    continue
-                for item, tnorm in target_norms.items():
-                    if sec_name != SECTIONS[item]:
-                        continue
-                    is_match = any(isinstance(v, str) and norm(v) == tnorm for v in row.values())
-                    if not is_match:
-                        continue
-                    report_date = None
-                    for key in ("report_date", "published_date", "date"):
-                        if row.get(key):
-                            report_date = parse_date(row[key])
-                            break
-                    if not report_date:
-                        continue
-                    price = None
-                    for k, v in row.items():
-                        if "wtd" in k.lower():
-                            price = num(v)
-                            if price is not None:
-                                break
-                    if price is None:
-                        continue
-                    pounds = None
-                    for k, v in row.items():
-                        if "pound" in k.lower() or "volume" in k.lower():
-                            pounds = num(v)
-                            if pounds is not None:
-                                break
-                    out.append({
-                        "date": report_date,
-                        "item": item,
-                        "label": ITEMS[item],
-                        "pounds": pounds,
-                        "wtdAvgCwt": round(price, 4),
-                        "usdPerLb": round(price / 100.0, 4),
-                    })
+        report_date = None
+        for key in ("report_date", "published_date", "date"):
+            if row.get(key):
+                report_date = parse_date(row[key])
+                break
+        report_date = report_date or inherited_date
+        if not report_date:
+            continue
+        price = None
+        for k, v in row.items():
+            if "wtd" in k.lower():
+                price = num(v)
+                if price is not None:
+                    break
+        if price is None:
+            continue
+        pounds = None
+        for k, v in row.items():
+            if "pound" in k.lower() or "volume" in k.lower():
+                pounds = num(v)
+                if pounds is not None:
+                    break
+        out.append({
+            "date": report_date,
+            "item": item,
+            "label": ITEMS[item],
+            "pounds": pounds,
+            "wtdAvgCwt": round(price, 4),
+            "usdPerLb": round(price / 100.0, 4),
+        })
     return out
 
 
 def fetch_range(start: dt.date, end: dt.date):
-    """180일 제한을 넘는 범위는 청크로 나눠 순차 요청."""
+    """섹션별로, 180일 제한을 넘는 범위는 청크로 나눠 순차 요청."""
     records = []
-    cur = start
-    dumped = False
-    while cur <= end:
-        chunk_end = min(cur + dt.timedelta(days=CHUNK_DAYS - 1), end)
-        print(f"수집 중: {cur} ~ {chunk_end}")
-        payload = fetch_chunk(cur, chunk_end)
-        if os.environ.get("PK602_DEBUG_DUMP") and not dumped and payload:
-            dumped = True
-            p0 = payload[0] if isinstance(payload, list) else payload
-            print("DEBUG type:", type(payload).__name__)
-            print("DEBUG top-level keys:", list(p0.keys()) if isinstance(p0, dict) else "N/A")
-            secs = p0.get("reportSections") if isinstance(p0, dict) else None
-            print("DEBUG reportSections:", secs)
-            results = p0.get("results") if isinstance(p0, dict) else None
-            if isinstance(results, list):
-                for i, rows in enumerate(results):
-                    sec_name = secs[i] if secs and i < len(secs) else None
-                    if isinstance(rows, dict):
-                        rows = [rows]
-                    print(f"DEBUG section[{i}]={sec_name!r} rows={len(rows) if isinstance(rows, list) else rows}")
-                    if isinstance(rows, list) and rows:
-                        print(f"  sample row: {json.dumps(rows[0], ensure_ascii=False)[:500]}")
-                        if len(rows) > 1:
-                            print(f"  sample row[1]: {json.dumps(rows[1], ensure_ascii=False)[:500]}")
-        try:
-            recs = extract_records(payload)
-        except Exception as e:
-            print(f"  경고: {cur}~{chunk_end} 파싱 중 오류, 이 구간 건너뜀: {e!r}", file=sys.stderr)
-            recs = []
-        print(f"  -> {len(recs)}건 매칭")
-        records.extend(recs)
-        cur = chunk_end + dt.timedelta(days=1)
-        time.sleep(1)
+    items_by_section = {}
+    for item, sec in SECTIONS.items():
+        items_by_section.setdefault(sec, []).append(item)
+
+    for section, items in items_by_section.items():
+        cur = start
+        while cur <= end:
+            chunk_end = min(cur + dt.timedelta(days=CHUNK_DAYS - 1), end)
+            print(f"수집 중 [{section}]: {cur} ~ {chunk_end}")
+            payload = fetch_chunk(section, cur, chunk_end)
+            if os.environ.get("PK602_DEBUG_DUMP") and payload:
+                sample = payload if isinstance(payload, dict) else (payload[0] if isinstance(payload, list) else None)
+                print(f"DEBUG[{section}] type={type(payload).__name__} sample_keys={list(sample.keys()) if isinstance(sample, dict) else 'N/A'}")
+                rows_seen = [r for r, _d in _iter_row_dicts(payload)]
+                item_rows = [r for r in rows_seen if any(isinstance(v, str) and "wtd" not in str(v).lower() and len(str(v)) < 60 for v in r.values())]
+                print(f"DEBUG[{section}] total row-dicts seen: {len(rows_seen)}")
+                for r in rows_seen[:3]:
+                    print(f"  sample: {json.dumps(r, ensure_ascii=False)[:400]}")
+            chunk_recs = []
+            for item in items:
+                try:
+                    chunk_recs.extend(extract_records_for_item(payload, item))
+                except Exception as e:
+                    print(f"  경고: [{section}/{item}] {cur}~{chunk_end} 파싱 오류: {e!r}", file=sys.stderr)
+            print(f"  -> {len(chunk_recs)}건 매칭")
+            records.extend(chunk_recs)
+            cur = chunk_end + dt.timedelta(days=1)
+            time.sleep(1)
     return records
 
 
