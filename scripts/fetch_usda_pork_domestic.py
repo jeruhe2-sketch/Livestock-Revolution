@@ -104,55 +104,64 @@ def fetch_chunk(start: dt.date, end: dt.date):
 
 
 def extract_records(payload):
-    """payload에서 우리가 추적하는 3개 품목의 (date, item, pounds, wtdAvgCwt) 레코드를 뽑는다."""
+    """payload에서 우리가 추적하는 3개 품목의 (date, item, pounds, wtdAvgCwt) 레코드를 뽑는다.
+
+    보통 payload는 {"reportSection": [...], "results": [...]} 형태의 dict이지만,
+    일부 좁은 날짜범위/응답에서는 여러 날짜의 그런 dict들이 담긴 list로 오는 경우가
+    실제로 확인되어(list.get 오류) 두 형태 모두 처리하도록 방어적으로 작성함.
+    """
     out = []
     if not payload:
         return out
-    sections = payload.get("reportSection") or []
-    results = payload.get("results") or []
+    payloads = payload if isinstance(payload, list) else [payload]
     target_norms = {item: norm(item) for item in ITEMS}
-    for i, rows in enumerate(results):
-        sec_name = sections[i] if i < len(sections) else None
-        if not rows:
+    for p in payloads:
+        if not isinstance(p, dict):
             continue
-        for row in rows:
-            if not isinstance(row, dict):
+        sections = p.get("reportSection") or []
+        results = p.get("results") or []
+        for i, rows in enumerate(results):
+            sec_name = sections[i] if i < len(sections) else None
+            if not rows or not isinstance(rows, list):
                 continue
-            for item, tnorm in target_norms.items():
-                if sec_name != SECTIONS[item]:
+            for row in rows:
+                if not isinstance(row, dict):
                     continue
-                is_match = any(isinstance(v, str) and norm(v) == tnorm for v in row.values())
-                if not is_match:
-                    continue
-                report_date = None
-                for key in ("report_date", "published_date", "date"):
-                    if row.get(key):
-                        report_date = parse_date(row[key])
-                        break
-                if not report_date:
-                    continue
-                price = None
-                for k, v in row.items():
-                    if "wtd" in k.lower():
-                        price = num(v)
-                        if price is not None:
+                for item, tnorm in target_norms.items():
+                    if sec_name != SECTIONS[item]:
+                        continue
+                    is_match = any(isinstance(v, str) and norm(v) == tnorm for v in row.values())
+                    if not is_match:
+                        continue
+                    report_date = None
+                    for key in ("report_date", "published_date", "date"):
+                        if row.get(key):
+                            report_date = parse_date(row[key])
                             break
-                if price is None:
-                    continue
-                pounds = None
-                for k, v in row.items():
-                    if "pound" in k.lower() or "volume" in k.lower():
-                        pounds = num(v)
-                        if pounds is not None:
-                            break
-                out.append({
-                    "date": report_date,
-                    "item": item,
-                    "label": ITEMS[item],
-                    "pounds": pounds,
-                    "wtdAvgCwt": round(price, 4),
-                    "usdPerLb": round(price / 100.0, 4),
-                })
+                    if not report_date:
+                        continue
+                    price = None
+                    for k, v in row.items():
+                        if "wtd" in k.lower():
+                            price = num(v)
+                            if price is not None:
+                                break
+                    if price is None:
+                        continue
+                    pounds = None
+                    for k, v in row.items():
+                        if "pound" in k.lower() or "volume" in k.lower():
+                            pounds = num(v)
+                            if pounds is not None:
+                                break
+                    out.append({
+                        "date": report_date,
+                        "item": item,
+                        "label": ITEMS[item],
+                        "pounds": pounds,
+                        "wtdAvgCwt": round(price, 4),
+                        "usdPerLb": round(price / 100.0, 4),
+                    })
     return out
 
 
@@ -164,7 +173,11 @@ def fetch_range(start: dt.date, end: dt.date):
         chunk_end = min(cur + dt.timedelta(days=CHUNK_DAYS - 1), end)
         print(f"수집 중: {cur} ~ {chunk_end}")
         payload = fetch_chunk(cur, chunk_end)
-        recs = extract_records(payload)
+        try:
+            recs = extract_records(payload)
+        except Exception as e:
+            print(f"  경고: {cur}~{chunk_end} 파싱 중 오류, 이 구간 건너뜀: {e!r}", file=sys.stderr)
+            recs = []
         print(f"  -> {len(recs)}건 매칭")
         records.extend(recs)
         cur = chunk_end + dt.timedelta(days=1)
