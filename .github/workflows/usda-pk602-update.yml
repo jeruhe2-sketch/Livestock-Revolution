@@ -32,24 +32,40 @@ jobs:
       - name: commit
         if: always()
         run: |
+          {
+            echo ""
+            echo "===== git commit/push log ($(date -u +%Y-%m-%dT%H:%M:%SZ)) ====="
+          } >> debug/usda_pk602_last.log
           git config user.email "actions@github.com"
           git config user.name "github-actions"
           for i in 1 2 3 4 5 6 7 8; do
             git add data/usda_pk602.json
             if git diff --cached --quiet; then
-              echo "변경 없음"
+              echo "변경 없음" | tee -a debug/usda_pk602_last.log
               break
             fi
-            git commit -m "auto: 미국 축산물 내수현황(PK602) 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
-            if git push; then
-              echo "push 성공"
+            git commit -m "auto: 미국 축산물 내수현황(PK602) 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))" >> debug/usda_pk602_last.log 2>&1
+            if git push >> debug/usda_pk602_last.log 2>&1; then
+              echo "push 성공" | tee -a debug/usda_pk602_last.log
               break
             fi
-            echo "push 충돌, 재시도 $i"
-            git fetch origin main
-            git reset --mixed origin/main
+            echo "push 충돌, 재시도 $i" | tee -a debug/usda_pk602_last.log
+            git fetch origin main >> debug/usda_pk602_last.log 2>&1
+            git reset --mixed origin/main >> debug/usda_pk602_last.log 2>&1
             sleep $((RANDOM % 10 + 3))
           done
+          # 디버그 로그 자체는 별도로 항상 커밋 (실패 원인 확인용, .gitignore 무시)
+          git add -f debug/usda_pk602_last.log
+          if ! git diff --cached --quiet; then
+            git commit -m "debug: usda_pk602 실행 로그 ($(date -u +%Y-%m-%dT%H:%M:%SZ))" || true
+            for i in 1 2 3; do
+              git push && break
+              git fetch origin main
+              git reset --mixed origin/main
+              git add -f debug/usda_pk602_last.log
+              sleep 3
+            done
+          fi
       - name: 로그를 아티팩트로 업로드 (git 커밋 안 함)
         if: always()
         uses: actions/upload-artifact@v4
