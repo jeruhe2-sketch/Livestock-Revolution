@@ -45,7 +45,7 @@ window.UsdaDomesticApp = (function () {
         }),
         rows.map((r, i) => i % labelsEvery === 0 && React.createElement("text", { key: r.date, x: x(i), y: height - 12, textAnchor: "middle", fontSize: 9, fill: COLORS.mute }, r.date.slice(5))),
         ITEMS.map(item => React.createElement("g", { key: item.key },
-          React.createElement("polyline", { points: path(item), fill: "none", stroke: item.color, strokeWidth: 2.3 }),
+          React.createElement("path", { d: path(item), fill: "none", stroke: item.color, strokeWidth: 2.3 }),
           rows.length <= 90 && rows.map((r, i) => {
             const v = Number(r[item.key]?.usdPerLb);
             return Number.isFinite(v) ? React.createElement("circle", { key: i, cx: x(i), cy: y(v), r: 2.4, fill: item.color }) : null;
@@ -96,7 +96,7 @@ window.UsdaDomesticApp = (function () {
         React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700 } }, "USDA AMS · LM_PK602 · NATIONAL DAILY PORK FOB PLANT"),
         React.createElement("h1", { style: { fontSize: "clamp(20px,5.5vw,25px)", fontWeight: 800, margin: "5px 0 4px" } }, "미국 축산물 내수 현황"),
         React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 · Negotiated Sales · Wtd Avg · USD/100 lb → USD/lb"),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, marginBottom: 10 } }, ITEMS.map(item => React.createElement(DomesticCard, { key: item.key, item, latest: latest, previous: prev, weekAgo }))),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8, marginBottom: 10 } }, ITEMS.map(item => React.createElement(DomesticCard, { key: item.key, item, latest: latest, previous: prev, weekAgo }))),
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "11px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" } },
           React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } }, latest ? `최근 발표 ${fmtDate(latest.date)} · ${latest.source || "USDA AMS"}` : "최근 발표 데이터 없음"),
           React.createElement("button", { onClick: copy, style: { fontSize: 11, fontWeight: 700, color: copied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${copied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, copied ? "✓ 복사됨" : "🔗 이 화면 링크 복사")
