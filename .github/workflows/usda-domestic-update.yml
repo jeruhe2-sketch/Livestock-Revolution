@@ -23,6 +23,7 @@ jobs:
         env:
           USDA_MMN_API_KEY: ${{ secrets.USDA_MMN_API_KEY }}
           USDA_API_KEY: ${{ secrets.USDA_API_KEY }}
+          PK602_DEBUG_DUMP: "1"
         run: |
           mkdir -p debug
           python scripts/fetch_usda_pork_domestic.py > debug/usda_domestic_last.log 2>&1

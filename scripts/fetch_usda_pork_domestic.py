@@ -169,10 +169,27 @@ def fetch_range(start: dt.date, end: dt.date):
     """180일 제한을 넘는 범위는 청크로 나눠 순차 요청."""
     records = []
     cur = start
+    dumped = False
     while cur <= end:
         chunk_end = min(cur + dt.timedelta(days=CHUNK_DAYS - 1), end)
         print(f"수집 중: {cur} ~ {chunk_end}")
         payload = fetch_chunk(cur, chunk_end)
+        if os.environ.get("PK602_DEBUG_DUMP") and not dumped and payload:
+            dumped = True
+            p0 = payload[0] if isinstance(payload, list) else payload
+            print("DEBUG type:", type(payload).__name__)
+            print("DEBUG top-level keys:", list(p0.keys()) if isinstance(p0, dict) else "N/A")
+            secs = p0.get("reportSection") if isinstance(p0, dict) else None
+            print("DEBUG reportSection:", secs)
+            results = p0.get("results") if isinstance(p0, dict) else None
+            if isinstance(results, list):
+                for i, rows in enumerate(results):
+                    sec_name = secs[i] if secs and i < len(secs) else None
+                    print(f"DEBUG section[{i}]={sec_name!r} rows={len(rows) if isinstance(rows, list) else rows}")
+                    if isinstance(rows, list) and rows:
+                        print(f"  sample row: {json.dumps(rows[0], ensure_ascii=False)[:500]}")
+                        if len(rows) > 1:
+                            print(f"  sample row[1]: {json.dumps(rows[1], ensure_ascii=False)[:500]}")
         try:
             recs = extract_records(payload)
         except Exception as e:
