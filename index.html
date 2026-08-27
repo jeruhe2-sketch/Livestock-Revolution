@@ -573,8 +573,8 @@ function pct(v) {
   const s = v > 0 ? "+" : "";
   return `${s}${v.toFixed(1)}%`;
 }
-const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH"];
-const PARTNER_LABEL = { KR: "한국", US: "미국", GB: "영국", CN: "중국", JP: "일본", PH: "필리핀" };
+const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH", "VN", "MY"];
+const PARTNER_LABEL = { KR: "한국", US: "미국", GB: "영국", CN: "중국", JP: "일본", PH: "필리핀", VN: "베트남", MY: "말레이시아" };
 const DIM_LABEL = { ms: "수출국", partner: "수입국", year: "연도", month: "월" };
 const DIM_OPTIONS = [["ms", "수출국"], ["partner", "수입국"], ["year", "연도"], ["month", "월"]];
 function downloadXlsx(aoa, filename, sheetName) {
