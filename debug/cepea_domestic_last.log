@@ -1,4 +1,5 @@
 ERROR: 다운로드 실패: status=403 bytes=6322 head=b'<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta nam'
 [pork] 다운로드: https://www.cepea.esalq.usp.br/br/indicador/series/suino.aspx?id=124
-  expect_download 실패(TimeoutError('Timeout 30000ms exceeded while waiting for event "download"\n=========================== logs ===========================\nwaiting for event "download"\n============================================================')), page.goto 응답 바디로 폴백 시도
-  (goto 응답 바디) status=403 bytes=6322
+  홈페이지 챌린지 통과 여부: False (title='Um momento…')
+  expect_download 실패(TimeoutError('Timeout 20000ms exceeded while waiting for event "download"\n=========================== logs ===========================\nwaiting for event "download"\n============================================================')), page.goto 응답 바디로 폴백 시도
+  (goto 응답 바디) status=403 bytes=6322 title='Just a moment...'
