@@ -47,20 +47,62 @@ TARGETS = [
 ]
 
 
-def download_xls_bytes(playwright, url: str) -> bytes:
-    browser = playwright.chromium.launch(headless=True)
+STEALTH_JS = """
+Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+Object.defineProperty(navigator, 'languages', { get: () => ['pt-BR', 'pt', 'en-US', 'en'] });
+Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+window.chrome = { runtime: {} };
+const originalQuery = window.navigator.permissions.query;
+window.navigator.permissions.query = (parameters) => (
+  parameters.name === 'notifications'
+    ? Promise.resolve({ state: Notification.permission })
+    : originalQuery(parameters)
+);
+"""
+
+
+def is_challenge_page(page) -> bool:
     try:
-        context = browser.new_context(user_agent=UA, locale="pt-BR")
+        title = page.title()
+    except Exception:
+        title = ""
+    return "moment" in title.lower() or "attention required" in title.lower()
+
+
+def wait_out_challenge(page, max_seconds=40):
+    waited = 0
+    while is_challenge_page(page) and waited < max_seconds:
+        time.sleep(3)
+        waited += 3
+    return not is_challenge_page(page)
+
+
+def download_xls_bytes(playwright, url: str) -> bytes:
+    browser = playwright.chromium.launch(
+        headless=True,
+        args=[
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+        ],
+    )
+    try:
+        context = browser.new_context(
+            user_agent=UA,
+            locale="pt-BR",
+            viewport={"width": 1366, "height": 850},
+            accept_downloads=True,
+        )
+        context.add_init_script(STEALTH_JS)
         page = context.new_page()
 
         # 1) 홈페이지 먼저 방문해서 Cloudflare 챌린지를 통과하고 쿠키를 확보
-        # networkidle은 계속 붙는 스크립트/트래킹 때문에 타임아웃 나서 domcontentloaded로 완화
         page.goto("https://www.cepea.esalq.usp.br/br/", wait_until="domcontentloaded", timeout=60000)
-        time.sleep(6)  # 챌린지 리다이렉트/JS 실행 여유 시간
+        passed = wait_out_challenge(page, max_seconds=40)
+        print(f"  홈페이지 챌린지 통과 여부: {passed} (title={page.title()!r})")
 
-        # 2) 실제 다운로드 URL로 이동 (파일 다운로드로 처리될 것으로 예상)
+        # 2) 실제 다운로드 URL로 이동
         try:
-            with page.expect_download(timeout=30000) as download_info:
+            with page.expect_download(timeout=20000) as download_info:
                 page.goto(url, timeout=60000)
             download = download_info.value
             path = download.path()
@@ -70,12 +112,20 @@ def download_xls_bytes(playwright, url: str) -> bytes:
             return content
         except Exception as e:
             print(f"  expect_download 실패({e!r}), page.goto 응답 바디로 폴백 시도")
-            resp = page.goto(url, timeout=60000)
-            content = resp.body()
-            print(f"  (goto 응답 바디) status={resp.status} bytes={len(content)}")
-            if resp.status != 200 or len(content) < 1000:
-                raise RuntimeError(f"다운로드 실패: status={resp.status} bytes={len(content)} head={content[:200]!r}")
-            return content
+
+        resp = page.goto(url, timeout=60000, wait_until="domcontentloaded")
+        # 챌린지가 여기서도 뜨면 좀 더 기다렸다가 재시도(reload)
+        if is_challenge_page(page):
+            wait_out_challenge(page, max_seconds=40)
+            resp = page.reload(timeout=60000, wait_until="domcontentloaded")
+
+        content = resp.body()
+        print(f"  (goto 응답 바디) status={resp.status} bytes={len(content)} title={page.title()!r}")
+        if resp.status != 200 or len(content) < 1000 or b"Just a moment" in content[:2000]:
+            raise RuntimeError(
+                f"다운로드 실패: status={resp.status} bytes={len(content)} head={content[:200]!r}"
+            )
+        return content
     finally:
         browser.close()
 
