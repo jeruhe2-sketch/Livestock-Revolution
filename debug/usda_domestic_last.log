@@ -1,149 +1,49 @@
 수집 중 [Loin Cuts]: 2023-08-27 ~ 2024-02-12
 DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5033
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 5031, "returnedRows:
-  sample: {"totalRows:": 5031, "returnedRows:": 5031, "userAllowedRows:": 99999}
-  sample: {"report_date": "02/12/2024", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "261,630", "price_range_low": "99.99", "price_range_high": "120.80", "weighted_average": "105.37", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS
-  -> 0건 매칭
+DEBUG[Loin Cuts] total row-dicts seen: 5033, unique Item_Description values (43): ['1/4 Trimmed Loin Combo', '1/4 Trimmed Loin Paper', '1/4 Trimmed Loin Paper, FZN', '1/4 Trimmed Loin VAC', '1/4 Trimmed Loin VAC, FZN', '1/8 Trimmed Loin Combo', '1/8 Trimmed Loin Paper', '1/8 Trimmed Loin Paper, FZN', '1/8 Trimmed Loin VAC', '1/8 Trimmed Loin VAC, FZN', 'B-In CC, Tender-in, FLON Loin', 'B-In CC, Tender-in, FLON Loin, FZN', 'Backribs 2.0#/up', 'Backribs 2.0#/up 1 Pc Vac', 'Backribs 2.0#/up 1 Pc Vac, FZN', 'Backribs 2.0#/up, FZN', 'Blade Ends', 'Blade Ends, FZN', 'Bnls CC Strap-off', 'Bnls CC Strap-off, 1/2 cut', 'Bnls CC Strap-off, 1/2 cut, FZN', 'Bnls CC Strap-off, FZN', 'Bnls CC Strap-on', 'Bnls CC Strap-on, 1/2 cut', 'Bnls CC Strap-on, 1/2 cut, FZN', 'Bnls CC Strap-on, FZN', 'Bone-in CC, Tender-in Loin Combo', 'Bone-in CC, Tender-in Loin VAC', 'Bone-in CC, Tender-in Loin VAC, FZN', 'Bone-in Sirloin', 'Bone-in Sirloin, FZN', 'Boneless Sirloin', 'Boneless Sirloin, Combo', 'Boneless Sirloin, FZN', 'Butt Tender', 'Butt Tender, FZN', 'Riblets', 'Riblets, FZN', 'Tenderloin', 'Tenderloin, 1 pc vac', 'Tenderloin, 1 pc vac, FZN', 'Tenderloin, FZN', 'Whole Bnls Strap-on']
+  -> 117건 매칭
 수집 중 [Loin Cuts]: 2024-02-13 ~ 2024-07-31
-DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5162
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 5160, "returnedRows:
-  sample: {"totalRows:": 5160, "returnedRows:": 5160, "userAllowedRows:": 99999}
-  sample: {"report_date": "07/31/2024", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "199,983", "price_range_low": "121.00", "price_range_high": "130.50", "weighted_average": "125.38", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "L
-  -> 0건 매칭
+  -> 120건 매칭
 수집 중 [Loin Cuts]: 2024-08-01 ~ 2025-01-17
-DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5033
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 5031, "returnedRows:
-  sample: {"totalRows:": 5031, "returnedRows:": 5031, "userAllowedRows:": 99999}
-  sample: {"report_date": "01/17/2025", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "136,516", "price_range_low": "92.00", "price_range_high": "102.00", "weighted_average": "97.79", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-
-  -> 0건 매칭
+  -> 117건 매칭
 수집 중 [Loin Cuts]: 2025-01-18 ~ 2025-07-06
-DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5076
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 5074, "returnedRows:
-  sample: {"totalRows:": 5074, "returnedRows:": 5074, "userAllowedRows:": 99999}
-  sample: {"report_date": "07/03/2025", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "344,832", "price_range_low": "102.00", "price_range_high": "125.00", "weighted_average": "112.89", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "L
-  -> 0건 매칭
+  -> 118건 매칭
 수집 중 [Loin Cuts]: 2025-07-07 ~ 2025-12-23
-DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5162
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 5160, "returnedRows:
-  sample: {"totalRows:": 5160, "returnedRows:": 5160, "userAllowedRows:": 99999}
-  sample: {"report_date": "12/23/2025", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "286,983", "price_range_low": "90.00", "price_range_high": "112.05", "weighted_average": "100.41", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS
-  -> 0건 매칭
+  -> 120건 매칭
 수집 중 [Loin Cuts]: 2025-12-24 ~ 2026-06-11
-DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5119
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 5117, "returnedRows:
-  sample: {"totalRows:": 5117, "returnedRows:": 5117, "userAllowedRows:": 99999}
-  sample: {"report_date": "06/11/2026", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "257,660", "price_range_low": "100.00", "price_range_high": "119.00", "weighted_average": "102.08", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "L
-  -> 0건 매칭
+  -> 119건 매칭
 수집 중 [Loin Cuts]: 2026-06-12 ~ 2026-08-27
-DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 2281
-  sample: {"reportSection": "Loin Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 2279, "returnedRows:
-  sample: {"totalRows:": 2279, "returnedRows:": 2279, "userAllowedRows:": 99999}
-  sample: {"report_date": "08/26/2026", "narrative": null, "Item_Description": "1/4 Trimmed Loin VAC", "total_pounds": "576,701", "price_range_low": "100.00", "price_range_high": "127.00", "weighted_average": "108.38", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "L
-  -> 0건 매칭
+  -> 53건 매칭
 수집 중 [Picnic Cuts]: 2023-08-27 ~ 2024-02-12
 DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1523
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1521, "returnedRow
-  sample: {"totalRows:": 1521, "returnedRows:": 1521, "userAllowedRows:": 99999}
-  sample: {"report_date": "02/12/2024", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": null, "price_range_low": null, "price_range_high": null, "weighted_average": null, "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-NW", "of
-  -> 0건 매칭
+DEBUG[Picnic Cuts] total row-dicts seen: 1523, unique Item_Description values (13): ['Picnic Cushion Meat Combo', 'Picnic Cushion Meat Poly', 'Picnic Cushion Meat Poly, FZN', 'Picnic Cushion Meat Vac', 'Picnic Cushion Meat Vac, FZN', 'RS Smoker Trim Picnic Combo', 'SS Smoker Trim Picnic 1 Pc Vac', 'SS Smoker Trim Picnic 1 Pc Vac, FZN', 'SS Smoker Trim Picnic Combo', 'SS Smoker Trim Picnic Paper/Poly', 'SS Smoker Trim Picnic Paper/Poly, FZN', 'SS Smoker Trim Picnic VAC', 'SS Smoker Trim Picnic VAC, FZN']
+  -> 117건 매칭
 수집 중 [Picnic Cuts]: 2024-02-13 ~ 2024-07-31
-DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1562
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1560, "returnedRow
-  sample: {"totalRows:": 1560, "returnedRows:": 1560, "userAllowedRows:": 99999}
-  sample: {"report_date": "07/31/2024", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": null, "price_range_low": null, "price_range_high": null, "weighted_average": null, "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-NW", "of
-  -> 0건 매칭
+  -> 120건 매칭
 수집 중 [Picnic Cuts]: 2024-08-01 ~ 2025-01-17
-DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1523
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1521, "returnedRow
-  sample: {"totalRows:": 1521, "returnedRows:": 1521, "userAllowedRows:": 99999}
-  sample: {"report_date": "01/17/2025", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": "11,213", "price_range_low": "69.50", "price_range_high": "84.36", "weighted_average": "74.94", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code":
-  -> 0건 매칭
+  -> 117건 매칭
 수집 중 [Picnic Cuts]: 2025-01-18 ~ 2025-07-06
-DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1536
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1534, "returnedRow
-  sample: {"totalRows:": 1534, "returnedRows:": 1534, "userAllowedRows:": 99999}
-  sample: {"report_date": "07/03/2025", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": null, "price_range_low": null, "price_range_high": null, "weighted_average": null, "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-NW", "of
-  -> 0건 매칭
+  -> 118건 매칭
 수집 중 [Picnic Cuts]: 2025-07-07 ~ 2025-12-23
-DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1562
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1560, "returnedRow
-  sample: {"totalRows:": 1560, "returnedRows:": 1560, "userAllowedRows:": 99999}
-  sample: {"report_date": "12/23/2025", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": "222,360", "price_range_low": "101.08", "price_range_high": "118.36", "weighted_average": "103.46", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_co
-  -> 0건 매칭
+  -> 120건 매칭
 수집 중 [Picnic Cuts]: 2025-12-24 ~ 2026-06-11
-DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1549
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1547, "returnedRow
-  sample: {"totalRows:": 1547, "returnedRows:": 1547, "userAllowedRows:": 99999}
-  sample: {"report_date": "06/11/2026", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": null, "price_range_low": null, "price_range_high": null, "weighted_average": null, "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-NW", "of
-  -> 0건 매칭
+  -> 119건 매칭
 수집 중 [Picnic Cuts]: 2026-06-12 ~ 2026-08-27
-DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 691
-  sample: {"reportSection": "Picnic Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 689, "returnedRows
-  sample: {"totalRows:": 689, "returnedRows:": 689, "userAllowedRows:": 99999}
-  sample: {"report_date": "08/26/2026", "narrative": null, "Item_Description": "RS Smoker Trim Picnic Combo", "total_pounds": "42,000", "price_range_low": "82.00", "price_range_high": "90.64", "weighted_average": "82.41", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code":
-  -> 0건 매칭
+  -> 53건 매칭
 수집 중 [Butt Cuts]: 2023-08-27 ~ 2024-02-12
 DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3629
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 3627, "returnedRows:
-  sample: {"totalRows:": 3627, "returnedRows:": 3627, "userAllowedRows:": 99999}
-  sample: {"report_date": "02/12/2024", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "875,827", "price_range_low": "101.54", "price_range_high": "143.56", "weighted_average": "112.72", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
+DEBUG[Butt Cuts] total row-dicts seen: 3629, unique Item_Description values (31): ['1/4 Trim Bnls Butt 1 Pc VAC', '1/4 Trim Bnls Butt 1 Pc VAC, FZN', '1/4 Trim Bnls Butt Combo', '1/4 Trim Bnls Butt Poly', '1/4 Trim Bnls Butt Poly, FZN', '1/4 Trim Bnls Butt VAC', '1/4 Trim Bnls Butt VAC, FZN', '1/4 Trim Butt 1 Pc VAC', '1/4 Trim Butt 1 Pc VAC, FZN', '1/4 Trim Butt Combo', '1/4 Trim Butt Paper', '1/4 Trim Butt Paper, FZN', '1/4 Trim Butt VAC', '1/4 Trim Butt VAC, FZN', '1/4 Trim Steak Ready Butt 1 Pc Vac', '1/4 Trim Steak Ready Butt 1 Pc Vac, FZN', '1/4 Trim Steak Ready Butt Vac', '1/4 Trim Steak Ready Butt Vac, FZN', '1/8 Trim Butt 1 Pc VAC', '1/8 Trim Butt 1 Pc VAC, FZN', '1/8 Trim Butt Combo', '1/8 Trim Butt Paper', '1/8 Trim Butt Paper, FZN', '1/8 Trim Butt Vac', '1/8 Trim Butt Vac, FZN', '1/8 Trim Steak Ready Butt 1 Pc Vac', '1/8 Trim Steak Ready Butt 1 Pc Vac, FZN', '1/8 Trim Steak Ready Butt Vac', '1/8 Trim Steak Ready Butt Vac, FZN', 'Bnls CT Butt 1 Pc VAC', 'Bnls CT Butt 1 Pc VAC, FZN']
+  -> 117건 매칭
 수집 중 [Butt Cuts]: 2024-02-13 ~ 2024-07-31
-DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3722
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 3720, "returnedRows:
-  sample: {"totalRows:": 3720, "returnedRows:": 3720, "userAllowedRows:": 99999}
-  sample: {"report_date": "07/31/2024", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "641,092", "price_range_low": "110.00", "price_range_high": "168.20", "weighted_average": "123.70", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
+  -> 120건 매칭
 수집 중 [Butt Cuts]: 2024-08-01 ~ 2025-01-17
-DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3629
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 3627, "returnedRows:
-  sample: {"totalRows:": 3627, "returnedRows:": 3627, "userAllowedRows:": 99999}
-  sample: {"report_date": "01/17/2025", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "949,349", "price_range_low": "109.00", "price_range_high": "154.50", "weighted_average": "117.08", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
+  -> 117건 매칭
 수집 중 [Butt Cuts]: 2025-01-18 ~ 2025-07-06
-DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3660
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 3658, "returnedRows:
-  sample: {"totalRows:": 3658, "returnedRows:": 3658, "userAllowedRows:": 99999}
-  sample: {"report_date": "07/03/2025", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "533,389", "price_range_low": "110.00", "price_range_high": "195.50", "weighted_average": "128.46", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
+  -> 118건 매칭
 수집 중 [Butt Cuts]: 2025-07-07 ~ 2025-12-23
-DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3722
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 3720, "returnedRows:
-  sample: {"totalRows:": 3720, "returnedRows:": 3720, "userAllowedRows:": 99999}
-  sample: {"report_date": "12/23/2025", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "946,762", "price_range_low": "121.50", "price_range_high": "156.04", "weighted_average": "134.63", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
+  -> 120건 매칭
 수집 중 [Butt Cuts]: 2025-12-24 ~ 2026-06-11
-DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3691
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 3689, "returnedRows:
-  sample: {"totalRows:": 3689, "returnedRows:": 3689, "userAllowedRows:": 99999}
-  sample: {"report_date": "06/11/2026", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "872,332", "price_range_low": "119.45", "price_range_high": "180.50", "weighted_average": "130.58", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
+  -> 119건 매칭
 수집 중 [Butt Cuts]: 2026-06-12 ~ 2026-08-27
-DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 1645
-  sample: {"reportSection": "Butt Cuts", "reportSections": ["Summary", "Cutout and Primal Values", "Change From Prior Day", "Cutout and Primal History", "5-Day Average Cutout and Primal Values", "Current Volume", "Loin Cuts", "Butt Cuts", "Picnic Cuts", "Ham Cuts", "Belly Cuts", "Sparerib Cuts", "Jowl Cuts", "Trim Cuts", "Variety Cuts", "Added Ingredients Cuts"], "stats": {"totalRows:": 1643, "returnedRows:
-  sample: {"totalRows:": 1643, "returnedRows:": 1643, "userAllowedRows:": 99999}
-  sample: {"report_date": "08/26/2026", "narrative": null, "Item_Description": "1/4 Trim Butt VAC", "total_pounds": "489,392", "price_range_low": "122.00", "price_range_high": "147.04", "weighted_average": "128.24", "report_title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon (PDF) (LM_PK602)", "slug_name": "AMS_2498", "slug_id": "2498", "office_name": "Des Moines, IA", "office_code": "LS-N
-  -> 0건 매칭
-완료: 0개 발표일 / 0개 품목 레코드 / 조회범위 2023-08-27~2026-08-27
-::warning::수집된 행이 0건입니다. API 응답 구조가 예상과 다를 수 있습니다.
+  -> 53건 매칭
+완료: 764개 발표일 / 2292개 품목 레코드 / 조회범위 2023-08-27~2026-08-27
