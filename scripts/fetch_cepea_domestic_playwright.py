@@ -120,12 +120,14 @@ def download_xls_bytes(playwright, url: str) -> bytes:
             except Exception as e:
                 print(f"  프레임 디버그 실패: {e!r}")
 
-            # 체크박스형 challenge(Turnstile) 클릭 시도: 모든 프레임을 순회하며 직접 시도
+            # 체크박스형 challenge(Turnstile) 클릭 시도: cloudflare 프레임을 최우선으로, 체크박스류 셀렉터만 사용
             clicked = False
-            for fr in page.frames:
+            cf_frames = [fr for fr in page.frames if "challenges.cloudflare.com" in (fr.url or "")]
+            other_frames = [fr for fr in page.frames if fr not in cf_frames]
+            for fr in cf_frames + other_frames:
                 if clicked:
                     break
-                for sel in ["input[type='checkbox']", "[role='checkbox']", "label", ".cb-lb", "#challenge-stage", "body"]:
+                for sel in ["input[type='checkbox']", "[role='checkbox']", ".cb-lb", "#challenge-stage"]:
                     try:
                         loc = fr.locator(sel)
                         if loc.count() > 0 and loc.first.is_visible():
@@ -136,18 +138,18 @@ def download_xls_bytes(playwright, url: str) -> bytes:
                     except Exception:
                         continue
             if not clicked:
+                # cloudflare 프레임 전체를 좌표 클릭 (체크박스는 보통 프레임 좌측에 위치)
                 try:
-                    for fr in page.frames:
-                        if "challenges.cloudflare.com" in (fr.url or ""):
-                            el = fr.frame_element()
-                            box = el.bounding_box() if el else None
-                            if box:
-                                x = box["x"] + 30
-                                y = box["y"] + box["height"] / 2
-                                page.mouse.click(x, y)
-                                clicked = True
-                                print(f"  체크박스 좌표 클릭 시도(frame_element): ({x:.0f},{y:.0f})")
-                                break
+                    for fr in cf_frames:
+                        el = fr.frame_element()
+                        box = el.bounding_box() if el else None
+                        if box:
+                            x = box["x"] + 30
+                            y = box["y"] + box["height"] / 2
+                            page.mouse.click(x, y)
+                            clicked = True
+                            print(f"  체크박스 좌표 클릭 시도(frame_element): ({x:.0f},{y:.0f})")
+                            break
                 except Exception as e:
                     print(f"  좌표 클릭도 실패: {e!r}")
             if clicked:
