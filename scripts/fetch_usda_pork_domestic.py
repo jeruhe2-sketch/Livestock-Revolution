@@ -25,6 +25,7 @@ import requests
 
 BASE = "https://mpr.datamart.ams.usda.gov/services/v1.1/reports/2498"
 OUT = "data/usda_pork_domestic.json"
+HIST_START = dt.date(2023, 1, 1)  # 데이터 시작일 고정 (예전엔 "오늘로부터 3년 전" 롤링이었음)
 REFRESH_DAYS = 21
 CHUNK_DAYS = 170  # API 180일 제한보다 여유있게
 MAX_RETRIES = 6
@@ -72,13 +73,6 @@ def parse_date(v: Any):
         return dt.date.fromisoformat(s[:10]).isoformat()
     except ValueError:
         return None
-
-
-def three_years_ago(day: dt.date) -> dt.date:
-    try:
-        return day.replace(year=day.year - 3)
-    except ValueError:
-        return day.replace(year=day.year - 3, month=2, day=28)
 
 
 def fetch_chunk(section: str, start: dt.date, end: dt.date):
@@ -226,10 +220,18 @@ def load_existing():
 
 def main():
     end = dt.date.today()
-    start = three_years_ago(end)
+    start = HIST_START
     refresh_start = end - dt.timedelta(days=REFRESH_DAYS - 1)
     existing = load_existing()
-    fetch_start = start if not existing else max(start, refresh_start)
+    existing_dates = [v["date"] for v in existing.values()]
+    existing_min = min(existing_dates) if existing_dates else None
+    # 시작일(HIST_START)이 기존에 저장된 데이터의 최소 날짜보다 더 이전이면
+    # (예: 롤링 3년 -> 고정 2023-01-01로 당겨진 경우) 그 사이 빈 구간을 채우기 위해
+    # 최근 REFRESH_DAYS만 보는 게 아니라 전체 구간을 다시 백필함.
+    if existing_min is None or existing_min > start.isoformat():
+        fetch_start = start
+    else:
+        fetch_start = max(start, refresh_start)
 
     records = fetch_range(fetch_start, end)
 

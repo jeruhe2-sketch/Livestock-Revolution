@@ -17,10 +17,9 @@ window.UsdaDomesticApp = (function () {
     { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
     { key: "1/4 Trim Butt VAC", label: "목전지", color: "#4f8fb8" }
   ];
-  const PERIOD_OPTIONS = [["3y", "3년"], ["2y", "2년"], ["1y", "1년"], ["6m", "6개월"], ["3m", "3개월"], ["all", "전체"]];
-  const PERIOD_DAYS = { "3y": 1095, "2y": 730, "1y": 365, "6m": 180, "3m": 90, all: Infinity };
   const GRANULARITY_OPTIONS = [["day", "일별"], ["month", "월별"], ["year", "연도별"]];
   const CHG_LABEL = { day: "전일대비", month: "전월대비", year: "전년대비" };
+  function ymLabel(ym) { return `${Math.floor(ym / 100)}년 ${ym % 100}월`; }
 
   function money(v) { return v == null || !isFinite(v) ? "—" : `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
   function pctFmt(v) { if (v === null || v === undefined || !isFinite(v)) return "—"; const s = v > 0 ? "+" : ""; return `${s}${v.toFixed(1)}%`; }
@@ -192,14 +191,20 @@ window.UsdaDomesticApp = (function () {
     }, []);
 
     const ROWS = useMemo(() => [...(db.data || [])].sort((a, b) => a.date.localeCompare(b.date)), [db]);
+    const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
+      const set = new Set();
+      ROWS.forEach((r) => { const [y, m] = r.date.split("-").map(Number); set.add(y * 100 + m); });
+      const all = [...set].sort((a, b) => a - b);
+      return { ALL_YM: all, YM_MIN: all[0], YM_MAX: all[all.length - 1] };
+    }, [ROWS]);
 
     const initParams = useMemo(() => readParams(), []);
     const p = (k, f) => { const v = initParams.get(k); return v != null ? v : f; };
     const pOneOf = (k, f, valid) => { const v = p(k, f); return valid.includes(v) ? v : f; };
     const pList = (k, fallback) => { const v = initParams.get(k); return v ? v.split(",").filter(Boolean) : fallback; };
+    const pInt = (k, f) => { const v = initParams.get(k); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : f; };
 
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["table", "chart"]));
-    const [period, setPeriod] = useState(() => pOneOf("p", "1y", PERIOD_OPTIONS.map(([v]) => v)));
     const [itemFilter, setItemFilter] = useState(() => pList("it", ITEMS.map((i) => i.key)).filter((k) => ITEMS.some((i) => i.key === k)));
     const [granularity, setGranularity] = useState(() => pOneOf("gr", "day", ["day", "month", "year"]));
     const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "chg"]));
@@ -207,12 +212,27 @@ window.UsdaDomesticApp = (function () {
     const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
     const [overlayItem, setOverlayItem] = useState(() => pOneOf("oi", ITEMS[0].key, ITEMS.map((i) => i.key)));
 
+    // 기간선택: 검역/EU/USDA 수출현황과 동일하게 "연월 범위 + 월별(계절) 범위" 방식.
+    const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
+    const [monthFrom, setMonthFrom] = useState(() => pInt("ms", 1));
+    const [monthTo, setMonthTo] = useState(() => pInt("me", 12));
+    const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
+    const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
+    const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
+    const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
+
     const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? (cur.length > 1 ? cur.filter((k) => k !== key) : cur) : [...cur, key]);
 
     const periodRows = useMemo(() => {
-      const days = PERIOD_DAYS[period];
-      return isFinite(days) ? ROWS.slice(-days) : ROWS;
-    }, [ROWS, period]);
+      return ROWS.filter((r) => {
+        const [y, m] = r.date.split("-").map(Number);
+        const ym = y * 100 + m;
+        if (ym < ymStart || ym > ymEnd) return false;
+        if (m < monthFrom || m > monthTo) return false;
+        return true;
+      });
+    }, [ROWS, ymStart, ymEnd, monthFrom, monthTo]);
 
     /* ── 표: 일/월/연 집계 ── */
     const tableRows = useMemo(() => {
@@ -260,7 +280,7 @@ window.UsdaDomesticApp = (function () {
       const header = [granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도", ...ITEMS.map((i) => `${i.label} ($/lb)`)];
       const body = [...tableRows].reverse().map((r) => [r.label, ...ITEMS.map((i) => r.vals[i.key] != null ? Math.round(r.vals[i.key] * 10000) / 10000 : "")]);
       const footer = ["기간평균", ...ITEMS.map((i) => tableAvg[i.key] != null ? Math.round(tableAvg[i.key] * 10000) / 10000 : "")];
-      downloadXlsx([header, ...body, footer], `미국축산물내수현황_${granularity}_${period}.xlsx`, "표");
+      downloadXlsx([header, ...body, footer], `미국축산물내수현황_${granularity}_${ymStart}-${ymEnd}.xlsx`, "표");
     }
 
     /* ── 차트: 추이(이동평균) ── */
@@ -277,7 +297,7 @@ window.UsdaDomesticApp = (function () {
     function exportTrendXlsx() {
       const header = ["발표일", ...trendSeries.map((s) => s.name)];
       const body = trendCategories.map((c, i) => [c, ...trendSeries.map((s) => s.data[i] != null ? Math.round(s.data[i] * 10000) / 10000 : "")]);
-      downloadXlsx([header, ...body], `미국축산물내수현황_추이_${period}.xlsx`, "추이");
+      downloadXlsx([header, ...body], `미국축산물내수현황_추이_${ymStart}-${ymEnd}.xlsx`, "추이");
     }
 
     /* ── 차트: 연도별 겹쳐보기(계절성) ── 선택한 품목 하나를 연도별 월평균으로 겹쳐서 계절 패턴/연도비교 ── */
@@ -307,7 +327,10 @@ window.UsdaDomesticApp = (function () {
     useEffect(() => {
       const sp = new URLSearchParams();
       sp.set("tab", mainTab);
-      if (period !== "1y") sp.set("p", period);
+      if (ymStart !== YM_MIN) sp.set("ys", ymStart);
+      if (ymEnd !== YM_MAX) sp.set("ye", ymEnd);
+      if (monthFrom !== 1) sp.set("ms", monthFrom);
+      if (monthTo !== 12) sp.set("me", monthTo);
       if (itemFilter.length !== ITEMS.length) sp.set("it", itemFilter.join(","));
       if (mainTab === "table") {
         if (granularity !== "day") sp.set("gr", granularity);
@@ -319,7 +342,7 @@ window.UsdaDomesticApp = (function () {
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-    }, [mainTab, period, itemFilter, granularity, displayMode, chartSub, smoothed, overlayItem]);
+    }, [mainTab, ymStart, ymEnd, monthFrom, monthTo, itemFilter, granularity, displayMode, chartSub, smoothed, overlayItem]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -339,15 +362,30 @@ window.UsdaDomesticApp = (function () {
         ),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
-          PERIOD_OPTIONS.map(([v, l]) => React.createElement(ToggleBtn, { key: v, active: period === v, onClick: () => setPeriod(v), label: l })),
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 8 } }, "표시 품목"),
+          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "표시 품목"),
           ITEMS.map((i) => React.createElement(ToggleBtn, { key: i.key, active: itemFilter.includes(i.key), onClick: () => toggleItem(i.key), label: i.label, activeColor: i.color }))
+        ),
+
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
+          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
+          React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+          React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
+          React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+          React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+          (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+            onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+            style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" }
+          }, "전체기간")
         ),
 
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
           React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } },
-            `최근 발표 ${dateLabel(cur?.date)} · 데이터 ${dateLabel(db.period?.start)} ~ ${dateLabel(db.period?.end)} · 표시 품목 ${itemFilter.length}개`
+            `최근 발표 ${dateLabel(cur?.date)} · 데이터 ${dateLabel(db.period?.start)} ~ ${dateLabel(db.period?.end)} · ${ymLabel(ymStart)}~${ymLabel(ymEnd)}`,
+            (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : "",
+            ` · 표시 품목 ${itemFilter.length}개`
           ),
           React.createElement("button", { onClick: copyShareLink, style: { fontSize: 11, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사")
         ),

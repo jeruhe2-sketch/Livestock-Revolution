@@ -1,6 +1,6 @@
 // 축산레이더 서비스워커
 // index/data는 네트워크 우선, 정적 자산은 캐시 우선.
-const CACHE_VERSION = "v31";
+const CACHE_VERSION = "v32";
 const SHELL_CACHE = `axr-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `axr-data-${CACHE_VERSION}`;
 const SHELL_FILES = ["./icons/icon-192.png?v=2","./icons/icon-512.png?v=2","./apple-touch-icon.png?v=2","./favicon.ico?v=2"];
