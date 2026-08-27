@@ -1,2 +1,5 @@
-ERROR: 다운로드 실패: https://www.cepea.esalq.usp.br/br/indicador/series/suino.aspx?id=124 (status=403 bytes=5788 body_head=<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta nam)
+ERROR: Page.goto: Timeout 90000ms exceeded.
+Call log:
+  - navigating to "https://www.cepea.esalq.usp.br/br/", waiting until "networkidle"
+
 [pork] 다운로드: https://www.cepea.esalq.usp.br/br/indicador/series/suino.aspx?id=124
