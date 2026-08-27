@@ -16,13 +16,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install requests xlrd
-      - name: CEPEA 돈육/계육 데이터 수집
+      - run: pip install requests xlrd playwright
+      - name: Chromium 브라우저 엔진 설치
+        run: python -m playwright install --with-deps chromium
+      - name: CEPEA 돈육/계육 데이터 수집 (Playwright, Cloudflare 우회)
         id: fetch
         continue-on-error: true
         run: |
           mkdir -p debug
-          python scripts/fetch_cepea_domestic.py > debug/cepea_domestic_last.log 2>&1
+          python scripts/fetch_cepea_domestic_playwright.py > debug/cepea_domestic_last.log 2>&1
           code=$?
           cat debug/cepea_domestic_last.log
           exit $code
