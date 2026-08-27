@@ -1,49 +1,13 @@
-수집 중 [Loin Cuts]: 2023-08-27 ~ 2024-02-12
+수집 중 [Loin Cuts]: 2026-08-07 ~ 2026-08-27
 DEBUG[Loin Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Loin Cuts] total row-dicts seen: 5033, unique Item_Description values (43): ['1/4 Trimmed Loin Combo', '1/4 Trimmed Loin Paper', '1/4 Trimmed Loin Paper, FZN', '1/4 Trimmed Loin VAC', '1/4 Trimmed Loin VAC, FZN', '1/8 Trimmed Loin Combo', '1/8 Trimmed Loin Paper', '1/8 Trimmed Loin Paper, FZN', '1/8 Trimmed Loin VAC', '1/8 Trimmed Loin VAC, FZN', 'B-In CC, Tender-in, FLON Loin', 'B-In CC, Tender-in, FLON Loin, FZN', 'Backribs 2.0#/up', 'Backribs 2.0#/up 1 Pc Vac', 'Backribs 2.0#/up 1 Pc Vac, FZN', 'Backribs 2.0#/up, FZN', 'Blade Ends', 'Blade Ends, FZN', 'Bnls CC Strap-off', 'Bnls CC Strap-off, 1/2 cut', 'Bnls CC Strap-off, 1/2 cut, FZN', 'Bnls CC Strap-off, FZN', 'Bnls CC Strap-on', 'Bnls CC Strap-on, 1/2 cut', 'Bnls CC Strap-on, 1/2 cut, FZN', 'Bnls CC Strap-on, FZN', 'Bone-in CC, Tender-in Loin Combo', 'Bone-in CC, Tender-in Loin VAC', 'Bone-in CC, Tender-in Loin VAC, FZN', 'Bone-in Sirloin', 'Bone-in Sirloin, FZN', 'Boneless Sirloin', 'Boneless Sirloin, Combo', 'Boneless Sirloin, FZN', 'Butt Tender', 'Butt Tender, FZN', 'Riblets', 'Riblets, FZN', 'Tenderloin', 'Tenderloin, 1 pc vac', 'Tenderloin, 1 pc vac, FZN', 'Tenderloin, FZN', 'Whole Bnls Strap-on']
-  -> 117건 매칭
-수집 중 [Loin Cuts]: 2024-02-13 ~ 2024-07-31
-  -> 120건 매칭
-수집 중 [Loin Cuts]: 2024-08-01 ~ 2025-01-17
-  -> 117건 매칭
-수집 중 [Loin Cuts]: 2025-01-18 ~ 2025-07-06
-  -> 118건 매칭
-수집 중 [Loin Cuts]: 2025-07-07 ~ 2025-12-23
-  -> 120건 매칭
-수집 중 [Loin Cuts]: 2025-12-24 ~ 2026-06-11
-  -> 119건 매칭
-수집 중 [Loin Cuts]: 2026-06-12 ~ 2026-08-27
-  -> 53건 매칭
-수집 중 [Picnic Cuts]: 2023-08-27 ~ 2024-02-12
+DEBUG[Loin Cuts] total row-dicts seen: 604, unique Item_Description values (43): ['1/4 Trimmed Loin Combo', '1/4 Trimmed Loin Paper', '1/4 Trimmed Loin Paper, FZN', '1/4 Trimmed Loin VAC', '1/4 Trimmed Loin VAC, FZN', '1/8 Trimmed Loin Combo', '1/8 Trimmed Loin Paper', '1/8 Trimmed Loin Paper, FZN', '1/8 Trimmed Loin VAC', '1/8 Trimmed Loin VAC, FZN', 'B-In CC, Tender-in, FLON Loin', 'B-In CC, Tender-in, FLON Loin, FZN', 'Backribs 2.0#/up', 'Backribs 2.0#/up 1 Pc Vac', 'Backribs 2.0#/up 1 Pc Vac, FZN', 'Backribs 2.0#/up, FZN', 'Blade Ends', 'Blade Ends, FZN', 'Bnls CC Strap-off', 'Bnls CC Strap-off, 1/2 cut', 'Bnls CC Strap-off, 1/2 cut, FZN', 'Bnls CC Strap-off, FZN', 'Bnls CC Strap-on', 'Bnls CC Strap-on, 1/2 cut', 'Bnls CC Strap-on, 1/2 cut, FZN', 'Bnls CC Strap-on, FZN', 'Bone-in CC, Tender-in Loin Combo', 'Bone-in CC, Tender-in Loin VAC', 'Bone-in CC, Tender-in Loin VAC, FZN', 'Bone-in Sirloin', 'Bone-in Sirloin, FZN', 'Boneless Sirloin', 'Boneless Sirloin, Combo', 'Boneless Sirloin, FZN', 'Butt Tender', 'Butt Tender, FZN', 'Riblets', 'Riblets, FZN', 'Tenderloin', 'Tenderloin, 1 pc vac', 'Tenderloin, 1 pc vac, FZN', 'Tenderloin, FZN', 'Whole Bnls Strap-on']
+  -> 14건 매칭
+수집 중 [Picnic Cuts]: 2026-08-07 ~ 2026-08-27
 DEBUG[Picnic Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Picnic Cuts] total row-dicts seen: 1523, unique Item_Description values (13): ['Picnic Cushion Meat Combo', 'Picnic Cushion Meat Poly', 'Picnic Cushion Meat Poly, FZN', 'Picnic Cushion Meat Vac', 'Picnic Cushion Meat Vac, FZN', 'RS Smoker Trim Picnic Combo', 'SS Smoker Trim Picnic 1 Pc Vac', 'SS Smoker Trim Picnic 1 Pc Vac, FZN', 'SS Smoker Trim Picnic Combo', 'SS Smoker Trim Picnic Paper/Poly', 'SS Smoker Trim Picnic Paper/Poly, FZN', 'SS Smoker Trim Picnic VAC', 'SS Smoker Trim Picnic VAC, FZN']
-  -> 117건 매칭
-수집 중 [Picnic Cuts]: 2024-02-13 ~ 2024-07-31
-  -> 120건 매칭
-수집 중 [Picnic Cuts]: 2024-08-01 ~ 2025-01-17
-  -> 117건 매칭
-수집 중 [Picnic Cuts]: 2025-01-18 ~ 2025-07-06
-  -> 118건 매칭
-수집 중 [Picnic Cuts]: 2025-07-07 ~ 2025-12-23
-  -> 120건 매칭
-수집 중 [Picnic Cuts]: 2025-12-24 ~ 2026-06-11
-  -> 119건 매칭
-수집 중 [Picnic Cuts]: 2026-06-12 ~ 2026-08-27
-  -> 53건 매칭
-수집 중 [Butt Cuts]: 2023-08-27 ~ 2024-02-12
+DEBUG[Picnic Cuts] total row-dicts seen: 184, unique Item_Description values (13): ['Picnic Cushion Meat Combo', 'Picnic Cushion Meat Poly', 'Picnic Cushion Meat Poly, FZN', 'Picnic Cushion Meat Vac', 'Picnic Cushion Meat Vac, FZN', 'RS Smoker Trim Picnic Combo', 'SS Smoker Trim Picnic 1 Pc Vac', 'SS Smoker Trim Picnic 1 Pc Vac, FZN', 'SS Smoker Trim Picnic Combo', 'SS Smoker Trim Picnic Paper/Poly', 'SS Smoker Trim Picnic Paper/Poly, FZN', 'SS Smoker Trim Picnic VAC', 'SS Smoker Trim Picnic VAC, FZN']
+  -> 14건 매칭
+수집 중 [Butt Cuts]: 2026-08-07 ~ 2026-08-27
 DEBUG[Butt Cuts] type=dict sample_keys=['reportSection', 'reportSections', 'stats', 'results']
-DEBUG[Butt Cuts] total row-dicts seen: 3629, unique Item_Description values (31): ['1/4 Trim Bnls Butt 1 Pc VAC', '1/4 Trim Bnls Butt 1 Pc VAC, FZN', '1/4 Trim Bnls Butt Combo', '1/4 Trim Bnls Butt Poly', '1/4 Trim Bnls Butt Poly, FZN', '1/4 Trim Bnls Butt VAC', '1/4 Trim Bnls Butt VAC, FZN', '1/4 Trim Butt 1 Pc VAC', '1/4 Trim Butt 1 Pc VAC, FZN', '1/4 Trim Butt Combo', '1/4 Trim Butt Paper', '1/4 Trim Butt Paper, FZN', '1/4 Trim Butt VAC', '1/4 Trim Butt VAC, FZN', '1/4 Trim Steak Ready Butt 1 Pc Vac', '1/4 Trim Steak Ready Butt 1 Pc Vac, FZN', '1/4 Trim Steak Ready Butt Vac', '1/4 Trim Steak Ready Butt Vac, FZN', '1/8 Trim Butt 1 Pc VAC', '1/8 Trim Butt 1 Pc VAC, FZN', '1/8 Trim Butt Combo', '1/8 Trim Butt Paper', '1/8 Trim Butt Paper, FZN', '1/8 Trim Butt Vac', '1/8 Trim Butt Vac, FZN', '1/8 Trim Steak Ready Butt 1 Pc Vac', '1/8 Trim Steak Ready Butt 1 Pc Vac, FZN', '1/8 Trim Steak Ready Butt Vac', '1/8 Trim Steak Ready Butt Vac, FZN', 'Bnls CT Butt 1 Pc VAC', 'Bnls CT Butt 1 Pc VAC, FZN']
-  -> 117건 매칭
-수집 중 [Butt Cuts]: 2024-02-13 ~ 2024-07-31
-  -> 120건 매칭
-수집 중 [Butt Cuts]: 2024-08-01 ~ 2025-01-17
-  -> 117건 매칭
-수집 중 [Butt Cuts]: 2025-01-18 ~ 2025-07-06
-  -> 118건 매칭
-수집 중 [Butt Cuts]: 2025-07-07 ~ 2025-12-23
-  -> 120건 매칭
-수집 중 [Butt Cuts]: 2025-12-24 ~ 2026-06-11
-  -> 119건 매칭
-수집 중 [Butt Cuts]: 2026-06-12 ~ 2026-08-27
-  -> 53건 매칭
-완료: 764개 발표일 / 2292개 품목 레코드 / 조회범위 2023-08-27~2026-08-27
+DEBUG[Butt Cuts] total row-dicts seen: 436, unique Item_Description values (31): ['1/4 Trim Bnls Butt 1 Pc VAC', '1/4 Trim Bnls Butt 1 Pc VAC, FZN', '1/4 Trim Bnls Butt Combo', '1/4 Trim Bnls Butt Poly', '1/4 Trim Bnls Butt Poly, FZN', '1/4 Trim Bnls Butt VAC', '1/4 Trim Bnls Butt VAC, FZN', '1/4 Trim Butt 1 Pc VAC', '1/4 Trim Butt 1 Pc VAC, FZN', '1/4 Trim Butt Combo', '1/4 Trim Butt Paper', '1/4 Trim Butt Paper, FZN', '1/4 Trim Butt VAC', '1/4 Trim Butt VAC, FZN', '1/4 Trim Steak Ready Butt 1 Pc Vac', '1/4 Trim Steak Ready Butt 1 Pc Vac, FZN', '1/4 Trim Steak Ready Butt Vac', '1/4 Trim Steak Ready Butt Vac, FZN', '1/8 Trim Butt 1 Pc VAC', '1/8 Trim Butt 1 Pc VAC, FZN', '1/8 Trim Butt Combo', '1/8 Trim Butt Paper', '1/8 Trim Butt Paper, FZN', '1/8 Trim Butt Vac', '1/8 Trim Butt Vac, FZN', '1/8 Trim Steak Ready Butt 1 Pc Vac', '1/8 Trim Steak Ready Butt 1 Pc Vac, FZN', '1/8 Trim Steak Ready Butt Vac', '1/8 Trim Steak Ready Butt Vac, FZN', 'Bnls CT Butt 1 Pc VAC', 'Bnls CT Butt 1 Pc VAC, FZN']
+  -> 14건 매칭
+완료: 764개 발표일 / 2292개 품목 레코드 / 조회범위 2026-08-07~2026-08-27
