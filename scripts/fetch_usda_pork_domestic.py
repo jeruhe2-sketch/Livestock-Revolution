@@ -1,13 +1,4 @@
-"""USDA AMS MyMarketNews LM_PK602 (report 2498) 수집기.
-
-목표 품목:
-- Bnls CC Strap-off
-- Picnic Cushion Meat Vac
-- 1/4 Trim Bnls Butt VAC
-
-USDA 원자료의 weighted average는 $/100 lb(cwt) 기준이므로
-화면용 usdPerLb = weighted_average / 100 으로 저장한다.
-"""
+"""USDA AMS MyMarketNews LM_PK602 (report 2498) 수집기."""
 import datetime as dt
 import json
 import os
@@ -19,7 +10,7 @@ import requests
 
 BASE = "https://marsapi.ams.usda.gov/services/v1.2/reports/2498"
 OUT = "data/usda_pork_domestic.json"
-DAYS = 180
+REFRESH_DAYS = 21
 ITEMS = {
     "Bnls CC Strap-off": "등심",
     "Picnic Cushion Meat Vac": "전지",
@@ -36,9 +27,8 @@ def num(v: Any):
         return None
     if isinstance(v, (int, float)):
         return float(v)
-    s = str(v).replace(",", "").replace("$", "").strip()
     try:
-        return float(s)
+        return float(str(v).replace(",", "").replace("$", "").strip())
     except ValueError:
         return None
 
@@ -64,6 +54,13 @@ def parse_date(v: Any):
     return None
 
 
+def three_years_ago(day: dt.date) -> dt.date:
+    try:
+        return day.replace(year=day.year - 3)
+    except ValueError:
+        return day.replace(year=day.year - 3, month=2, day=28)
+
+
 def walk(obj: Any, inherited_date=None, out=None):
     if out is None:
         out = []
@@ -76,14 +73,7 @@ def walk(obj: Any, inherited_date=None, out=None):
                 wtd = first_num(obj, ["weighted_average", "weightedAverage", "wtd_avg", "wtdAvg", "weighted_avg"])
                 pounds = first_num(obj, ["total_pounds", "totalPounds", "pounds", "volume", "total_volume"])
                 if local_date and wtd is not None:
-                    out.append({
-                        "date": local_date,
-                        "item": key,
-                        "label": ITEMS[key],
-                        "pounds": pounds,
-                        "wtdAvgCwt": round(wtd, 4),
-                        "usdPerLb": round(wtd / 100.0, 4),
-                    })
+                    out.append({"date": local_date, "item": key, "label": ITEMS[key], "pounds": pounds, "wtdAvgCwt": round(wtd, 4), "usdPerLb": round(wtd / 100.0, 4)})
         for v in obj.values():
             walk(v, local_date, out)
     elif isinstance(obj, list):
@@ -97,50 +87,46 @@ def fetch(start: dt.date, end: dt.date):
     if not key:
         raise RuntimeError("USDA_MMN_API_KEY 또는 USDA_API_KEY secret이 필요합니다.")
     q = f"report_begin_date={start.strftime('%m/%d/%Y')}:{end.strftime('%m/%d/%Y')}"
-    r = requests.get(BASE, params={"q": q, "allSections": "true"}, auth=(key, ""), timeout=90)
+    r = requests.get(BASE, params={"q": q, "allSections": "true"}, auth=(key, ""), timeout=120)
     r.raise_for_status()
     return r.json()
 
 
+def load_existing():
+    if not os.path.exists(OUT):
+        return {}
+    try:
+        with open(OUT, encoding="utf-8") as f:
+            payload = json.load(f)
+        return {(r["date"], item): {"date": r["date"], "item": item, **r[item]} for r in payload.get("data", []) for item in ITEMS if isinstance(r.get(item), dict) and r[item].get("usdPerLb") is not None}
+    except Exception:
+        return {}
+
+
 def main():
     end = dt.date.today()
-    start = end - dt.timedelta(days=DAYS - 1)
-    payload = fetch(start, end)
+    start = three_years_ago(end)
+    refresh_start = end - dt.timedelta(days=REFRESH_DAYS - 1)
+    existing = load_existing()
+    fetch_start = start if not existing else max(start, refresh_start)
+    payload = fetch(fetch_start, end)
     records = walk(payload)
 
-    # 날짜/품목별 중복은 가장 완전한 레코드로 유지한다.
-    dedup = {}
+    merged = existing
     for rec in records:
-        k = (rec["date"], rec["item"])
-        old = dedup.get(k)
-        if old is None or (rec.get("pounds") is not None and old.get("pounds") is None):
-            dedup[k] = rec
+        merged[(rec["date"], rec["item"])] = rec
+    merged = {k: v for k, v in merged.items() if start.isoformat() <= v["date"] <= end.isoformat()}
 
     by_date = {}
-    for rec in dedup.values():
-        by_date.setdefault(rec["date"], {})[rec["item"]] = {
-            "label": rec["label"],
-            "pounds": rec["pounds"],
-            "wtdAvgCwt": rec["wtdAvgCwt"],
-            "usdPerLb": rec["usdPerLb"],
-        }
-
+    for rec in merged.values():
+        by_date.setdefault(rec["date"], {})[rec["item"]] = {"label": rec["label"], "pounds": rec.get("pounds"), "wtdAvgCwt": rec["wtdAvgCwt"], "usdPerLb": rec["usdPerLb"]}
     rows = [{"date": d, **by_date[d]} for d in sorted(by_date)]
-    out = {
-        "report": "LM_PK602",
-        "slugId": 2498,
-        "title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon",
-        "unit": "USD/100 lb",
-        "screenUnit": "USD/lb",
-        "period": {"start": start.isoformat(), "end": end.isoformat()},
-        "collectedAt": dt.datetime.now(dt.timezone.utc).astimezone().isoformat(),
-        "source": "USDA AMS MyMarketNews",
-        "data": rows,
-    }
+
+    out = {"report": "LM_PK602", "slugId": 2498, "title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon", "unit": "USD/100 lb", "screenUnit": "USD/lb", "period": {"start": start.isoformat(), "end": end.isoformat()}, "refreshWindowDays": REFRESH_DAYS, "collectedAt": dt.datetime.now(dt.timezone.utc).astimezone().isoformat(), "source": "USDA AMS MyMarketNews", "data": rows}
     os.makedirs("data", exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"완료: {len(rows)}개 발표일 / {len(dedup)}개 품목 레코드 -> {OUT}")
+    print(f"완료: {len(rows)}개 발표일 / {len(merged)}개 품목 레코드 / 조회범위 {fetch_start}~{end}")
 
 
 if __name__ == "__main__":
