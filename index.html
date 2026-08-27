@@ -566,6 +566,10 @@ function fmtWon(krw) {
   if (krw == null || !isFinite(krw)) return null;
   return (krw / 1e12).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "조원";
 }
+function fmtUsd(usd) {
+  if (usd == null || !isFinite(usd)) return null;
+  return "$" + (usd / 1e9).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "B";
+}
 function fmtWonChart(krw) {
   if (krw == null || !isFinite(krw)) return null;
   return (krw / 1e8).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "억원";
@@ -679,8 +683,12 @@ function EuTradeApp() {
   const [db, setDb] = useState(null);
   const [err, setErr] = useState(null);
   const [exRates, setExRates] = useState(null);
+  const [fxHistory, setFxHistory] = useState(null);
   useEffect(() => {
     fetch("./data/exchange_rates.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then(setExRates).catch(() => setExRates(null));
+  }, []);
+  useEffect(() => {
+    fetch("./data/fx_history.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then(setFxHistory).catch(() => setFxHistory(null));
   }, []);
   useEffect(() => {
     fetch("./data/eu_pigmeat_trade.json", { cache: "no-store" }).then((r) => {
@@ -690,10 +698,10 @@ function EuTradeApp() {
   }, []);
   if (err) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, err);
   if (!db) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.mute, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, "데이터를 불러오는 중...");
-  return React.createElement(Dashboard, { db, exRates });
+  return React.createElement(Dashboard, { db, exRates, fxHistory });
 }
 
-function Dashboard({ db, exRates }) {
+function Dashboard({ db, exRates, fxHistory }) {
   // 필터 배너(<details>) 열려있을 때 다른 곳 클릭하면 자동으로 닫히게.
   // details는 원래 summary를 다시 눌러야만 닫히는데, 그러면 다른 필터 열 때
   // 이전 필터가 계속 열려있게 되므로 전역으로 한 번만 등록해서 처리.
@@ -706,7 +714,18 @@ function Dashboard({ db, exRates }) {
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
   }, []);
-  const ROWS = useMemo(() => db.data.map((row) => ({ year: row[0], week: row[1], month: row[2], partnerCode: row[3], msCode: row[4], kg: row[5], euro: row[6] })), [db]);
+  const ROWS = useMemo(() => {
+    const weekly = (fxHistory && fxHistory.weekly) || {};
+    return db.data.map((row) => {
+      const year = row[0], week = row[1], euro = row[6];
+      const rate = weekly[`${year}-W${String(week).padStart(2, "0")}`];
+      return {
+        year, week, month: row[2], partnerCode: row[3], msCode: row[4], kg: row[5], euro,
+        usdEquiv: rate ? euro * rate.usd : null,
+        krwEquiv: rate ? euro * rate.krw : null,
+      };
+    });
+  }, [db, fxHistory]);
   const msNames = db.msNames || {};
   const MS_LIST = useMemo(() => Object.keys(msNames).sort((a, b) => msNames[a].localeCompare(msNames[b])), [msNames]);
   const YEARS_ALL = useMemo(() => [...new Set(ROWS.map((r) => String(r.year)))].sort(), [ROWS]);
@@ -749,7 +768,6 @@ function Dashboard({ db, exRates }) {
 
   const val = (r) => (valueKey === "kg" ? r.kg / 1000 : r.euro);
   const unitLabel = valueKey === "kg" ? "톤" : "유로(€)";
-  const chartFormatValue = valueKey === "euro" && exRates && exRates.eurKrw ? (v) => fmtWonChart(v * exRates.eurKrw) : undefined;
 
   const baseFilteredRows = useMemo(() => {
     return ROWS.filter((r) => {
@@ -760,6 +778,14 @@ function Dashboard({ db, exRates }) {
       return true;
     });
   }, [ROWS, msFilter, partnerFilter, yearFilter, monthFrom, monthTo, msNames]);
+  const periodKrwRate = useMemo(() => {
+    if (valueKey !== "euro") return null;
+    const totalEuro = baseFilteredRows.reduce((s, r) => s + r.euro, 0);
+    const totalKrw = baseFilteredRows.reduce((s, r) => s + (r.krwEquiv || 0), 0);
+    if (totalEuro > 0 && totalKrw > 0) return totalKrw / totalEuro; // 현재 필터 기간의 거래액 가중평균 환율
+    return exRates && exRates.eurKrw ? exRates.eurKrw : null; // 폴백: 오늘 환율
+  }, [baseFilteredRows, valueKey, exRates]);
+  const chartFormatValue = valueKey === "euro" && periodKrwRate ? (v) => fmtWonChart(v * periodKrwRate) : undefined;
   const years = useMemo(() => [...new Set(baseFilteredRows.map((r) => r.year))].sort((a, b) => a - b), [baseFilteredRows]);
   const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + val(r), 0), [baseFilteredRows, valueKey]);
   const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
@@ -949,12 +975,17 @@ function Dashboard({ db, exRates }) {
           React.createElement("button", { onClick: copyShareLink, style: { fontSize: 11, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사"),
           React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end" } },
             React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "합계 ", n(grandTotalAll), " ", unitLabel),
-            valueKey === "euro" && exRates && exRates.eurKrw && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, fontWeight: 600 } }, "≈ ", fmtWon(grandTotalAll * exRates.eurKrw))
+            valueKey === "euro" && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, fontWeight: 600, display: "flex", gap: 8 } },
+              React.createElement("span", null, "≈ ", fmtUsd(baseFilteredRows.reduce((s, r) => s + (r.usdEquiv || 0), 0))),
+              React.createElement("span", null, "≈ ", fmtWon(baseFilteredRows.reduce((s, r) => s + (r.krwEquiv || 0), 0)))
+            )
           )
         )
       ),
-      valueKey === "euro" && exRates && exRates.updatedAt && React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginBottom: 8, textAlign: "right" } },
-        "* 환율은 조회 시점(", fmtUpdatedAt(exRates.updatedAt), ") 기준 1유로 = ", Math.round(exRates.eurKrw).toLocaleString(), "원으로 일괄 환산된 값입니다. 과거 시점의 실제 환율과는 다릅니다."
+      valueKey === "euro" && React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginBottom: 8, textAlign: "right" } },
+        fxHistory && fxHistory.updatedAt
+          ? `* US$·₩ 환산은 각 주차 당시의 실제 EUR 환율(ECB, 매주 갱신)을 적용한 값입니다.`
+          : "* 환율 데이터를 아직 불러오지 못했습니다."
       ),
       React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginBottom: 14, textAlign: "right" } }, db.sourceMostRecentData ? `EU TAXUD 주간 자료 · ${db.sourceMostRecentData} 기준` : ""),
       React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
