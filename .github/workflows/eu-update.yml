@@ -41,25 +41,48 @@ jobs:
           cat debug/fx_history_last.log
           exit $code
       - name: commit
+        id: commit
+        if: always()
+        continue-on-error: true
+        run: |
+          set -x
+          {
+            git config user.email "actions@github.com"
+            git config user.name "github-actions"
+            for i in 1 2 3 4 5 6 7 8; do
+              git add data/eu_pigmeat_trade.json data/fx_history.json
+              git status --short
+              if git diff --cached --quiet; then
+                echo "변경 없음"
+                break
+              fi
+              git commit -m "auto: EU 돈육 수출현황 + 환율 이력 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+              if git push; then
+                echo "push 성공"
+                break
+              fi
+              echo "push 충돌, 재시도 $i"
+              git fetch origin main
+              git reset --mixed origin/main
+              sleep $((RANDOM % 10 + 3))
+            done
+          } > debug/eu_commit_last.log 2>&1
+          code=$?
+          cat debug/eu_commit_last.log
+          exit $code
+      - name: 커밋 디버그 로그를 저장소에 커밋 (임시)
         if: always()
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions"
-          for i in 1 2 3 4 5 6 7 8; do
-            git add data/eu_pigmeat_trade.json data/fx_history.json
-            if git diff --cached --quiet; then
-              echo "변경 없음"
-              break
-            fi
-            git commit -m "auto: EU 돈육 수출현황 + 환율 이력 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
-            if git push; then
-              echo "push 성공"
-              break
-            fi
-            echo "push 충돌, 재시도 $i"
+          git add -f debug/eu_commit_last.log
+          git commit -m "debug: eu commit 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git push && break
             git fetch origin main
             git reset --mixed origin/main
-            sleep $((RANDOM % 10 + 3))
+            git add -f debug/eu_commit_last.log
+            sleep 3
           done
       - name: 환율이력 로그를 아티팩트로 업로드 (git 커밋 안 함)
         if: always()
@@ -78,9 +101,9 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
       - name: 수집 실패했으면 워크플로우도 실패로 표시
-        if: steps.run.outcome == 'failure' || steps.run_fx.outcome == 'failure'
+        if: steps.run.outcome == 'failure' || steps.run_fx.outcome == 'failure' || steps.commit.outcome == 'failure'
         run: |
-          echo "::error::EU API 또는 환율이력 수집 스크립트가 실패했습니다. debug/ 로그 확인 필요 (해당 데이터 파일은 갱신 안 되고 기존 값 유지됨)"
+          echo "::error::EU API/환율이력 수집 또는 커밋이 실패했습니다. debug/ 로그 확인 필요"
           exit 1
 
       - name: 실패 시 텔레그램 알림
