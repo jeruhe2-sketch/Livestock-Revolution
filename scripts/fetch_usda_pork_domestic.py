@@ -1,25 +1,47 @@
-"""USDA AMS MyMarketNews LM_PK602 (report 2498) 수집기."""
+"""USDA AMS LMR Datamart LM_PK602 (report/slug 2498) 수집기.
+
+기존 버전은 marsapi.ams.usda.gov(MyMarketNews API, API key 필요)를 썼는데
+USDA_MMN_API_KEY secret이 없어서(또는 유효하지 않아서) 401 Unauthorized로 계속 실패했음.
+
+대신 인증키가 필요 없는 LMR Datamart API(mpr.datamart.ams.usda.gov)로 전환함.
+요청 형식은 공개된 R 패키지 usdampr(https://github.com/cbw1243/usdampr)의 실제 구현으로 확인:
+  https://mpr.datamart.ams.usda.gov/services/v1.1/reports/2498?q=report_date=MM/DD/YYYY[:MM/DD/YYYY]&allSections=true
+- 날짜 범위는 한 번에 최대 180일 제한 (MARS API와 달리 넉넉한 범위 불가 -> 청크 처리 필요).
+- 응답 형태: {"reportSection": [...섹션명...], "results": [...섹션별 행배열...]}
+
+출력 JSON 스키마(usda_domestic_app.js가 그대로 소비하므로 절대 변경하지 않음):
+  {report, slugId, title, unit, screenUnit, period, refreshWindowDays, collectedAt, source, data}
+"""
 import datetime as dt
 import json
 import os
 import re
 import sys
+import time
 from typing import Any
 
 import requests
 
-BASE = "https://marsapi.ams.usda.gov/services/v1.2/reports/2498"
+BASE = "https://mpr.datamart.ams.usda.gov/services/v1.1/reports/2498"
 OUT = "data/usda_pork_domestic.json"
 REFRESH_DAYS = 21
+CHUNK_DAYS = 170  # API 180일 제한보다 여유있게
+MAX_RETRIES = 6
 ITEMS = {
     "Bnls CC Strap-off": "등심",
     "Picnic Cushion Meat Vac": "전지",
     "1/4 Trim Bnls Butt VAC": "목전지",
 }
+# 위 3개 품목이 실제로 위치하는 리포트 섹션 (usdampr 패키지 slugInfo로 확인됨)
+SECTIONS = {
+    "Bnls CC Strap-off": "Loin Cuts",
+    "Picnic Cushion Meat Vac": "Picnic Cuts",
+    "1/4 Trim Bnls Butt VAC": "Butt Cuts",
+}
 
 
 def norm(v: Any) -> str:
-    return re.sub(r"\s+", " ", str(v or "").strip()).casefold()
+    return re.sub(r"[^a-z0-9]", "", str(v or "").casefold())
 
 
 def num(v: Any):
@@ -27,31 +49,28 @@ def num(v: Any):
         return None
     if isinstance(v, (int, float)):
         return float(v)
+    s = str(v).strip()
+    if s in ("-", "N/A", "NA"):
+        return None
     try:
-        return float(str(v).replace(",", "").replace("$", "").strip())
+        return float(s.replace(",", "").replace("$", ""))
     except ValueError:
         return None
-
-
-def first_num(d: dict, keys):
-    for k in keys:
-        if k in d:
-            x = num(d.get(k))
-            if x is not None:
-                return x
-    return None
 
 
 def parse_date(v: Any):
     if not v:
         return None
     s = str(v).strip()
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S"):
+    for fmt in ("%m/%d/%Y %H:%M:%S", "%m/%d/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
         try:
             return dt.datetime.strptime(s[:19], fmt).date().isoformat()
         except ValueError:
             pass
-    return None
+    try:
+        return dt.date.fromisoformat(s[:10]).isoformat()
+    except ValueError:
+        return None
 
 
 def three_years_ago(day: dt.date) -> dt.date:
@@ -61,35 +80,96 @@ def three_years_ago(day: dt.date) -> dt.date:
         return day.replace(year=day.year - 3, month=2, day=28)
 
 
-def walk(obj: Any, inherited_date=None, out=None):
-    if out is None:
-        out = []
-    if isinstance(obj, dict):
-        local_date = parse_date(obj.get("report_date") or obj.get("reportDate") or obj.get("report_begin_date")) or inherited_date
-        item = obj.get("Item_Description") or obj.get("item_description") or obj.get("itemDescription") or obj.get("item")
-        if item:
-            key = next((k for k in ITEMS if norm(k) == norm(item)), None)
-            if key:
-                wtd = first_num(obj, ["weighted_average", "weightedAverage", "wtd_avg", "wtdAvg", "weighted_avg"])
-                pounds = first_num(obj, ["total_pounds", "totalPounds", "pounds", "volume", "total_volume"])
-                if local_date and wtd is not None:
-                    out.append({"date": local_date, "item": key, "label": ITEMS[key], "pounds": pounds, "wtdAvgCwt": round(wtd, 4), "usdPerLb": round(wtd / 100.0, 4)})
-        for v in obj.values():
-            walk(v, local_date, out)
-    elif isinstance(obj, list):
-        for v in obj:
-            walk(v, inherited_date, out)
+def fetch_chunk(start: dt.date, end: dt.date):
+    report_time = f"{start.strftime('%m/%d/%Y')}:{end.strftime('%m/%d/%Y')}"
+    params = {"q": f"report_date={report_time}", "allSections": "true"}
+    last_err = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            r = requests.get(BASE, params=params, headers={"Accept": "application/json"}, timeout=90)
+        except Exception as e:  # 네트워크 에러
+            last_err = repr(e)
+            time.sleep(min(5 * attempt, 30))
+            continue
+        if r.status_code == 200:
+            try:
+                return r.json()
+            except Exception as e:
+                last_err = f"json parse error: {e!r} body={r.text[:300]}"
+        else:
+            last_err = f"status={r.status_code} body={r.text[:300]}"
+        time.sleep(min(5 * attempt, 30))
+    print(f"경고: {report_time} 구간 수집 실패, 건너뜀 ({last_err})", file=sys.stderr)
+    return None
+
+
+def extract_records(payload):
+    """payload에서 우리가 추적하는 3개 품목의 (date, item, pounds, wtdAvgCwt) 레코드를 뽑는다."""
+    out = []
+    if not payload:
+        return out
+    sections = payload.get("reportSection") or []
+    results = payload.get("results") or []
+    target_norms = {item: norm(item) for item in ITEMS}
+    for i, rows in enumerate(results):
+        sec_name = sections[i] if i < len(sections) else None
+        if not rows:
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            for item, tnorm in target_norms.items():
+                if sec_name != SECTIONS[item]:
+                    continue
+                is_match = any(isinstance(v, str) and norm(v) == tnorm for v in row.values())
+                if not is_match:
+                    continue
+                report_date = None
+                for key in ("report_date", "published_date", "date"):
+                    if row.get(key):
+                        report_date = parse_date(row[key])
+                        break
+                if not report_date:
+                    continue
+                price = None
+                for k, v in row.items():
+                    if "wtd" in k.lower():
+                        price = num(v)
+                        if price is not None:
+                            break
+                if price is None:
+                    continue
+                pounds = None
+                for k, v in row.items():
+                    if "pound" in k.lower() or "volume" in k.lower():
+                        pounds = num(v)
+                        if pounds is not None:
+                            break
+                out.append({
+                    "date": report_date,
+                    "item": item,
+                    "label": ITEMS[item],
+                    "pounds": pounds,
+                    "wtdAvgCwt": round(price, 4),
+                    "usdPerLb": round(price / 100.0, 4),
+                })
     return out
 
 
-def fetch(start: dt.date, end: dt.date):
-    key = os.environ.get("USDA_MMN_API_KEY") or os.environ.get("USDA_API_KEY")
-    if not key:
-        raise RuntimeError("USDA_MMN_API_KEY 또는 USDA_API_KEY secret이 필요합니다.")
-    q = f"report_begin_date={start.strftime('%m/%d/%Y')}:{end.strftime('%m/%d/%Y')}"
-    r = requests.get(BASE, params={"q": q, "allSections": "true"}, auth=(key, ""), timeout=120)
-    r.raise_for_status()
-    return r.json()
+def fetch_range(start: dt.date, end: dt.date):
+    """180일 제한을 넘는 범위는 청크로 나눠 순차 요청."""
+    records = []
+    cur = start
+    while cur <= end:
+        chunk_end = min(cur + dt.timedelta(days=CHUNK_DAYS - 1), end)
+        print(f"수집 중: {cur} ~ {chunk_end}")
+        payload = fetch_chunk(cur, chunk_end)
+        recs = extract_records(payload)
+        print(f"  -> {len(recs)}건 매칭")
+        records.extend(recs)
+        cur = chunk_end + dt.timedelta(days=1)
+        time.sleep(1)
+    return records
 
 
 def load_existing():
@@ -98,7 +178,13 @@ def load_existing():
     try:
         with open(OUT, encoding="utf-8") as f:
             payload = json.load(f)
-        return {(r["date"], item): {"date": r["date"], "item": item, **r[item]} for r in payload.get("data", []) for item in ITEMS if isinstance(r.get(item), dict) and r[item].get("usdPerLb") is not None}
+        out = {}
+        for r in payload.get("data", []):
+            for item in ITEMS:
+                cell = r.get(item)
+                if isinstance(cell, dict) and cell.get("usdPerLb") is not None:
+                    out[(r["date"], item)] = {"date": r["date"], "item": item, **cell}
+        return out
     except Exception:
         return {}
 
@@ -109,8 +195,8 @@ def main():
     refresh_start = end - dt.timedelta(days=REFRESH_DAYS - 1)
     existing = load_existing()
     fetch_start = start if not existing else max(start, refresh_start)
-    payload = fetch(fetch_start, end)
-    records = walk(payload)
+
+    records = fetch_range(fetch_start, end)
 
     merged = existing
     for rec in records:
@@ -119,14 +205,30 @@ def main():
 
     by_date = {}
     for rec in merged.values():
-        by_date.setdefault(rec["date"], {})[rec["item"]] = {"label": rec["label"], "pounds": rec.get("pounds"), "wtdAvgCwt": rec["wtdAvgCwt"], "usdPerLb": rec["usdPerLb"]}
+        by_date.setdefault(rec["date"], {})[rec["item"]] = {
+            "label": rec["label"], "pounds": rec.get("pounds"),
+            "wtdAvgCwt": rec["wtdAvgCwt"], "usdPerLb": rec["usdPerLb"],
+        }
     rows = [{"date": d, **by_date[d]} for d in sorted(by_date)]
 
-    out = {"report": "LM_PK602", "slugId": 2498, "title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon", "unit": "USD/100 lb", "screenUnit": "USD/lb", "period": {"start": start.isoformat(), "end": end.isoformat()}, "refreshWindowDays": REFRESH_DAYS, "collectedAt": dt.datetime.now(dt.timezone.utc).astimezone().isoformat(), "source": "USDA AMS MyMarketNews", "data": rows}
+    out = {
+        "report": "LM_PK602",
+        "slugId": 2498,
+        "title": "National Daily Pork FOB Plant - Negotiated Sales - Afternoon",
+        "unit": "USD/100 lb",
+        "screenUnit": "USD/lb",
+        "period": {"start": start.isoformat(), "end": end.isoformat()},
+        "refreshWindowDays": REFRESH_DAYS,
+        "collectedAt": dt.datetime.now(dt.timezone.utc).astimezone().isoformat(),
+        "source": "USDA AMS LMR Datamart (mpr.datamart.ams.usda.gov, slug 2498 / LM_PK602)",
+        "data": rows,
+    }
     os.makedirs("data", exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     print(f"완료: {len(rows)}개 발표일 / {len(merged)}개 품목 레코드 / 조회범위 {fetch_start}~{end}")
+    if len(rows) == 0:
+        print("::warning::수집된 행이 0건입니다. API 응답 구조가 예상과 다를 수 있습니다.")
 
 
 if __name__ == "__main__":
