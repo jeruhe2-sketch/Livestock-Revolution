@@ -235,15 +235,19 @@ window.UsdaDomesticApp = (function () {
       });
     }, [periodRows, granularity]);
 
-    function cellDisplay(row, idx, key) {
+    function cellDisplay(idx, key) {
       const v = tableRows[idx].vals[key];
       if (displayMode === "abs") return { text: money(v), raw: v };
       const prevRow = tableRows[idx - 1];
       const prevV = prevRow ? prevRow.vals[key] : null;
       if (v == null || prevV == null || prevV === 0) return { text: "—", raw: null };
       const chg = (v - prevV) / prevV * 100;
-      return { text: pctFmt(chg), raw: chg };
+      const arrow = chg > 0.05 ? "▲ " : chg < -0.05 ? "▼ " : "";
+      return { text: `${arrow}${pctFmt(chg)}`, raw: chg };
     }
+    // 계산(전일·전월·전년대비)은 예전→최근 순서가 있어야 하므로 tableRows 자체는 오름차순 유지하고,
+    // 화면에는 최신이 위로 오게 인덱스만 뒤집어서 렌더링함.
+    const displayIdxs = useMemo(() => tableRows.map((_, i) => i).reverse(), [tableRows]);
     const tableAvg = useMemo(() => {
       const avg = {};
       ITEMS.forEach((i) => {
@@ -254,7 +258,7 @@ window.UsdaDomesticApp = (function () {
     }, [tableRows]);
     function exportTableXlsx() {
       const header = [granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도", ...ITEMS.map((i) => `${i.label} ($/lb)`)];
-      const body = tableRows.map((r) => [r.label, ...ITEMS.map((i) => r.vals[i.key] != null ? Math.round(r.vals[i.key] * 10000) / 10000 : "")]);
+      const body = [...tableRows].reverse().map((r) => [r.label, ...ITEMS.map((i) => r.vals[i.key] != null ? Math.round(r.vals[i.key] * 10000) / 10000 : "")]);
       const footer = ["기간평균", ...ITEMS.map((i) => tableAvg[i.key] != null ? Math.round(tableAvg[i.key] * 10000) / 10000 : "")];
       downloadXlsx([header, ...body, footer], `미국축산물내수현황_${granularity}_${period}.xlsx`, "표");
     }
@@ -398,16 +402,24 @@ window.UsdaDomesticApp = (function () {
               React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } },
                 React.createElement("thead", null, React.createElement("tr", null,
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 92 } }, granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도"),
-                  ITEMS.map((i) => React.createElement("th", { key: i.key, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 96 } }, `${i.label} ($/lb)`))
+                  ITEMS.map((i) => React.createElement("th", { key: i.key, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 100 } }, `${i.label} ($/lb)`))
                 )),
-                React.createElement("tbody", null, tableRows.map((r, idx) => React.createElement("tr", { key: r.sortKey, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
-                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, r.label),
-                  ITEMS.map((i) => {
-                    const { text, raw } = cellDisplay(r, idx, i.key);
-                    const color = displayMode === "chg" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
-                    return React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
-                  })
-                ))),
+                React.createElement("tbody", null, displayIdxs.map((idx, rowPos) => {
+                  const r = tableRows[idx];
+                  return React.createElement("tr", {
+                    key: r.sortKey,
+                    style: { borderTop: `1px solid ${COLORS.panelBorder}`, background: rowPos % 2 ? "rgba(255,255,255,0.015)" : "transparent" },
+                    onMouseEnter: (e) => { e.currentTarget.style.background = "rgba(217,139,63,0.07)"; },
+                    onMouseLeave: (e) => { e.currentTarget.style.background = rowPos % 2 ? "rgba(255,255,255,0.015)" : "transparent"; }
+                  },
+                    React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: rowPos === 0 ? "#211c17" : COLORS.panel, fontWeight: rowPos === 0 ? 800 : 700, zIndex: 1, color: rowPos === 0 ? COLORS.amberSoft : COLORS.cream } }, r.label, rowPos === 0 ? " ·최신" : ""),
+                    ITEMS.map((i) => {
+                      const { text, raw } = cellDisplay(idx, i.key);
+                      const color = displayMode === "chg" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
+                      return React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
+                    })
+                  );
+                })),
                 React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
                   React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "기간평균"),
                   ITEMS.map((i) => React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, money(tableAvg[i.key])))
