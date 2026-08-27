@@ -1,0 +1,27 @@
+name: Fix USDA domestic dashboard UI
+on:
+  push:
+    paths:
+      - .github/workflows/fix-usda-domestic-ui.yml
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix SVG chart and mobile cards
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/usda_domestic_app.js')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('React.createElement("polyline", { points: path(item), fill: "none", stroke: item.color, strokeWidth: 2.3 })', 'React.createElement("path", { d: path(item), fill: "none", stroke: item.color, strokeWidth: 2.3 })')
+          s = s.replace('gridTemplateColumns: "repeat(3,minmax(0,1fr))"', 'gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))"')
+          p.write_text(s, encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/usda_domestic_app.js
+          git commit -m "fix: correct USDA domestic chart rendering"
+          git push
