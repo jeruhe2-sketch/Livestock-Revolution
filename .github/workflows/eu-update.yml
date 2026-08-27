@@ -39,21 +39,17 @@ jobs:
           python scripts/fetch_fx_history.py > debug/fx_history_last.log 2>&1
           code=$?
           cat debug/fx_history_last.log
-          echo "---ls data---"
-          ls -la data/ || true
           exit $code
       - name: commit
         id: commit
         if: always()
         continue-on-error: true
         run: |
-          set -x
           {
             git config user.email "actions@github.com"
             git config user.name "github-actions"
             for i in 1 2 3 4 5 6 7 8; do
               git add data/eu_pigmeat_trade.json data/fx_history.json
-              git status --short
               if git diff --cached --quiet; then
                 echo "변경 없음"
                 break
@@ -72,28 +68,20 @@ jobs:
           code=$?
           cat debug/eu_commit_last.log
           exit $code
-      - name: 커밋 디버그 로그를 저장소에 커밋 (임시)
-        if: always()
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "github-actions"
-          git add -f debug/eu_commit_last.log
-          [ -f debug/fx_history_last.log ] && git add -f debug/fx_history_last.log
-          git commit -m "debug: eu commit 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
-          for i in 1 2 3; do
-            git push && break
-            git fetch origin main
-            git reset --mixed origin/main
-            git add -f debug/eu_commit_last.log
-            [ -f debug/fx_history_last.log ] && git add -f debug/fx_history_last.log
-            sleep 3
-          done
       - name: 환율이력 로그를 아티팩트로 업로드 (git 커밋 안 함)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fx-history-update-log
           path: debug/fx_history_last.log
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: 커밋 로그를 아티팩트로 업로드 (git 커밋 안 함)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eu-commit-log
+          path: debug/eu_commit_last.log
           retention-days: 14
           if-no-files-found: ignore
       - name: 로그를 아티팩트로 업로드 (git 커밋 안 함)
