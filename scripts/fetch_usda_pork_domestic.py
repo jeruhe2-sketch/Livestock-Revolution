@@ -68,7 +68,7 @@ def walk(obj: Any, inherited_date=None, out=None):
     if out is None:
         out = []
     if isinstance(obj, dict):
-        local_date = parse_date(obj.get("report_date") or obj.get("reportDate") or obj.get("report_begin_date") or obj.get("report_begin_date")) or inherited_date
+        local_date = parse_date(obj.get("report_date") or obj.get("reportDate") or obj.get("report_begin_date")) or inherited_date
         item = obj.get("Item_Description") or obj.get("item_description") or obj.get("itemDescription") or obj.get("item")
         if item:
             key = next((k for k in ITEMS if norm(k) == norm(item)), None)
@@ -96,8 +96,8 @@ def fetch(start: dt.date, end: dt.date):
     key = os.environ.get("USDA_MMN_API_KEY") or os.environ.get("USDA_API_KEY")
     if not key:
         raise RuntimeError("USDA_MMN_API_KEY 또는 USDA_API_KEY secret이 필요합니다.")
-    q = f"report_date={start.isoformat()}:{end.isoformat()}"
-    r = requests.get(BASE, params={"q": q, "all": "true"}, auth=(key, ""), timeout=90)
+    q = f"report_begin_date={start.strftime('%m/%d/%Y')}:{end.strftime('%m/%d/%Y')}"
+    r = requests.get(BASE, params={"q": q, "allSections": "true"}, auth=(key, ""), timeout=90)
     r.raise_for_status()
     return r.json()
 
