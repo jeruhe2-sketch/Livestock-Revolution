@@ -469,6 +469,17 @@ def append_daily_history(all_rows: list) -> None:
             "중량_kg": round(vals["중량_kg"], 2),
         })
 
+    # 이 실행에서 만든 "오늘" 레코드만 따로 저장해둔다. 여러 워크플로우가 같은
+    # main 브랜치에 자주 커밋하다 보니 push 충돌이 잦고, 그때마다 "git reset
+    # --mixed origin/main + 재시도"를 하는데, history.json은 매 실행 시작 시점의
+    # 스냅샷을 통째로 다시 쓰는 방식이라 재시도 도중 다른 실행이 이미 추가해둔
+    # 다른 날짜 기록을 덮어써 버리는 사고가 있었다(며칠치 기록이 통째로 사라짐).
+    # 커밋 재시도 시점마다 origin의 최신 history.json에 "오늘 것만" 다시 병합해
+    # 넣도록, 오늘 레코드만 별도 파일로 남겨서 워크플로우가 재사용하게 한다.
+    os.makedirs("debug", exist_ok=True)
+    with open("debug/history_today_rows.json", "w", encoding="utf-8") as f:
+        json.dump({"날짜": today, "레코드": [h for h in history["기록"] if h.get("날짜") == today]}, f, ensure_ascii=False)
+
     with open(HISTORY_PATH, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
     existing_dates_after = sorted({h.get("날짜") for h in history.get("기록", [])})
