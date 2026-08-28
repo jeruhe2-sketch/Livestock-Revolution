@@ -76,7 +76,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4 5 6 7 8; do
-            git add data/warehouse_stock.json
+            git add data/warehouse_stock.json data/warehouse_history.json
             if git diff --cached --quiet; then
               echo "변경 없음, 커밋 스킵"
               break
