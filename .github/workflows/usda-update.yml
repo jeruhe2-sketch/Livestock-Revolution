@@ -2,7 +2,7 @@ name: 미국 축산물 수출현황(USDA ESR) 자동 갱신
 on:
   workflow_dispatch: {}
 concurrency:
-  group: ${{ github.workflow }}
+  group: repo-main-git-write  # 저장소 전체 워크플로우가 공유하는 잠금 (git push 충돌 방지)
   cancel-in-progress: false
 
 permissions:

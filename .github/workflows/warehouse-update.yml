@@ -8,7 +8,7 @@ on:
   workflow_dispatch: {}  # \"Run workflow\" 버튼(또는 API 호출)으로 실행
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: repo-main-git-write  # 저장소 전체 워크플로우가 공유하는 잠금 (git push 충돌 방지)
   cancel-in-progress: false
 
 permissions:
