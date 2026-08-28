@@ -30,8 +30,9 @@ jobs:
           code=$?
           cat debug/usda_domestic_last.log
           exit $code
-      - name: 실패 로그를 저장소에도 커밋 (디버그, 임시)
-        if: always()
+      - name: 실패 로그를 저장소에도 커밋 (실패했을 때만)
+        id: log_commit
+        if: steps.fetch.outcome == 'failure'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

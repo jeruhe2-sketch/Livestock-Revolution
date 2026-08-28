@@ -102,16 +102,19 @@ jobs:
             sleep $((RANDOM % 15 + 5))
           done
           cat debug/git_push_debug.log
-          # 진단 로그는 별도로 항상 커밋해서 남긴다 (본 데이터 push 성공 여부와 무관하게)
-          git add -f debug/git_push_debug.log 2>/dev/null || true
-          git commit -m "debug: git push 진단 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
-          for i in 1 2 3; do
-            git push && break
-            git fetch origin main
-            git reset --mixed origin/main
-            git add -f debug/git_push_debug.log
-            sleep 3
-          done
+          if [ "$pushed" != "1" ]; then
+            # 실패했을 때만 진단 로그를 커밋해서 남긴다 (평소엔 30분마다 도는데
+            # 매번 커밋하면 저장소가 로그로만 계속 부풀어서, 문제 있을 때만 남김)
+            git add -f debug/git_push_debug.log 2>/dev/null || true
+            git commit -m "debug: git push 진단 로그(실패) $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+            for i in 1 2 3; do
+              git push && break
+              git fetch origin main
+              git reset --mixed origin/main
+              git add -f debug/git_push_debug.log
+              sleep 3
+            done
+          fi
           if [ "$pushed" != "1" ]; then
             echo "::error::재시도 20회 후에도 push 실패. 이번 실행의 창고 데이터/이력 갱신이 유실됐습니다."
             exit 1

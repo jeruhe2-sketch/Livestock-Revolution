@@ -4,5 +4,4 @@ debug_*.html
 .env
 debug/*.log
 debug/*.html
-debug/eu_commit_last.log
-debug/fx_history_last.log
+debug/*.png
