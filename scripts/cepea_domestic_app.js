@@ -21,6 +21,7 @@ window.CepeaDomesticApp = (function () {
   const CHG_LABEL = { day: "전일대비", month: "전월대비", year: "전년대비" };
   function ymLabel(ym) { return `${Math.floor(ym / 100)}년 ${ym % 100}월`; }
   function itemVal(row, item) { return row?.[item.key]?.[item.field]; }
+  function itemUsd(row, item) { return row?.[item.key]?.valueUSD; }
 
   function money(v) { return v == null || !isFinite(v) ? "—" : `R$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
   function pctFmt(v) { if (v === null || v === undefined || !isFinite(v)) return "—"; const s = v > 0 ? "+" : ""; return `${s}${v.toFixed(1)}%`; }
@@ -172,18 +173,22 @@ window.CepeaDomesticApp = (function () {
   function CepeaDomesticApp() {
     const [db, setDb] = useState(null);
     const [err, setErr] = useState(null);
+    const [exRates, setExRates] = useState(null);
     useEffect(() => {
       fetch("./data/cepea_domestic.json", { cache: "no-store" }).then((r) => {
         if (!r.ok) throw new Error(`데이터 파일을 불러오지 못했습니다 (${r.status})`);
         return r.json();
       }).then(setDb).catch((e) => setErr(e.message));
     }, []);
+    useEffect(() => {
+      fetch("./data/exchange_rates.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then(setExRates).catch(() => setExRates(null));
+    }, []);
     if (err) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, err);
     if (!db) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.mute, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, "데이터를 불러오는 중...");
-    return React.createElement(Dashboard, { db });
+    return React.createElement(Dashboard, { db, exRates });
   }
 
-  function Dashboard({ db }) {
+  function Dashboard({ db, exRates }) {
     useEffect(() => {
       const onDocClick = (e) => {
         document.querySelectorAll("details[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
@@ -225,6 +230,7 @@ window.CepeaDomesticApp = (function () {
     const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
     const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? (cur.length > 1 ? cur.filter((k) => k !== key) : cur) : [...cur, key]);
+    const visibleItems = useMemo(() => ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
 
     const periodRows = useMemo(() => {
       return ROWS.filter((r) => {
@@ -238,30 +244,41 @@ window.CepeaDomesticApp = (function () {
 
     /* ── 표: 일/월/연 집계 ── */
     const tableRows = useMemo(() => {
-      if (granularity === "day") return periodRows.map((r) => ({ label: r.date, sortKey: r.date, vals: ITEMS.reduce((o, i) => (o[i.key] = itemVal(r, i) ?? null, o), {}) }));
+      if (granularity === "day") return periodRows.map((r) => ({
+        label: r.date, sortKey: r.date,
+        vals: ITEMS.reduce((o, i) => (o[i.key] = itemVal(r, i) ?? null, o), {}),
+        usdVals: ITEMS.reduce((o, i) => (o[i.key] = itemUsd(r, i) ?? null, o), {}),
+      }));
       const buckets = new Map();
       periodRows.forEach((r) => {
         const key = granularity === "month" ? r.date.slice(0, 7) : r.date.slice(0, 4);
-        if (!buckets.has(key)) buckets.set(key, { sums: {}, counts: {} });
+        if (!buckets.has(key)) buckets.set(key, { sums: {}, counts: {}, usdSums: {}, usdCounts: {} });
         const b = buckets.get(key);
         ITEMS.forEach((i) => {
           const v = itemVal(r, i);
           if (v != null && isFinite(v)) { b.sums[i.key] = (b.sums[i.key] || 0) + v; b.counts[i.key] = (b.counts[i.key] || 0) + 1; }
+          const uv = itemUsd(r, i);
+          if (uv != null && isFinite(uv)) { b.usdSums[i.key] = (b.usdSums[i.key] || 0) + uv; b.usdCounts[i.key] = (b.usdCounts[i.key] || 0) + 1; }
         });
       });
       return [...buckets.keys()].sort().map((key) => {
         const b = buckets.get(key);
-        const vals = {};
-        ITEMS.forEach((i) => { vals[i.key] = b.counts[i.key] ? b.sums[i.key] / b.counts[i.key] : null; });
-        return { label: granularity === "month" ? key.replace("-", ".") : key, sortKey: key, vals };
+        const vals = {}, usdVals = {};
+        ITEMS.forEach((i) => {
+          vals[i.key] = b.counts[i.key] ? b.sums[i.key] / b.counts[i.key] : null;
+          usdVals[i.key] = b.usdCounts[i.key] ? b.usdSums[i.key] / b.usdCounts[i.key] : null;
+        });
+        return { label: granularity === "month" ? key.replace("-", ".") : key, sortKey: key, vals, usdVals };
       });
     }, [periodRows, granularity]);
 
-    function cellDisplay(idx, key) {
-      const v = tableRows[idx].vals[key];
-      if (displayMode === "abs") return { text: money(v), raw: v };
+    function cellDisplay(idx, key, field) {
+      const src = field === "usd" ? tableRows[idx].usdVals : tableRows[idx].vals;
+      const v = src[key];
+      if (displayMode === "abs") return { text: field === "usd" ? (v == null ? "—" : `US$${v.toFixed(2)}`) : money(v), raw: v };
       const prevRow = tableRows[idx - 1];
-      const prevV = prevRow ? prevRow.vals[key] : null;
+      const prevSrc = prevRow ? (field === "usd" ? prevRow.usdVals : prevRow.vals) : null;
+      const prevV = prevSrc ? prevSrc[key] : null;
       if (v == null || prevV == null || prevV === 0) return { text: "—", raw: null };
       const chg = (v - prevV) / prevV * 100;
       const arrow = chg > 0.05 ? "▲ " : chg < -0.05 ? "▼ " : "";
@@ -271,17 +288,34 @@ window.CepeaDomesticApp = (function () {
     // 화면에는 최신이 위로 오게 인덱스만 뒤집어서 렌더링함.
     const displayIdxs = useMemo(() => tableRows.map((_, i) => i).reverse(), [tableRows]);
     const tableAvg = useMemo(() => {
-      const avg = {};
+      const avg = {}, avgUsd = {};
       ITEMS.forEach((i) => {
         const vals = tableRows.map((r) => r.vals[i.key]).filter((v) => v != null && isFinite(v));
         avg[i.key] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        const uvals = tableRows.map((r) => r.usdVals[i.key]).filter((v) => v != null && isFinite(v));
+        avgUsd[i.key] = uvals.length ? uvals.reduce((a, b) => a + b, 0) / uvals.length : null;
       });
-      return avg;
+      return { avg, avgUsd };
     }, [tableRows]);
+    const krwRate = exRates && exRates.usdKrw ? exRates.usdKrw : null;
     function exportTableXlsx() {
-      const header = [granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도", ...ITEMS.map((i) => `${i.label} (R$/kg)`)];
-      const body = [...tableRows].reverse().map((r) => [r.label, ...ITEMS.map((i) => r.vals[i.key] != null ? Math.round(r.vals[i.key] * 10000) / 10000 : "")]);
-      const footer = ["기간평균", ...ITEMS.map((i) => tableAvg[i.key] != null ? Math.round(tableAvg[i.key] * 10000) / 10000 : "")];
+      const header = [granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도", ...visibleItems.flatMap((i) => [`${i.label} (R$/kg)`, `${i.label} (US$/kg)`, `${i.label} (₩/kg)`])];
+      const body = [...tableRows].reverse().map((r) => [r.label, ...visibleItems.flatMap((i) => {
+        const brl = r.vals[i.key], usd = r.usdVals[i.key];
+        return [
+          brl != null ? Math.round(brl * 10000) / 10000 : "",
+          usd != null ? Math.round(usd * 10000) / 10000 : "",
+          usd != null && krwRate ? Math.round(usd * krwRate) : "",
+        ];
+      })]);
+      const footer = ["기간평균", ...visibleItems.flatMap((i) => {
+        const brl = tableAvg.avg[i.key], usd = tableAvg.avgUsd[i.key];
+        return [
+          brl != null ? Math.round(brl * 10000) / 10000 : "",
+          usd != null ? Math.round(usd * 10000) / 10000 : "",
+          usd != null && krwRate ? Math.round(usd * krwRate) : "",
+        ];
+      })];
       downloadXlsx([header, ...body, footer], `브라질돈육계육내수현황_${granularity}_${ymStart}-${ymEnd}.xlsx`, "표");
     }
 
@@ -360,8 +394,8 @@ window.CepeaDomesticApp = (function () {
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "브라질 돈육·계육 내수 현황"),
         React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 14 } }, "카르카사 특급(돈육) · 냉장 계육 도매가 · 상파울루주(Grande São Paulo)"),
 
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8, marginBottom: 12 } },
-          ITEMS.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${Math.max(1, visibleItems.length)},minmax(0,1fr))`, gap: 8, marginBottom: 12 } },
+          visibleItems.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
         ),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
@@ -392,7 +426,7 @@ window.CepeaDomesticApp = (function () {
           ),
           React.createElement("button", { onClick: copyShareLink, style: { fontSize: 11, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사")
         ),
-        React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: -6, marginBottom: 14 } }, "※ 카드의 US$/kg은 '오늘' 환율이 아니라 각 날짜별 계육 R$/US$ 비율(그날 CEPEA 환율)로 환산한 값입니다 — 과거 날짜는 그 날짜 당시 환율 기준입니다."),
+        React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: -6, marginBottom: 14 } }, "※ US$/kg은 '오늘' 환율이 아니라 각 날짜별 계육 R$/US$ 비율(그날 CEPEA 환율)로 환산한 값입니다 — 과거 날짜는 그 날짜 당시 환율 기준입니다. 표의 ₩(원화)는 US$ 금액에 오늘 USD/KRW 환율만 곱한 값이라, 과거 원화 수치는 실제 그 시점 환율과 다를 수 있습니다."),
 
         React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
           React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "차트" }),
@@ -444,7 +478,11 @@ window.CepeaDomesticApp = (function () {
               React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } },
                 React.createElement("thead", null, React.createElement("tr", null,
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 92 } }, granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도"),
-                  ITEMS.map((i) => React.createElement("th", { key: i.key, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 100 } }, `${i.label} (R$/kg)`))
+                  visibleItems.flatMap((i) => [
+                    React.createElement("th", { key: i.key + "-brl", style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 88 } }, `${i.label} (R$/kg)`),
+                    React.createElement("th", { key: i.key + "-usd", style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 88, color: COLORS.mute } }, `${i.label} (US$/kg)`),
+                    React.createElement("th", { key: i.key + "-krw", style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 92, color: COLORS.mute } }, `${i.label} (₩/kg)`),
+                  ])
                 )),
                 React.createElement("tbody", null, displayIdxs.map((idx, rowPos) => {
                   const r = tableRows[idx];
@@ -455,16 +493,33 @@ window.CepeaDomesticApp = (function () {
                     onMouseLeave: (e) => { e.currentTarget.style.background = rowPos % 2 ? "rgba(255,255,255,0.015)" : "transparent"; }
                   },
                     React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: rowPos === 0 ? "#211c17" : COLORS.panel, fontWeight: rowPos === 0 ? 800 : 700, zIndex: 1, color: rowPos === 0 ? COLORS.amberSoft : COLORS.cream } }, r.label, rowPos === 0 ? " ·최신" : ""),
-                    ITEMS.map((i) => {
-                      const { text, raw } = cellDisplay(idx, i.key);
-                      const color = displayMode === "chg" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
-                      return React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
+                    visibleItems.flatMap((i) => {
+                      const brl = cellDisplay(idx, i.key, "brl");
+                      const usd = cellDisplay(idx, i.key, "usd");
+                      const brlColor = displayMode === "chg" ? (brl.raw === null ? COLORS.mute : brl.raw > 0 ? COLORS.sage : brl.raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
+                      const usdColor = displayMode === "chg" ? (usd.raw === null ? COLORS.mute : usd.raw > 0 ? COLORS.sage : usd.raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.mute;
+                      const usdVal = r.usdVals[i.key];
+                      const krwText = displayMode === "abs"
+                        ? (usdVal != null && krwRate ? `₩${Math.round(usdVal * krwRate).toLocaleString()}` : "—")
+                        : usd.text; // 증감률은 US$ 기준과 동일(원화는 US$에 오늘 환율만 곱한 것이라 증감률 자체는 US$와 같음)
+                      return [
+                        React.createElement("td", { key: i.key + "-brl", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color: brlColor } }, brl.text),
+                        React.createElement("td", { key: i.key + "-usd", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color: usdColor } }, usd.text),
+                        React.createElement("td", { key: i.key + "-krw", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color: usdColor } }, krwText),
+                      ];
                     })
                   );
                 })),
                 React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
                   React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "기간평균"),
-                  ITEMS.map((i) => React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, money(tableAvg[i.key])))
+                  visibleItems.flatMap((i) => {
+                    const brl = tableAvg.avg[i.key], usd = tableAvg.avgUsd[i.key];
+                    return [
+                      React.createElement("td", { key: i.key + "-brl", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, money(brl)),
+                      React.createElement("td", { key: i.key + "-usd", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.mute } }, usd != null ? `US$${usd.toFixed(2)}` : "—"),
+                      React.createElement("td", { key: i.key + "-krw", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.mute } }, usd != null && krwRate ? `₩${Math.round(usd * krwRate).toLocaleString()}` : "—"),
+                    ];
+                  })
                 ))
               )
             )

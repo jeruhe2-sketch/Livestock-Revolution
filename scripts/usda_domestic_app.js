@@ -17,6 +17,8 @@ window.UsdaDomesticApp = (function () {
     { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
     { key: "1/4 Trim Butt VAC", label: "목전지", color: "#4f8fb8" }
   ];
+  const KG_PER_LB = 0.45359237;
+  const lbToKg = (v) => v == null || !isFinite(v) ? null : v / KG_PER_LB;
   const GRANULARITY_OPTIONS = [["day", "일별"], ["month", "월별"], ["year", "연도별"]];
   const CHG_LABEL = { day: "전일대비", month: "전월대비", year: "전년대비" };
   function ymLabel(ym) { return `${Math.floor(ym / 100)}년 ${ym % 100}월`; }
@@ -160,7 +162,7 @@ window.UsdaDomesticApp = (function () {
         React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" } }), item.label
       ),
       React.createElement("div", { style: { fontSize: "clamp(20px,5vw,28px)", fontWeight: 800, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", marginTop: 6 } }, v == null ? "—" : `${money(v)}/lb`),
-      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(v / 0.45359237)}/kg 환산 · Wtd Avg`),
+      React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(lbToKg(v))}/kg 환산 · Wtd Avg`),
       React.createElement("div", { style: { display: "flex", gap: 12, marginTop: 9, fontSize: 10.5 } },
         React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && prev?.[item.key]?.usdPerLb ? (v - prev[item.key].usdPerLb) / prev[item.key].usdPerLb * 100 : null))),
         React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && week?.[item.key]?.usdPerLb ? (v - week[item.key].usdPerLb) / week[item.key].usdPerLb * 100 : null)))
@@ -224,6 +226,7 @@ window.UsdaDomesticApp = (function () {
     const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
     const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? (cur.length > 1 ? cur.filter((k) => k !== key) : cur) : [...cur, key]);
+    const visibleItems = useMemo(() => ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
 
     const periodRows = useMemo(() => {
       return ROWS.filter((r) => {
@@ -278,9 +281,15 @@ window.UsdaDomesticApp = (function () {
       return avg;
     }, [tableRows]);
     function exportTableXlsx() {
-      const header = [granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도", ...ITEMS.map((i) => `${i.label} ($/lb)`)];
-      const body = [...tableRows].reverse().map((r) => [r.label, ...ITEMS.map((i) => r.vals[i.key] != null ? Math.round(r.vals[i.key] * 10000) / 10000 : "")]);
-      const footer = ["기간평균", ...ITEMS.map((i) => tableAvg[i.key] != null ? Math.round(tableAvg[i.key] * 10000) / 10000 : "")];
+      const header = [granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도", ...visibleItems.flatMap((i) => [`${i.label} ($/lb)`, `${i.label} ($/kg)`])];
+      const body = [...tableRows].reverse().map((r) => [r.label, ...visibleItems.flatMap((i) => {
+        const v = r.vals[i.key];
+        return [v != null ? Math.round(v * 10000) / 10000 : "", v != null ? Math.round(lbToKg(v) * 10000) / 10000 : ""];
+      })]);
+      const footer = ["기간평균", ...visibleItems.flatMap((i) => {
+        const v = tableAvg[i.key];
+        return [v != null ? Math.round(v * 10000) / 10000 : "", v != null ? Math.round(lbToKg(v) * 10000) / 10000 : ""];
+      })];
       downloadXlsx([header, ...body, footer], `미국축산물내수현황_${granularity}_${ymStart}-${ymEnd}.xlsx`, "표");
     }
 
@@ -358,8 +367,8 @@ window.UsdaDomesticApp = (function () {
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "미국 축산물 내수 현황"),
         React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
 
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, marginBottom: 12 } },
-          ITEMS.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${Math.max(1, visibleItems.length)},minmax(0,1fr))`, gap: 8, marginBottom: 12 } },
+          visibleItems.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
         ),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
@@ -441,7 +450,10 @@ window.UsdaDomesticApp = (function () {
               React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } },
                 React.createElement("thead", null, React.createElement("tr", null,
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 92 } }, granularity === "day" ? "발표일" : granularity === "month" ? "연월" : "연도"),
-                  ITEMS.map((i) => React.createElement("th", { key: i.key, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 100 } }, `${i.label} ($/lb)`))
+                  visibleItems.flatMap((i) => [
+                    React.createElement("th", { key: i.key + "-lb", style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 92 } }, `${i.label} ($/lb)`),
+                    React.createElement("th", { key: i.key + "-kg", style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 92, color: COLORS.mute } }, `${i.label} ($/kg)`)
+                  ])
                 )),
                 React.createElement("tbody", null, displayIdxs.map((idx, rowPos) => {
                   const r = tableRows[idx];
@@ -452,16 +464,24 @@ window.UsdaDomesticApp = (function () {
                     onMouseLeave: (e) => { e.currentTarget.style.background = rowPos % 2 ? "rgba(255,255,255,0.015)" : "transparent"; }
                   },
                     React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: rowPos === 0 ? "#211c17" : COLORS.panel, fontWeight: rowPos === 0 ? 800 : 700, zIndex: 1, color: rowPos === 0 ? COLORS.amberSoft : COLORS.cream } }, r.label, rowPos === 0 ? " ·최신" : ""),
-                    ITEMS.map((i) => {
+                    visibleItems.flatMap((i) => {
                       const { text, raw } = cellDisplay(idx, i.key);
                       const color = displayMode === "chg" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
-                      return React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
+                      const v = r.vals[i.key];
+                      const kgText = displayMode === "abs" ? money(lbToKg(v)) : text; // 증감률은 단위 무관하게 동일값
+                      return [
+                        React.createElement("td", { key: i.key + "-lb", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text),
+                        React.createElement("td", { key: i.key + "-kg", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color: displayMode === "abs" ? COLORS.mute : color } }, kgText)
+                      ];
                     })
                   );
                 })),
                 React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
                   React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "기간평균"),
-                  ITEMS.map((i) => React.createElement("td", { key: i.key, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, money(tableAvg[i.key])))
+                  visibleItems.flatMap((i) => [
+                    React.createElement("td", { key: i.key + "-lb", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, money(tableAvg[i.key])),
+                    React.createElement("td", { key: i.key + "-kg", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.mute } }, money(lbToKg(tableAvg[i.key])))
+                  ])
                 ))
               )
             )
