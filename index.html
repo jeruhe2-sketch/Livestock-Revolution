@@ -874,15 +874,43 @@ function Dashboard({ db, exRates, fxHistory }) {
   // overlayDim==="year"일 땐 연도가 각각 하나의 선이라 X축은 그 해 안에서만(1~12월 또는
   // 1~53주) 돌면 됨. overlayDim이 수출국/수입국일 땐 국가가 선이니, 기준연도 하나에
   // 가두지 않고 선택된 전체 기간(여러 연도)을 월/주 단위로 쭉 이어붙여서 보여줌.
+  // 주차만 봐서는 몇 월인지 감이 안 와서, EU 원본 데이터에 이미 붙어있는 "그 주가
+  // 속한 월" 정보를 라벨에 같이 붙여줌(예: "34주(8월)"). overlayDim==="year"일 때는
+  // 여러 연도를 주 번호 하나로 합쳐 보여주는 거라, 그 주 번호가 여러 연도에서 걸린
+  // 월들 중 가장 흔한 월 하나를 대표로 삼음(연도마다 살짝 다를 수 있어서 근사치).
+  // 라벨과 실제 데이터 집계(xVal)가 반드시 똑같은 이 맵을 같이 써야 서로 어긋나지 않음.
+  const weekMonthMap = useMemo(() => {
+    const counts = {};
+    baseFilteredRows.forEach((r) => {
+      counts[r.week] = counts[r.week] || {};
+      counts[r.week][r.month] = (counts[r.week][r.month] || 0) + 1;
+    });
+    const map = {};
+    Object.keys(counts).forEach((w) => {
+      map[w] = Object.keys(counts[w]).sort((a, b) => counts[w][b] - counts[w][a])[0];
+    });
+    return map;
+  }, [baseFilteredRows]);
   const overlayXLabels = useMemo(() => {
     if (effectiveXAxis === "year") return years.map(String);
     if (effectiveXAxis === "week") {
-      if (overlayDim === "year") return Array.from({ length: 53 }, (_, i) => `${i + 1}주`);
+      if (overlayDim === "year") {
+        return Array.from({ length: 53 }, (_, i) => {
+          const w = i + 1;
+          const m = weekMonthMap[w];
+          return m ? `${w}주(${m}월)` : `${w}주`;
+        });
+      }
       const labels = [];
       years.forEach((y) => {
-        const weeksInYear = baseFilteredRows.filter((r) => r.year === y).map((r) => r.week);
-        const maxWeek = weeksInYear.length ? Math.max(...weeksInYear) : 0;
-        for (let w = 1; w <= maxWeek; w++) labels.push(`${y}-W${String(w).padStart(2, "0")}`);
+        const rowsInYear = baseFilteredRows.filter((r) => r.year === y);
+        const maxWeek = rowsInYear.length ? Math.max(...rowsInYear.map((r) => r.week)) : 0;
+        const monthOfWeek = {};
+        rowsInYear.forEach((r) => { monthOfWeek[r.week] = r.month; });
+        for (let w = 1; w <= maxWeek; w++) {
+          const m = monthOfWeek[w];
+          labels.push(m ? `${y}-W${String(w).padStart(2, "0")}(${m}월)` : `${y}-W${String(w).padStart(2, "0")}`);
+        }
       });
       return labels;
     }
@@ -892,7 +920,7 @@ function Dashboard({ db, exRates, fxHistory }) {
       for (let m = monthFrom; m <= monthTo; m++) labels.push(`${y}.${String(m).padStart(2, "0")}`);
     });
     return labels;
-  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, baseFilteredRows]);
+  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, baseFilteredRows, weekMonthMap]);
   const overlaySeries = useMemo(() => {
     return currentOverlayList.map((v0, idx) => {
       const bucket = {};
@@ -901,13 +929,20 @@ function Dashboard({ db, exRates, fxHistory }) {
         if (seriesVal !== v0) return;
         let xVal;
         if (effectiveXAxis === "year") xVal = String(r.year);
-        else if (effectiveXAxis === "week") xVal = overlayDim === "year" ? `${r.week}주` : `${r.year}-W${String(r.week).padStart(2, "0")}`;
+        else if (effectiveXAxis === "week") {
+          if (overlayDim === "year") {
+            const m = weekMonthMap[r.week];
+            xVal = m ? `${r.week}주(${m}월)` : `${r.week}주`;
+          } else {
+            xVal = r.month ? `${r.year}-W${String(r.week).padStart(2, "0")}(${r.month}월)` : `${r.year}-W${String(r.week).padStart(2, "0")}`;
+          }
+        }
         else xVal = overlayDim === "year" ? `${r.month}월` : `${r.year}.${String(r.month).padStart(2, "0")}`;
         bucket[xVal] = (bucket[xVal] || 0) + val(r);
       });
       return { name: v0, color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10) };
     });
-  }, [baseFilteredRows, overlayDim, effectiveXAxis, currentOverlayList, overlayXLabels, valueKey]);
+  }, [baseFilteredRows, overlayDim, effectiveXAxis, currentOverlayList, overlayXLabels, valueKey, weekMonthMap]);
   function exportOverlayXlsx() {
     const header = ["구분", ...currentOverlayList];
     const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
