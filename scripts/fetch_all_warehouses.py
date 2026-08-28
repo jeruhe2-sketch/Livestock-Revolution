@@ -440,12 +440,15 @@ def append_daily_history(all_rows: list) -> None:
     같은 날짜에 여러 번 실행되면 그날 기록을 덮어써서 중복 누적을 막는다.
     """
     today = now_kst().strftime("%Y-%m-%d")
+    print(f"[history] today(KST)={today}, all_rows 건수={len(all_rows)}")
 
     if os.path.exists(HISTORY_PATH):
         with open(HISTORY_PATH, encoding="utf-8") as f:
             history = json.load(f)
     else:
         history = {"기록": []}
+    existing_dates_before = sorted({h.get("날짜") for h in history.get("기록", [])})
+    print(f"[history] 기존 파일의 날짜들: {existing_dates_before}")
 
     history["기록"] = [h for h in history["기록"] if h.get("날짜") != today]
 
@@ -455,6 +458,7 @@ def append_daily_history(all_rows: list) -> None:
         bucket = totals.setdefault(key, {"재고수량": 0, "중량_kg": 0})
         bucket["재고수량"] += r.get("재고수량", 0) or 0
         bucket["중량_kg"] += r.get("중량_kg", 0) or 0
+    print(f"[history] 오늘({today}) 집계된 (창고,축종) 조합 수: {len(totals)}")
 
     for (창고명, 축종), vals in totals.items():
         history["기록"].append({
@@ -467,6 +471,8 @@ def append_daily_history(all_rows: list) -> None:
 
     with open(HISTORY_PATH, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
+    existing_dates_after = sorted({h.get("날짜") for h in history.get("기록", [])})
+    print(f"[history] 저장 후 날짜들: {existing_dates_after}, 총 레코드 {len(history['기록'])}건")
 
 
 def load_existing() -> dict:
