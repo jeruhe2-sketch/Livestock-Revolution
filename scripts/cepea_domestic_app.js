@@ -371,9 +371,9 @@ window.CepeaDomesticApp = (function () {
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
           React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
-          React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-          React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
