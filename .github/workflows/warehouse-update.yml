@@ -132,8 +132,8 @@ jobs:
         if: steps.run_script.outcome == 'failure'
         run: exit 1
 
-      - name: 실패 시 텔레그램 알림
-        if: failure()
+      - name: 실패 시 텔레그램 알림 (요청으로 비활성화됨 - 다시 켜려면 if 조건을 failure()로 되돌리면 됨)
+        if: false
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
