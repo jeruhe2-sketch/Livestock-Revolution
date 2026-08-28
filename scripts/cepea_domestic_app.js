@@ -14,8 +14,8 @@ window.CepeaDomesticApp = (function () {
     sage: "#6f9482", rust: "#c2695f", head: "#141211"
   };
   const ITEMS = [
-    { key: "pork", field: "value", label: "돈육 (카르카사 특급)", color: COLORS.amber },
-    { key: "chicken", field: "valueBRL", label: "계육 (냉장, 상파울루주)", color: COLORS.sage }
+    { key: "pork", field: "value", label: "돈육 카카스", color: COLORS.amber },
+    { key: "chicken", field: "valueBRL", label: "계육 냉장", color: COLORS.sage }
   ];
   const GRANULARITY_OPTIONS = [["day", "일별"], ["month", "월별"], ["year", "연도별"]];
   const CHG_LABEL = { day: "전일대비", month: "전월대비", year: "전년대비" };
