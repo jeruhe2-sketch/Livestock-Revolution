@@ -77,33 +77,45 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           pushed=0
+          : > debug/git_push_debug.log
           for i in $(seq 1 20); do
             git add data/warehouse_stock.json data/warehouse_history.json
             if git diff --cached --quiet; then
-              echo "변경 없음, 커밋 스킵"
+              echo "[시도 $i] 변경 없음, 커밋 스킵" >> debug/git_push_debug.log
               pushed=1
               break
             fi
-            git commit -m "chore: 창고 데이터 자동 갱신 $(date -u +%Y-%m-%d)"
-            if git push; then
-              echo "push 성공"
+            git commit -m "chore: 창고 데이터 자동 갱신 $(date -u +%Y-%m-%d)" >> debug/git_push_debug.log 2>&1
+            echo "[시도 $i] git push 실행..." >> debug/git_push_debug.log
+            if git push >> debug/git_push_debug.log 2>&1; then
+              echo "[시도 $i] push 성공" >> debug/git_push_debug.log
               pushed=1
               break
             fi
-            echo "push 충돌(다른 워크플로우와 동시 실행으로 보임), 재시도 $i"
-            git fetch origin main
-            git reset --mixed origin/main
+            echo "[시도 $i] push 실패, 재시도 준비" >> debug/git_push_debug.log
+            git fetch origin main >> debug/git_push_debug.log 2>&1
+            git reset --mixed origin/main >> debug/git_push_debug.log 2>&1
             # history.json은 이번 실행 시작 시점 스냅샷이라, 재시도할 때마다
             # origin의 최신 상태 위에 "오늘 레코드만" 다시 병합해야 다른 실행이
             # 넣어둔 다른 날짜 기록이 사라지지 않는다.
-            python scripts/merge_warehouse_history.py
+            python scripts/merge_warehouse_history.py >> debug/git_push_debug.log 2>&1
             sleep $((RANDOM % 15 + 5))
+          done
+          cat debug/git_push_debug.log
+          # 진단 로그는 별도로 항상 커밋해서 남긴다 (본 데이터 push 성공 여부와 무관하게)
+          git add -f debug/git_push_debug.log 2>/dev/null || true
+          git commit -m "debug: git push 진단 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git reset --mixed origin/main
+            git add -f debug/git_push_debug.log
+            sleep 3
           done
           if [ "$pushed" != "1" ]; then
             echo "::error::재시도 20회 후에도 push 실패. 이번 실행의 창고 데이터/이력 갱신이 유실됐습니다."
             exit 1
           fi
-          done
 
       - name: 로그/스냅샷을 아티팩트로 업로드 (git 커밋 안 함)
         if: always()
