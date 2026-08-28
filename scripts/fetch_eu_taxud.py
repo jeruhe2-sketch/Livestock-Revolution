@@ -34,7 +34,7 @@ ENDPOINT = f"{BASE}/api/taxud/weeklyData/export"
 
 SECTOR = "Pigs"
 PRODUCT = "Frozen pig meat"
-PARTNER_CODES = ["KR", "US", "GB", "CN", "JP", "PH", "VN", "MY"]  # 한국/미국/영국/중국/일본/필리핀/베트남/말레이시아
+PARTNER_CODES = ["KR", "US", "GB", "CN", "JP", "PH", "VN", "MY", "CL", "TW"]  # 한국/미국/영국/중국/일본/필리핀/베트남/말레이시아/칠레/대만
 PARTNER_NAMES = {
     "KR": "Korea (Republic of)",
     "US": "United States of America",
@@ -44,6 +44,8 @@ PARTNER_NAMES = {
     "PH": "Philippines",
     "VN": "Vietnam",
     "MY": "Malaysia",
+    "CL": "Chile",
+    "TW": "Taiwan",
 }
 
 START_YEAR = 2024

@@ -38,7 +38,7 @@ window.UsdaDomesticApp = (function () {
   }
 
   /* ── EU/USDA 앱과 동일한 라인차트(호버 툴팁 포함) ── */
-  function SvgLineChart({ categories, series, height = 260, formatValue }) {
+  function SvgLineChart({ categories, series, height = 260, formatValue, yMin, yMax }) {
     const fmt = formatValue || ((v) => v == null ? "—" : v.toFixed(2));
     const width = 900;
     const manyLabels = categories.length > 16;
@@ -46,9 +46,10 @@ window.UsdaDomesticApp = (function () {
     const innerW = width - padding.left - padding.right;
     const innerH = height - padding.top - padding.bottom;
     const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
-    const maxVal = allVals.length ? Math.max(...allVals) : 1;
-    const minVal = allVals.length ? Math.min(0, Math.min(...allVals) * 0.97) : 0;
-    const span = Math.max(0.01, maxVal * 1.05 - minVal);
+    const maxVal = yMax != null ? yMax : (allVals.length ? Math.max(...allVals) : 1);
+    const minVal = yMin != null ? yMin : (allVals.length ? Math.min(0, Math.min(...allVals) * 0.97) : 0);
+    const topVal = yMax != null ? maxVal : maxVal * 1.05;
+    const span = Math.max(0.01, topVal - minVal);
     const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
     const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
     const xFor = (i) => padding.left + i * stepX;
@@ -67,7 +68,7 @@ window.UsdaDomesticApp = (function () {
       React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
         Array.from({ length: gridLines + 1 }).map((_, i) => {
           const y = padding.top + innerH / gridLines * i;
-          const val = maxVal * 1.05 - (maxVal * 1.05 - minVal) / gridLines * i;
+          const val = topVal - (topVal - minVal) / gridLines * i;
           return React.createElement("g", { key: i },
             React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
             React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, `$${val.toFixed(2)}`)
@@ -368,9 +369,9 @@ window.UsdaDomesticApp = (function () {
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
           React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
-          React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-          React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: ALL_YM.map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
@@ -408,7 +409,7 @@ window.UsdaDomesticApp = (function () {
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } },
               trendSeries.length
-                ? React.createElement(React.Fragment, null, React.createElement(SvgLineChart, { categories: trendCategories, series: trendSeries, height: 300 }), React.createElement(ChartLegend, { series: trendSeries }))
+                ? React.createElement(React.Fragment, null, React.createElement(SvgLineChart, { categories: trendCategories, series: trendSeries, height: 300, yMin: 1, yMax: 2 }), React.createElement(ChartLegend, { series: trendSeries }))
                 : React.createElement("div", { style: { padding: 40, textAlign: "center", color: COLORS.mute } }, "표시할 품목을 하나 이상 선택하세요.")
             ),
             React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10 } }, "※ USDA 원자료 Wtd Avg는 $/100 lb입니다. 예: $145.00/100 lb = $1.45/lb. 카드의 kg 환산치는 1 lb = 0.453592 kg 기준 단순 환산(참고용)입니다.")
@@ -420,7 +421,7 @@ window.UsdaDomesticApp = (function () {
             ),
             React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } }, "* 위쪽 기간 필터 안에 포함된 연도들을 월별 평균으로 겹쳐서 계절 패턴과 연도별 가격 수준을 비교합니다."),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } },
-              React.createElement(SvgLineChart, { categories: overlayCategories, series: overlaySeries, height: 300 }),
+              React.createElement(SvgLineChart, { categories: overlayCategories, series: overlaySeries, height: 300, yMin: 1, yMax: 2 }),
               React.createElement(ChartLegend, { series: overlaySeries })
             )
           )
