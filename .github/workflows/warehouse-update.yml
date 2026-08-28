@@ -75,6 +75,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/last_run.log 2>/dev/null || true
+          git commit -m "debug: warehouse last_run 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          git push || true
           for i in 1 2 3 4 5 6 7 8; do
             git add data/warehouse_stock.json data/warehouse_history.json
             if git diff --cached --quiet; then
