@@ -734,7 +734,7 @@ function Dashboard({ db, exRates, fxHistory }) {
     if (dimKey === "partner") return PARTNER_LABEL[r.partnerCode] || r.partnerCode;
     if (dimKey === "year") return String(r.year);
     if (dimKey === "yearMonth") return `${r.year}-${String(r.month).padStart(2, "0")}`;
-    if (dimKey === "week") return `${r.year}-W${String(r.week).padStart(2, "0")}`;
+    if (dimKey === "week") return `${r.year}-W${String(r.week).padStart(2, "0")}(${r.month}월)`;
     return `${r.month}월`;
   }
   function monthNum(label) { return parseInt(label, 10); }
@@ -1338,7 +1338,7 @@ function Dashboard({ db }) {
     if (dimKey === "country") return COUNTRY_LABEL[r.countryAlpha] || r.countryAlpha;
     if (dimKey === "year") return String(r.year);
     if (dimKey === "yearMonth") return `${r.year}-${String(r.month).padStart(2, "0")}`;
-    if (dimKey === "week") return `${r.year}-W${String(r.week).padStart(2, "0")}`;
+    if (dimKey === "week") return `${r.year}-W${String(r.week).padStart(2, "0")}(${r.month}월)`;
     return `${r.month}월`;
   }
   function monthNum(label) { return parseInt(label, 10); }
