@@ -67,6 +67,23 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+      - name: 실패 시에만 진단 로그를 리포에 커밋 (평소엔 커밋 안 함)
+        if: steps.run_script.outcome == 'failure'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git reset --mixed origin/main
+          git add -f debug/daily_update_last.log
+          git commit -m "debug: 수입검역 자동갱신 실패 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git reset --mixed origin/main
+            git add -f debug/daily_update_last.log
+            sleep 3
+          done
+
       - name: 스크립트 실패 시 워크플로우도 실패 처리
         if: steps.run_script.outcome == 'failure'
         run: exit 1
