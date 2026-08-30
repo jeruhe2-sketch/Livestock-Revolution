@@ -262,15 +262,17 @@ function Dashboard({ db }) {
     setYmEnd(val);
     if (val < ymStart) setYmStart(val);
   };
-  const [rowDim, setRowDim] = useState(() => p("rd", "country"));
-  const [colDim, setColDim] = useState(() => p("cd", "year"));
+  const pOneOf = (key, fallback, validValues) => { const v = p(key, fallback); return validValues.includes(v) ? v : fallback; };
+  const QDIM_VALUES = ["country", "part", "year", "month"];
+  const [rowDim, setRowDim] = useState(() => pOneOf("rd", "country", QDIM_VALUES));
+  const [colDim, setColDim] = useState(() => pOneOf("cd", "year", QDIM_VALUES));
   const [displayMode, setDisplayMode] = useState(() => p("dm", "abs"));
-  const [groupBy, setGroupBy] = useState(() => p("gb", "year"));
+  const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", QDIM_VALUES));
   const [sortDesc, setSortDesc] = useState(true);
-  const [overlayDim, setOverlayDim] = useState(() => p("od", "year"));
+  const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "country"]));
   const [overlayXAxis, setOverlayXAxis] = useState(() => p("oxa", "month"));
   const [overlayYearCtx, setOverlayYearCtx] = useState(() => pInt("oyc", Math.floor(YM_MAX / 100)));
-  const [overlaySel, setOverlaySel] = useState(() => ({ dim: p("od", "year"), list: pList("ol") }));
+  const [overlaySel, setOverlaySel] = useState(() => ({ dim: pOneOf("od", "year", ["year", "country"]), list: pList("ol") }));
   const meatIdx = META.\uD488\uBA85.indexOf(meat);
   const baseFilteredRows = useMemo(() => {
     return ROWS.filter((r) => {
