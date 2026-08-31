@@ -137,14 +137,14 @@ WAREHOUSE_CONFIGS = [
     },
     {
         "창고명": "한라냉장",
-        "base_url": "http://211.239.173.91:8080/hlgdst",
+        "base_url": "http://211.239.173.90/hlgdst",
         "id_env": "NWILL_HALLA_CLEARED_ID",
         "pw_env": "NWILL_HALLA_CLEARED_PW",
         "계정용도": "통관",
     },
     {
         "창고명": "한라냉장",
-        "base_url": "http://211.239.173.91:8080/hlgdst",
+        "base_url": "http://211.239.173.90/hlgdst",
         "id_env": "NWILL_HALLA_UNCLEARED_ID",
         "pw_env": "NWILL_HALLA_UNCLEARED_PW",
         "계정용도": "미통관",
