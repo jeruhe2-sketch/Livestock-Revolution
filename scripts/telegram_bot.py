@@ -51,38 +51,103 @@ def save_state(state: dict) -> None:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
-def goatcounter_visitors(api_key: str, start: datetime, end: datetime) -> int:
-    """주어진 기간(UTC)의 순 방문자 수(중복 새로고침 제외)를 반환."""
-    url = (
-        f"https://{GOATCOUNTER_CODE}.goatcounter.com/api/v0/stats/total"
-        f"?start={start.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-        f"&end={end.strftime('%Y-%m-%dT%H:%M:%SZ')}"
-    )
+def _api_get(api_key: str, path: str, params: dict) -> dict:
+    query = urllib.parse.urlencode(params)
+    url = f"https://{GOATCOUNTER_CODE}.goatcounter.com/api/v0/{path}?{query}"
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {api_key}"})
     with urllib.request.urlopen(req, timeout=20) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-    return data.get("total", 0)
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _iso(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def stats_total(api_key: str, start: datetime, end: datetime) -> dict:
+    """기간 내 방문자수(total) + 일자별 상세(stats)를 함께 반환."""
+    return _api_get(
+        api_key, "stats/total", {"start": _iso(start), "end": _iso(end)}
+    )
+
+
+def top_referrers(api_key: str, start: datetime, end: datetime, limit: int = 3) -> list:
+    """기간 내 유입경로 상위 N개. [{name, count}, ...]"""
+    data = _api_get(
+        api_key,
+        "stats/toprefs",
+        {"start": _iso(start), "end": _iso(end), "limit": limit},
+    )
+    return data.get("stats", [])
+
+
+def _pct_change(now: int, before: int) -> str:
+    if before == 0:
+        return "(신규)" if now > 0 else ""
+    diff = (now - before) / before * 100
+    arrow = "▲" if diff > 0 else ("▼" if diff < 0 else "-")
+    return f"({arrow}{abs(diff):.0f}%)"
 
 
 def build_stats_message(api_key: str) -> str:
     now_kst = datetime.now(KST)
     today_start_kst = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
     today_start_utc = today_start_kst.astimezone(timezone.utc)
+    yesterday_start_utc = today_start_utc - timedelta(days=1)
     now_utc = datetime.now(timezone.utc)
     week_start_utc = now_utc - timedelta(days=7)
+    prev_week_start_utc = now_utc - timedelta(days=14)
     all_start_utc = datetime(2020, 1, 1, tzinfo=timezone.utc)  # 서비스 시작 훨씬 이전
 
-    today = goatcounter_visitors(api_key, today_start_utc, now_utc)
-    week = goatcounter_visitors(api_key, week_start_utc, now_utc)
-    total = goatcounter_visitors(api_key, all_start_utc, now_utc)
+    today_data = stats_total(api_key, today_start_utc, now_utc)
+    yesterday_data = stats_total(api_key, yesterday_start_utc, today_start_utc)
+    week_data = stats_total(api_key, week_start_utc, now_utc)
+    prev_week_data = stats_total(api_key, prev_week_start_utc, week_start_utc)
+    total_data = stats_total(api_key, all_start_utc, now_utc)
 
-    return (
-        "📊 축산레이더 방문자 현황\n"
-        f"오늘: {today:,}명\n"
-        f"최근 7일: {week:,}명\n"
-        f"전체 누적: {total:,}명\n"
-        f"(같은 사람이 짧은 시간 내 새로고침한 건 중복 집계 안 됨)"
-    )
+    today_n = today_data.get("total", 0)
+    yesterday_n = yesterday_data.get("total", 0)
+    week_n = week_data.get("total", 0)
+    prev_week_n = prev_week_data.get("total", 0)
+    total_n = total_data.get("total", 0)
+
+    # 최근 7일 일별 추이 (일요일부터든 아니든 stats 배열에 있는 날짜 순서 그대로)
+    daily_lines = []
+    for day_stat in week_data.get("stats", []):
+        day = day_stat.get("day", "")
+        count = day_stat.get("daily", 0)
+        try:
+            day_label = datetime.strptime(day, "%Y-%m-%d").strftime("%m/%d")
+        except ValueError:
+            day_label = day
+        bar = "■" * min(count, 20)
+        daily_lines.append(f"{day_label} {bar} {count}")
+
+    refs = top_referrers(api_key, week_start_utc, now_utc, limit=3)
+    if refs:
+        ref_lines = "\n".join(
+            f"  · {r.get('name') or '(직접 접속/북마크)'}: {r.get('count', 0)}명"
+            for r in refs
+        )
+    else:
+        ref_lines = "  · (유입경로 데이터 없음 — 대부분 직접 접속/북마크)"
+
+    lines = [
+        "📊 축산레이더 방문자 리포트",
+        "",
+        f"오늘: {today_n:,}명 {_pct_change(today_n, yesterday_n)}  (어제 {yesterday_n:,}명)",
+        f"최근 7일: {week_n:,}명 {_pct_change(week_n, prev_week_n)}  (직전 7일 {prev_week_n:,}명)",
+        f"전체 누적: {total_n:,}명",
+        "",
+        "📈 최근 7일 일별 추이",
+    ]
+    lines.extend(daily_lines)
+    lines.append("")
+    lines.append("🔗 최근 7일 유입경로 TOP 3")
+    lines.append(ref_lines)
+    lines.append("")
+    lines.append("※ 같은 사람이 짧은 시간 내 새로고침한 건 중복 집계 안 됨")
+
+    return "\n".join(lines)
 
 
 def main() -> None:
