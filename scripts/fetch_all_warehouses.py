@@ -296,6 +296,17 @@ def parse_stock_table(html: str, 창고명: str) -> list:
             pass_raw = "통관"
         record["통관상태"] = pass_raw if pass_raw else None  # 후처리 단계에서 계정 기본값 적용
 
+        # 일부 창고(신우/한라)는 "사업부" 컬럼 자체에 "[계육팀-미통]", "축산1팀-통관"
+        # 처럼 실제 통관여부가 박혀 있는데, 이게 통관구분 컬럼/계정 기본값보다
+        # 더 신뢰도 높은 실제 정답이다 (예: MEDUHI881796 BL - 사업부는 "[계육팀-미통]"인데
+        # 통관구분/계정판정으로는 "통관"으로 잘못 찍히는 경우가 실제로 있었음).
+        # "미통"이 "통관"의 부분문자열이 아니므로(미+통관) 미통을 먼저 검사한다.
+        dept = record.get("사업부", "")
+        if "미통" in dept:
+            record["통관상태"] = "미통관"
+        elif "통관" in dept:
+            record["통관상태"] = "통관"
+
         for field in NUMERIC_FIELDS:
             if field in record:
                 record[field] = _to_number(record[field])
