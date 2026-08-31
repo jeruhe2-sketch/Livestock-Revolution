@@ -1,0 +1,90 @@
+name: 텔레그램 방문자 통계 봇
+
+on:
+  # cron-job.org에서 5~10분 간격으로 workflow_dispatch를 호출해서
+  # "/방문자" 명령이 왔는지 폴링하는 방식 (다른 워크플로우들과 동일 패턴)
+  workflow_dispatch: {}
+
+concurrency:
+  group: repo-main-git-write  # 저장소 전체 워크플로우가 공유하는 잠금 (git push 충돌 방지)
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 파이썬 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 텔레그램 명령 확인 및 응답
+        id: run_script
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GOATCOUNTER_API_KEY: ${{ secrets.GOATCOUNTER_API_KEY }}
+        run: |
+          mkdir -p debug
+          python scripts/telegram_bot.py > debug/telegram_bot_last.log 2>&1
+          echo "exit_code=$?" >> debug/telegram_bot_last.log
+          cat debug/telegram_bot_last.log
+
+      - name: 변경사항(offset 상태) 커밋 및 푸시
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3 4 5 6 7 8; do
+            git add data/telegram_bot_state.json
+            if git diff --cached --quiet; then
+              echo "변경 없음, 커밋 스킵"
+              break
+            fi
+            git commit -m "chore: 텔레그램 봇 처리 상태 갱신 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            if git push; then
+              echo "push 성공"
+              break
+            fi
+            echo "push 충돌, 재시도 $i"
+            git fetch origin main
+            git reset --mixed origin/main
+            sleep $((RANDOM % 10 + 3))
+          done
+
+      - name: 실패 시에만 진단 로그를 리포에 커밋 (평소엔 커밋 안 함)
+        if: steps.run_script.outcome == 'failure'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git reset --mixed origin/main
+          git add -f debug/telegram_bot_last.log
+          git commit -m "debug: 텔레그램 봇 실패 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git reset --mixed origin/main
+            git add -f debug/telegram_bot_last.log
+            sleep 3
+          done
+
+      - name: 스크립트 실패 시 워크플로우도 실패 처리
+        if: steps.run_script.outcome == 'failure'
+        run: exit 1
+
+      - name: 실패 시 텔레그램 알림
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            --data-urlencode text="⚠️ <b>[축산레이더] 텔레그램 방문자 봇 실패</b>
+            로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
