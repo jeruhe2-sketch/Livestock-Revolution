@@ -91,18 +91,52 @@ def download_all_years():
 
 def parse_year_file(path, year):
     """수입축산물 시트에서 면양육/산양육 행만 뽑아서 (년,월,품명,국가,kg) 리스트로 반환."""
-    df = pd.read_excel(path, sheet_name="수입축산물", header=None)
+    xl = pd.ExcelFile(path)
+    log(f"  {year} 시트 목록: {xl.sheet_names}")
+    sheet_name = None
+    for cand in ["수입축산물", "수입 축산물", "수입축산물현황", "수입축산물실적"]:
+        if cand in xl.sheet_names:
+            sheet_name = cand
+            break
+    if sheet_name is None:
+        # 이름이 다르면, "수입"과 "축산"이 둘 다 들어간 시트를 찾는다
+        for s in xl.sheet_names:
+            if "수입" in s and "축산" in s:
+                sheet_name = s
+                break
+    if sheet_name is None:
+        log(f"  {year}: 수입축산물류 시트를 못찾음")
+        return []
+    log(f"  {year}: 시트 '{sheet_name}' 사용")
+
+    df = pd.read_excel(path, sheet_name=sheet_name, header=None)
     col_item_group = df[0].ffill()
     col_item = df[1].ffill()
     col_country = df[2]
+
+    all_items = sorted(set(col_item.dropna().astype(str)))
+    matched_items = [x for x in all_items if "면양" in x or "산양" in x]
+    log(f"  {year}: 면양/산양 포함된 품명 후보: {matched_items}")
 
     mask = col_item.isin(ITEM_MAP.keys())
     sub = df[mask].copy()
     sub["품명"] = col_item[mask]
     sub["국가"] = col_country[mask]
 
-    # 헤더 행(=2)에서 월(2025.01 등)이 있는 컬럼 위치 찾기: 데이터는 항상 "건수","수량" 두 칸씩 짝
-    header_row = df.iloc[2]
+    # 헤더 행 위치가 연도마다 다를 수 있어서 "기준년월"이 포함된 행을 직접 찾는다
+    header_row_idx = None
+    for r_idx in range(min(6, len(df))):
+        row_vals = df.iloc[r_idx].astype(str).tolist()
+        if any("기준년월" in v for v in row_vals):
+            header_row_idx = r_idx
+            break
+    if header_row_idx is None:
+        header_row_idx = 2
+        log(f"  {year}: '기준년월' 행을 못찾아서 기본값(2번 행) 사용")
+    else:
+        log(f"  {year}: 헤더 행 = {header_row_idx}")
+
+    header_row = df.iloc[header_row_idx]
     month_cols = {}  # month_idx(1~12) -> (수량 컬럼 index)
     for col_idx in range(4, df.shape[1]):
         val = header_row[col_idx]
@@ -118,6 +152,7 @@ def parse_year_file(path, year):
                     month_cols[m] = col_idx + 1
         except Exception:
             continue
+    log(f"  {year}: month_cols 개수 = {len(month_cols)}")
 
     records = []
     for _, row in sub.iterrows():
