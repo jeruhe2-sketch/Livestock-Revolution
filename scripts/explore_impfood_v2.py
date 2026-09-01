@@ -43,6 +43,14 @@ def main():
                 log(f"  실패: {e}")
             page.wait_for_timeout(1500)
 
+            log("2-1) '일반현황' 클릭")
+            try:
+                page.get_by_text("일반현황", exact=True).first.click(timeout=5000)
+                log("  성공")
+            except Exception as e:
+                log(f"  실패: {e}")
+            page.wait_for_timeout(1500)
+
             try:
                 page.screenshot(path=f"debug/impfood_v2_{RUN_ID}_step2.png", full_page=True)
                 log("  step2 스크린샷 저장함")
@@ -96,6 +104,45 @@ def main():
                         log(f"  input[{i}] type={itype!r} value={ival!r} box={box}")
                     except Exception as e:
                         log(f"  input[{i}] 오류: {e}")
+            except Exception as e:
+                log(f"  오류: {e}")
+
+            log("5) '품명' 입력 및 검색 시도")
+            try:
+                label = page.get_by_text("품명", exact=True).first
+                label_box = label.bounding_box(timeout=3000)
+                log(f"  '품명' 라벨 위치: {label_box}")
+                inputs = page.locator("input[type='text']")
+                icount = inputs.count()
+                target_input = None
+                best_dist = None
+                for i in range(icount):
+                    try:
+                        box = inputs.nth(i).bounding_box(timeout=500)
+                        if not box or not label_box:
+                            continue
+                        if abs(box["y"] - label_box["y"]) < 20 and box["x"] > label_box["x"]:
+                            dist = box["x"] - label_box["x"]
+                            if best_dist is None or dist < best_dist:
+                                best_dist = dist
+                                target_input = i
+                    except Exception:
+                        continue
+                log(f"  '품명' 입력창 추정 index: {target_input}")
+                if target_input is not None:
+                    inputs.nth(target_input).click()
+                    inputs.nth(target_input).fill("양고기")
+                    log("  '양고기' 입력함")
+                    page.wait_for_timeout(500)
+                    page.get_by_text("검색", exact=True).first.click(timeout=5000)
+                    log("  '검색' 클릭함")
+                    page.wait_for_timeout(4000)
+                    result_text = page.locator("body").inner_text()
+                    with open(f"debug/impfood_v2_{RUN_ID}_result.txt", "w", encoding="utf-8") as f:
+                        f.write(result_text[:15000])
+                    log("  검색 결과 텍스트 저장함")
+                    page.screenshot(path=f"debug/impfood_v2_{RUN_ID}_result.png", full_page=True)
+                    log("  검색 결과 스크린샷 저장함")
             except Exception as e:
                 log(f"  오류: {e}")
 
