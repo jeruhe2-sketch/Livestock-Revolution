@@ -1,0 +1,3 @@
+[RUN_ID] 33511083679
+No1 오류: HTTPSConnectionPool(host='eminwon.qia.go.kr', port=443): Max retries exceeded with url: /statistics/statistics_No1.do (Caused by ConnectTimeoutError(<HTTPSConnection(host='eminwon.qia.go.kr', port=443) at 0x7f6bf8147e10>, 'Connection to eminwon.qia.go.kr timed out. (connect timeout=20)'))
+No3 오류: HTTPSConnectionPool(host='eminwon.qia.go.kr', port=443): Max retries exceeded with url: /statistics/statistics_No3.do (Caused by ConnectTimeoutError(<HTTPSConnection(host='eminwon.qia.go.kr', port=443) at 0x7f6bf7f37e50>, 'Connection to eminwon.qia.go.kr timed out. (connect timeout=20)'))
