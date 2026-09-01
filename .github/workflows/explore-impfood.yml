@@ -20,18 +20,18 @@ jobs:
           python-version: '3.11'
       - run: pip install playwright pandas openpyxl xlrd
       - run: python -m playwright install --with-deps chromium
-      - name: mafra 양/염소고기 히스토리 수집+병합 실행
+      - name: mafra 양/염소고기 히스토리 수집+병합 실행 (실제 병합)
         run: |
           mkdir -p debug
-          python scripts/fetch_mafra_livestock_history.py || echo "SCRIPT_FAILED_$?"
+          python scripts/fetch_mafra_livestock_history.py --merge || echo "SCRIPT_FAILED_$?"
       - name: 결과 커밋
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f debug/mafra_merge_${{ github.run_id }}.log debug/mafra_parsed_${{ github.run_id }}.json
+          git add -f debug/mafra_merge_${{ github.run_id }}.log debug/mafra_parsed_${{ github.run_id }}.json data/master_flat.json
           git status --porcelain
-          git commit -m "debug: mafra 파싱 검증 결과 (run ${{ github.run_id }})" || echo "COMMIT_SKIPPED"
+          git commit -m "data: 양고기/염소고기 2019~2025 히스토리 병합 (mafra 자동수집, run ${{ github.run_id }})" || echo "COMMIT_SKIPPED"
           for i in 1 2 3; do
             git push && break
             git fetch origin main
