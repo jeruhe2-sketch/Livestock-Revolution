@@ -166,11 +166,17 @@ def main():
                     page.wait_for_timeout(500)
 
                     cur_val = el.input_value(timeout=1000)
-                    log(f"  입력창 현재 값 확인: {cur_val!r}")
+                    log(f"  입력창 현재 값(Enter 전) 확인: {cur_val!r}")
 
-                    page.get_by_text("검색", exact=True).first.click(timeout=5000)
-                    log("  '검색' 클릭함")
+                    page.screenshot(path=f"debug/impfood_v2_{RUN_ID}_before_search.png", full_page=True)
+
+                    el.press("Enter")
+                    log("  Enter 키로 제출함")
                     page.wait_for_timeout(5000)
+
+                    cur_val2 = el.input_value(timeout=1000)
+                    log(f"  입력창 현재 값(Enter 후) 확인: {cur_val2!r}")
+
                     result_text = page.locator("body").inner_text()
                     with open(f"debug/impfood_v2_{RUN_ID}_result.txt", "w", encoding="utf-8") as f:
                         f.write(result_text[:15000])
