@@ -112,13 +112,13 @@ def main():
                 label = page.get_by_text("품명", exact=True).first
                 label_box = label.bounding_box(timeout=3000)
                 log(f"  '품명' 라벨 위치: {label_box}")
-                inputs = page.locator("input[type='text']")
-                icount = inputs.count()
+                text_inputs = page.locator("input[type='text']")
+                icount = text_inputs.count()
                 target_input = None
                 best_dist = None
                 for i in range(icount):
                     try:
-                        box = inputs.nth(i).bounding_box(timeout=500)
+                        box = text_inputs.nth(i).bounding_box(timeout=500)
                         if not box or not label_box:
                             continue
                         if abs(box["y"] - label_box["y"]) < 20 and box["x"] > label_box["x"]:
@@ -128,15 +128,49 @@ def main():
                                 target_input = i
                     except Exception:
                         continue
-                log(f"  '품명' 입력창 추정 index: {target_input}")
+                log(f"  '품명' 입력창 추정 index(type=text 중): {target_input}")
+
+                # 처리일자(시작/종료) input은 type이 지정 안 된(text도 아닌) input으로 확인됨
+                all_inputs = page.locator("input")
+                aicount = all_inputs.count()
+                date_inputs = []
+                for i in range(aicount):
+                    try:
+                        el = all_inputs.nth(i)
+                        itype = el.get_attribute("type") or ""
+                        val = el.input_value(timeout=500)
+                        if itype == "" and "-" in val and len(val) == 10:
+                            date_inputs.append(i)
+                    except Exception:
+                        continue
+                log(f"  날짜 input으로 추정되는 index들: {date_inputs}")
+
+                if len(date_inputs) >= 2:
+                    start_el = all_inputs.nth(date_inputs[0])
+                    end_el = all_inputs.nth(date_inputs[1])
+                    for el, val in [(start_el, "2019-01-01"), (end_el, "2019-01-31")]:
+                        el.click()
+                        page.keyboard.press("Control+A")
+                        page.keyboard.press("Delete")
+                        el.type(val, delay=50)
+                        page.keyboard.press("Tab")
+                    log("  날짜 2019-01-01 ~ 2019-01-31 입력함")
+
                 if target_input is not None:
-                    inputs.nth(target_input).click()
-                    inputs.nth(target_input).fill("양고기")
-                    log("  '양고기' 입력함")
+                    el = text_inputs.nth(target_input)
+                    el.click()
+                    page.keyboard.press("Control+A")
+                    page.keyboard.press("Delete")
+                    el.type("양고기", delay=100)
+                    log("  '양고기' 타이핑 입력함")
                     page.wait_for_timeout(500)
+
+                    cur_val = el.input_value(timeout=1000)
+                    log(f"  입력창 현재 값 확인: {cur_val!r}")
+
                     page.get_by_text("검색", exact=True).first.click(timeout=5000)
                     log("  '검색' 클릭함")
-                    page.wait_for_timeout(4000)
+                    page.wait_for_timeout(5000)
                     result_text = page.locator("body").inner_text()
                     with open(f"debug/impfood_v2_{RUN_ID}_result.txt", "w", encoding="utf-8") as f:
                         f.write(result_text[:15000])
