@@ -1,0 +1,39 @@
+name: (임시) 소고기 교차검증
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: repo-main-git-write
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install playwright pandas openpyxl
+      - run: python -m playwright install --with-deps chromium
+      - name: 검증 스크립트 실행
+        run: |
+          mkdir -p debug
+          python scripts/verify_mafra_beef.py || echo "SCRIPT_FAILED_$?"
+      - name: 결과 커밋
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/verify_beef_${{ github.run_id }}.log
+          git commit -m "debug: 소고기 교차검증 결과 (run ${{ github.run_id }})" || echo "COMMIT_SKIPPED"
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git rebase origin/main
+            sleep 3
+          done
