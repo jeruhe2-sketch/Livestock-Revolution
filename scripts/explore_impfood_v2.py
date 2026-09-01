@@ -161,8 +161,8 @@ def main():
                     el.click()
                     page.keyboard.press("Control+A")
                     page.keyboard.press("Delete")
-                    el.type("양고기", delay=100)
-                    log("  '양고기' 타이핑 입력함")
+                    el.type("소고기", delay=100)
+                    log("  '소고기' 타이핑 입력함 (검증용: 데이터 있는 게 확실한 품목)")
                     page.wait_for_timeout(500)
 
                     cur_val = el.input_value(timeout=1000)
