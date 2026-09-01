@@ -1,0 +1,13 @@
+1) 메인 페이지 접속
+2) '수입식품' 클릭
+  성공
+  step2 스크린샷 저장함
+3) '냉장/냉동-부위-국가' 텍스트 탐색
+  개수: 0
+  전체 body 텍스트 저장함 (못찾아서)
+  step3 스크린샷 저장함
+4) input 요소 전수 조사
+  input 전체 개수: 3
+  input[0] type='button' value='로그아웃' box=None
+  input[1] type='text' value='' box={'x': 17, 'y': 115, 'width': 171, 'height': 31}
+  input[2] type='button' value='서브메뉴 열기' box={'x': 260, 'y': 312.5, 'width': 11, 'height': 141}
