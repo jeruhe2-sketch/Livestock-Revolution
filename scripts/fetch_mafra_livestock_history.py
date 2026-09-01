@@ -117,6 +117,11 @@ def parse_year_file(path, year):
     all_items = sorted(set(col_item.dropna().astype(str)))
     matched_items = [x for x in all_items if "면양" in x or "산양" in x]
     log(f"  {year}: 면양/산양 포함된 품명 후보: {matched_items}")
+    if not matched_items:
+        # 육류 카테고리 전체를 덤프해서 이름이 다른지 확인
+        meat_group_mask = col_item_group.astype(str).str.contains("육류", na=False)
+        meat_items = sorted(set(col_item[meat_group_mask].dropna().astype(str)))
+        log(f"  {year}: (참고) 육류 카테고리 전체 품명: {meat_items}")
 
     mask = col_item.isin(ITEM_MAP.keys())
     sub = df[mask].copy()
