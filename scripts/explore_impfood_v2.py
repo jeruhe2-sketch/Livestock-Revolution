@@ -166,12 +166,30 @@ def main():
                     page.wait_for_timeout(500)
 
                     cur_val = el.input_value(timeout=1000)
-                    log(f"  입력창 현재 값(Enter 전) 확인: {cur_val!r}")
+                    log(f"  입력창 현재 값(클릭 전) 확인: {cur_val!r}")
 
-                    page.screenshot(path=f"debug/impfood_v2_{RUN_ID}_before_search.png", full_page=True)
+                    # '검색' 텍스트가 페이지 상단 전역검색 아이콘에도 있어서 .first는 위험함.
+                    # 필터 폼 영역(y가 대략 100~250 사이)에 있는 '검색'만 후보로 고른다.
+                    search_candidates = page.get_by_text("검색", exact=True)
+                    scount = search_candidates.count()
+                    log(f"  '검색' 텍스트 후보 개수: {scount}")
+                    search_target = None
+                    for i in range(scount):
+                        try:
+                            box = search_candidates.nth(i).bounding_box(timeout=1000)
+                            log(f"    후보[{i}] box={box}")
+                            if box and 100 < box["y"] < 250:
+                                search_target = i
+                        except Exception as e:
+                            log(f"    후보[{i}] 오류: {e}")
 
-                    el.press("Enter")
-                    log("  Enter 키로 제출함")
+                    if search_target is not None:
+                        search_candidates.nth(search_target).click(timeout=5000)
+                        log(f"  '검색'(후보[{search_target}]) 클릭함")
+                    else:
+                        log("  적절한 '검색' 버튼을 못찾음, Enter로 대체")
+                        el.press("Enter")
+
                     try:
                         page.wait_for_selector("text=처리중입니다", state="hidden", timeout=20000)
                         log("  '처리중입니다' 로딩 사라짐 확인")
@@ -180,7 +198,7 @@ def main():
                     page.wait_for_timeout(3000)
 
                     cur_val2 = el.input_value(timeout=1000)
-                    log(f"  입력창 현재 값(Enter 후) 확인: {cur_val2!r}")
+                    log(f"  입력창 현재 값(검색 후) 확인: {cur_val2!r}")
 
                     result_text = page.locator("body").inner_text()
                     with open(f"debug/impfood_v2_{RUN_ID}_result.txt", "w", encoding="utf-8") as f:
