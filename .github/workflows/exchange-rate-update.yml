@@ -22,12 +22,22 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - name: run
+      - name: run (실패시 5분 후 최대 2회 재시도)
         id: run
         continue-on-error: true
         run: |
-          python scripts/fetch_exchange_rates.py > /tmp/exrate.log 2>&1
-          code=$?
+          for attempt in 1 2 3; do
+            python scripts/fetch_exchange_rates.py > /tmp/exrate.log 2>&1
+            code=$?
+            if [ $code -eq 0 ]; then
+              break
+            fi
+            echo "시도 $attempt 실패" >> /tmp/exrate.log
+            if [ $attempt -lt 3 ]; then
+              echo "5분 후 재시도" >> /tmp/exrate.log
+              sleep 300
+            fi
+          done
           cat /tmp/exrate.log
           exit $code
 

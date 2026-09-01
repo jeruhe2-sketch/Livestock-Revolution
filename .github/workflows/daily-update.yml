@@ -25,16 +25,27 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 데이터 갱신 스크립트 실행
+      - name: 데이터 갱신 스크립트 실행 (실패시 5분 후 최대 2회 재시도)
         id: run_script
         continue-on-error: true
         env:
           OPEN_API_KEY: ${{ secrets.OPEN_API_KEY }}
         run: |
           mkdir -p debug
-          python scripts/update_data.py > debug/daily_update_last.log 2>&1
-          echo "exit_code=$?" >> debug/daily_update_last.log
+          for attempt in 1 2 3; do
+            python scripts/update_data.py > debug/daily_update_last.log 2>&1
+            code=$?
+            echo "exit_code=$code (시도 $attempt/3)" >> debug/daily_update_last.log
+            if [ $code -eq 0 ]; then
+              break
+            fi
+            if [ $attempt -lt 3 ]; then
+              echo "시도 $attempt 실패, 5분 후 재시도" >> debug/daily_update_last.log
+              sleep 300
+            fi
+          done
           cat debug/daily_update_last.log
+          exit $code
 
       - name: 변경사항 커밋 및 푸시
         if: always()
