@@ -99,7 +99,6 @@ def parse_year_file(path, year):
             sheet_name = cand
             break
     if sheet_name is None:
-        # 이름이 다르면, "수입"과 "축산"이 둘 다 들어간 시트를 찾는다
         for s in xl.sheet_names:
             if "수입" in s and "축산" in s:
                 sheet_name = s
@@ -110,9 +109,26 @@ def parse_year_file(path, year):
     log(f"  {year}: 시트 '{sheet_name}' 사용")
 
     df = pd.read_excel(path, sheet_name=sheet_name, header=None)
-    col_item_group = df[0].ffill()
-    col_item = df[1].ffill()
-    col_country = df[2]
+
+    # "품목명"/"품명"/"국가명" 라벨이 어느 행/열에 있는지 직접 찾는다 (연도마다 열이 밀려있음)
+    label_row_idx = None
+    col_group_idx = col_item_idx = col_country_idx = None
+    for r_idx in range(min(8, len(df))):
+        row_vals = [str(v).strip() for v in df.iloc[r_idx].tolist()]
+        if "품목명" in row_vals and "품명" in row_vals and "국가명" in row_vals:
+            label_row_idx = r_idx
+            col_group_idx = row_vals.index("품목명")
+            col_item_idx = row_vals.index("품명")
+            col_country_idx = row_vals.index("국가명")
+            break
+    if label_row_idx is None:
+        log(f"  {year}: 품목명/품명/국가명 라벨행을 못찾음")
+        return []
+    log(f"  {year}: 라벨행={label_row_idx}, 품목명열={col_group_idx}, 품명열={col_item_idx}, 국가명열={col_country_idx}")
+
+    col_item_group = df[col_group_idx].ffill()
+    col_item = df[col_item_idx].ffill()
+    col_country = df[col_country_idx]
 
     all_items = sorted(set(col_item.dropna().astype(str)))
     matched_items = [x for x in all_items if "면양" in x or "산양" in x]
@@ -120,31 +136,17 @@ def parse_year_file(path, year):
     if not matched_items:
         meat_group_mask = col_item_group.astype(str).str.contains("육류", na=False)
         meat_items = sorted(set(col_item[meat_group_mask].dropna().astype(str)))
-        log(f"  {year}: (참고) 육류 카테고리 전체 품명: {meat_items}")
-        log(f"  {year}: (진단) 0열 고유값 상위 20개: {sorted(set(col_item_group.dropna().astype(str)))[:20]}")
-        log(f"  {year}: (진단) 앞 6행x6열: {df.iloc[:6, :6].values.tolist()}")
+        log(f"  {year}: (참고) 육류 카테고리 전체 품명: {meat_items[:30]}")
 
     mask = col_item.isin(ITEM_MAP.keys())
     sub = df[mask].copy()
     sub["품명"] = col_item[mask]
     sub["국가"] = col_country[mask]
 
-    # 헤더 행 위치가 연도마다 다를 수 있어서 "기준년월"이 포함된 행을 직접 찾는다
-    header_row_idx = None
-    for r_idx in range(min(6, len(df))):
-        row_vals = [str(v) for v in df.iloc[r_idx].tolist()]
-        if any("기준년월" in v for v in row_vals):
-            header_row_idx = r_idx
-            break
-    if header_row_idx is None:
-        header_row_idx = 2
-        log(f"  {year}: '기준년월' 행을 못찾아서 기본값(2번 행) 사용")
-    else:
-        log(f"  {year}: 헤더 행 = {header_row_idx}")
-
-    header_row = df.iloc[header_row_idx]
-    month_cols = {}  # month_idx(1~12) -> (수량 컬럼 index)
-    for col_idx in range(4, df.shape[1]):
+    # 월(YYYY.MM) 헤더는 라벨행과 같은 행에, 국가명 열 오른쪽부터 나온다
+    header_row = df.iloc[label_row_idx]
+    month_cols = {}
+    for col_idx in range(col_country_idx + 1, df.shape[1]):
         val = header_row[col_idx]
         if pd.isna(val):
             continue
@@ -154,8 +156,7 @@ def parse_year_file(path, year):
                 y_part, m_part = s.split(".")
                 m = int(m_part)
                 if 1 <= m <= 12:
-                    # 그 다음 컬럼이 수량(Kg,Ea) 컬럼
-                    month_cols[m] = col_idx + 1
+                    month_cols[m] = col_idx + 1  # 바로 다음 칸이 수량(Kg,Ea)
         except Exception:
             continue
     log(f"  {year}: month_cols 개수 = {len(month_cols)}")
