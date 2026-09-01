@@ -202,7 +202,9 @@ def merge_into_master(all_records):
     added = 0
     updated = 0
     for (y, m, p, n, kg) in all_records:
-        key = (y, m, p, "합계", "전체육", n)
+        # 부위 정보가 없는 데이터이므로 "전체육"(=API가 실제로 부위없음을 명시한 값)이 아니라
+        # "-"(=부위 정보 자체가 없음, 기존 실시간 API도 이 경우 "-"를 씀)를 사용한다.
+        key = (y, m, p, "합계", "-", n)
         ton = kg / 1000
         if key in records:
             updated += 1
