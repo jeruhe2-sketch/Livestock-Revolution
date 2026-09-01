@@ -126,7 +126,7 @@ def parse_year_file(path, year):
     # 헤더 행 위치가 연도마다 다를 수 있어서 "기준년월"이 포함된 행을 직접 찾는다
     header_row_idx = None
     for r_idx in range(min(6, len(df))):
-        row_vals = df.iloc[r_idx].astype(str).tolist()
+        row_vals = [str(v) for v in df.iloc[r_idx].tolist()]
         if any("기준년월" in v for v in row_vals):
             header_row_idx = r_idx
             break
