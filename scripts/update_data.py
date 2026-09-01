@@ -70,10 +70,13 @@ def fetch_all() -> list[dict]:
 
 
 DETAIL_ICE_VALUES = {"냉동", "냉장"}
+EXCLUDED_ITEMS = {"오리고기"}  # 오리고기는 필요없다고 해서 제외 (사용자 요청)
 
 
 def is_detail_row(item: dict) -> bool:
     if item.get("MNF_NTNCD") is None:
+        return False
+    if item.get("KOREAN_NM") in EXCLUDED_ITEMS:
         return False
     regn = item.get("REGN_CD") or ""
     ice = item.get("ICE_YN") or ""
