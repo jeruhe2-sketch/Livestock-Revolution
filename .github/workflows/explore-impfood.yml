@@ -18,24 +18,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install playwright beautifulsoup4
-      - run: python -m playwright install --with-deps chromium
-      - name: 정찰 스크립트 실행
+      - run: pip install requests
+      - name: eminwon 정찰 스크립트 실행
         run: |
           mkdir -p debug
-          python scripts/explore_impfood.py > debug/impfood_explore.log 2>&1 || true
-          cat debug/impfood_explore.log
+          python scripts/explore_eminwon.py
       - name: 결과 커밋
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f debug/impfood_explore.log debug/impfood_page_text.txt debug/impfood_page_text2.txt debug/impfood_result_text.txt debug/impfood_network_log.json debug/impfood_screenshot.png 2>/dev/null || true
-          git commit -m "debug: impfood 정찰 결과" || true
+          git add -A -f debug/
+          git status --porcelain
+          git commit -m "debug: eminwon 정찰 결과 (run ${{ github.run_id }})" || echo "COMMIT_SKIPPED"
           for i in 1 2 3; do
             git push && break
             git fetch origin main
-            git reset --mixed origin/main
-            git add -f debug/impfood_explore.log debug/impfood_page_text.txt debug/impfood_page_text2.txt debug/impfood_result_text.txt debug/impfood_network_log.json debug/impfood_screenshot.png 2>/dev/null || true
+            git rebase origin/main
             sleep 3
           done
