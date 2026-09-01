@@ -148,21 +148,21 @@ def main():
                 if len(date_inputs) >= 2:
                     start_el = all_inputs.nth(date_inputs[0])
                     end_el = all_inputs.nth(date_inputs[1])
-                    for el, val in [(start_el, "2019-01-01"), (end_el, "2019-01-31")]:
-                        el.click()
+                    for el2, val in [(start_el, "2026-08-01"), (end_el, "2026-08-31")]:
+                        el2.click()
                         page.keyboard.press("Control+A")
                         page.keyboard.press("Delete")
-                        el.type(val, delay=50)
+                        el2.type(val, delay=50)
                         page.keyboard.press("Tab")
-                    log("  날짜 2019-01-01 ~ 2019-01-31 입력함")
+                    log("  날짜 2026-08-01 ~ 2026-08-31 입력함 (사용자 캡처와 동일 조건으로 검증)")
 
                 if target_input is not None:
                     el = text_inputs.nth(target_input)
                     el.click()
                     page.keyboard.press("Control+A")
                     page.keyboard.press("Delete")
-                    el.type("소고기", delay=100)
-                    log("  '소고기' 타이핑 입력함 (검증용: 데이터 있는 게 확실한 품목)")
+                    el.type("양고기", delay=100)
+                    log("  '양고기' 타이핑 입력함")
                     page.wait_for_timeout(500)
 
                     cur_val = el.input_value(timeout=1000)
@@ -191,11 +191,16 @@ def main():
                         el.press("Enter")
 
                     try:
-                        page.wait_for_selector("text=처리중입니다", state="hidden", timeout=20000)
+                        page.wait_for_selector("text=처리중입니다", state="visible", timeout=8000)
+                        log("  '처리중입니다' 로딩 나타남 확인")
+                    except Exception as e:
+                        log(f"  로딩이 아예 안 나타남(무시): {e}")
+                    try:
+                        page.wait_for_selector("text=처리중입니다", state="hidden", timeout=90000)
                         log("  '처리중입니다' 로딩 사라짐 확인")
                     except Exception as e:
                         log(f"  로딩 대기 중 타임아웃/오류(무시): {e}")
-                    page.wait_for_timeout(3000)
+                    page.wait_for_timeout(2000)
 
                     cur_val2 = el.input_value(timeout=1000)
                     log(f"  입력창 현재 값(검색 후) 확인: {cur_val2!r}")
