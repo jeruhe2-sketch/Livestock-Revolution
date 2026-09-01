@@ -172,7 +172,12 @@ def main():
 
                     el.press("Enter")
                     log("  Enter 키로 제출함")
-                    page.wait_for_timeout(5000)
+                    try:
+                        page.wait_for_selector("text=처리중입니다", state="hidden", timeout=20000)
+                        log("  '처리중입니다' 로딩 사라짐 확인")
+                    except Exception as e:
+                        log(f"  로딩 대기 중 타임아웃/오류(무시): {e}")
+                    page.wait_for_timeout(3000)
 
                     cur_val2 = el.input_value(timeout=1000)
                     log(f"  입력창 현재 값(Enter 후) 확인: {cur_val2!r}")
