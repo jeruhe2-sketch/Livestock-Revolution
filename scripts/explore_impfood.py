@@ -33,6 +33,8 @@ def log_response(response):
 
 
 def main():
+    import datetime
+    print(f"[RUN_MARKER] {datetime.datetime.utcnow().isoformat()}")
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
