@@ -20,10 +20,10 @@ jobs:
           python-version: '3.11'
       - run: pip install playwright
       - run: python -m playwright install --with-deps chromium
-      - name: impfood v2 정찰 스크립트 실행
+      - name: mafra 정찰 스크립트 실행
         run: |
           mkdir -p debug
-          python scripts/explore_impfood_v2.py || echo "SCRIPT_FAILED_$?"
+          python scripts/explore_mafra.py || echo "SCRIPT_FAILED_$?"
       - name: 결과 커밋
         if: always()
         run: |
