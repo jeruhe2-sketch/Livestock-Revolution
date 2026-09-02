@@ -26,6 +26,17 @@ jobs:
       - run: pip install pandas openpyxl playwright requests
       - name: Chromium 브라우저 엔진 설치
         run: python -m playwright install --with-deps chromium
+      - name: (진단) data.gov.au / UN Comtrade API 접근 가능 여부 확인
+        continue-on-error: true
+        run: |
+          echo "=== data.gov.au CKAN API ==="
+          curl -s -m 20 -o /tmp/ckan.json -w "status=%{http_code} time=%{time_total}s\n" \
+            "https://data.gov.au/api/3/action/package_search?q=red%20meat%20export%20statistics&rows=3" || echo "요청 실패"
+          head -c 800 /tmp/ckan.json; echo
+          echo "=== UN Comtrade API (legacy, AU->KR 소고기 HS0201 2024) ==="
+          curl -s -m 20 -o /tmp/comtrade.json -w "status=%{http_code} time=%{time_total}s\n" \
+            "https://comtradeapi.un.org/public/v1/preview/C/M/HS?reporterCode=36&period=202401&partnerCode=410&cmdCode=0201&flowCode=X" || echo "요청 실패"
+          head -c 800 /tmp/comtrade.json; echo
       - name: 호주 축산물 수출통계 수집
         id: fetch
         continue-on-error: true
