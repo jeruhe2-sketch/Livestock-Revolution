@@ -48,6 +48,24 @@ jobs:
             debug/aus_trade_downloads/*
           retention-days: 14
           if-no-files-found: ignore
+      - name: (테스트 단계) 디버그 로그를 저장소에도 커밋해서 확인 가능하게 함
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/aus_trade_last.log debug/aus_trade_parsed_*.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "커밋할 디버그 파일 없음"
+            exit 0
+          fi
+          git commit -m "debug: 호주 축산물 수집 테스트 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git reset --mixed origin/main
+            git add -f debug/aus_trade_last.log debug/aus_trade_parsed_*.json 2>/dev/null || true
+            sleep 3
+          done
       - name: 데이터 변경사항 확인 및 커밋 (merge=true 이고 성공했을 때만)
         if: steps.fetch.outcome == 'success' && inputs.merge == true
         run: |
