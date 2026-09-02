@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install pandas openpyxl playwright
+      - run: pip install pandas openpyxl playwright requests
       - name: Chromium 브라우저 엔진 설치
         run: python -m playwright install --with-deps chromium
       - name: 호주 축산물 수출통계 수집

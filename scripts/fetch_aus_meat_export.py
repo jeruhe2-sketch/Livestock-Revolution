@@ -106,8 +106,19 @@ def download_via_href(context, href, save_path):
         page.close()
 
 
+def diagnose_connectivity():
+    """Playwright 문제인지 네트워크(IP 차단) 문제인지 구분하기 위한 사전 진단."""
+    import requests
+    try:
+        r = requests.get(MAIN_URL, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+        log(f"[진단] requests GET 상태코드={r.status_code}, 응답길이={len(r.content)}")
+    except Exception as e:
+        log(f"[진단] requests GET 실패: {type(e).__name__}: {e}")
+
+
 def download_all():
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+    diagnose_connectivity()
     saved = {}  # (year, month) -> path
     with sync_playwright() as p:
         # net::ERR_HTTP2_PROTOCOL_ERROR 회피: HTTP/2 비활성화 + networkidle 대신
