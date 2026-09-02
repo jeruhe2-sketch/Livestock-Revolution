@@ -118,7 +118,7 @@ window.AusTradeApp = (function () {
     }, [selectedDest]);
 
     const rows = useMemo(() => (db.data || []).map((r) => ({
-      year: r[0], month: r[1], dest: r[2], chilled: r[3], frozen: r[4], total: r[5], goat: r[6],
+      year: r[0], month: r[1], dest: r[2], total: r[3],
       ym: `${r[0]}.${String(r[1]).padStart(2, "0")}`
     })), [db]);
 
@@ -158,8 +158,8 @@ window.AusTradeApp = (function () {
     };
 
     const handleExport = () => {
-      const header = ["연월", "목적지", "냉장(kg)", "냉동(kg)", "소고기합계(kg)", "산양육(kg)"];
-      const aoa = [header, ...tableRows.map((r) => [r.ym, DEST_LABEL_KO[r.dest] || r.dest, r.chilled, r.frozen, r.total, r.goat])];
+      const header = ["연월", "목적지", "소고기 합계(톤)"];
+      const aoa = [header, ...tableRows.map((r) => [r.ym, DEST_LABEL_KO[r.dest] || r.dest, r.total])];
       downloadXlsx(aoa, `호주_축산물_수출현황_${Date.now()}.xlsx`, "호주수출현황");
     };
 
@@ -168,7 +168,7 @@ window.AusTradeApp = (function () {
         React.createElement("h1", { style: { fontSize: 18, fontWeight: 800, margin: 0 } }, "🇦🇺 호주 축산물(소고기) 수출현황"),
         db.collectedAt && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } }, "수집: " + fmtUpdatedAt(db.collectedAt))
       ),
-      React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginBottom: 16 } }, "출처: 호주 농림부(DAFF) Red meat export statistics · 57 Destination Report · 월별"),
+      React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginBottom: 16 } }, "출처: 호주 DAFF Red meat export statistics · 57 Destination Report (사용자가 직접 취합해 수동 업로드 — 자동 갱신 안 됨, 새 데이터는 파일 업로드 시 반영)"),
 
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 } },
         DEST_ORDER.map((code) => React.createElement("button", {
@@ -184,7 +184,7 @@ window.AusTradeApp = (function () {
       ),
 
       React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16, marginBottom: 20 } },
-        React.createElement("div", { style: { fontSize: 12.5, fontWeight: 700, marginBottom: 10, color: COLORS.cream } }, "소고기(Beef & Veal) 총 수출량 추이 — 목적지별 (kg)"),
+        React.createElement("div", { style: { fontSize: 12.5, fontWeight: 700, marginBottom: 10, color: COLORS.cream } }, "소고기(Beef & Veal) 총 수출량 추이 — 목적지별 (톤)"),
         months.length ? React.createElement(SvgLineChart, { categories: months, series }) :
           React.createElement("div", { style: { color: COLORS.mute, fontSize: 12, padding: 30, textAlign: "center" } }, "아직 데이터가 없습니다. 자동 수집이 아직 실행되지 않았을 수 있습니다.")
       ),
@@ -198,7 +198,7 @@ window.AusTradeApp = (function () {
           React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12 } },
             React.createElement("thead", null,
               React.createElement("tr", null,
-                [["ym", "연월"], ["dest", "목적지"], ["chilled", "냉장(kg)"], ["frozen", "냉동(kg)"], ["total", "소고기 합계(kg)"], ["goat", "산양육(kg)"]].map(([key, label]) =>
+                [["ym", "연월"], ["dest", "목적지"], ["total", "소고기 합계(톤)"]].map(([key, label]) =>
                   React.createElement("th", {
                     key,
                     onClick: () => toggleSort(key),
@@ -211,10 +211,7 @@ window.AusTradeApp = (function () {
               tableRows.slice(0, 500).map((r, i) => React.createElement("tr", { key: i, style: { borderBottom: `1px solid ${COLORS.panelBorder}` } },
                 React.createElement("td", { style: { padding: "6px 10px" } }, r.ym),
                 React.createElement("td", { style: { padding: "6px 10px" } }, DEST_LABEL_KO[r.dest] || r.dest),
-                React.createElement("td", { style: { padding: "6px 10px", textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n(r.chilled)),
-                React.createElement("td", { style: { padding: "6px 10px", textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n(r.frozen)),
-                React.createElement("td", { style: { padding: "6px 10px", textAlign: "right", fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft } }, n(r.total)),
-                React.createElement("td", { style: { padding: "6px 10px", textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n(r.goat))
+                React.createElement("td", { style: { padding: "6px 10px", textAlign: "right", fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft } }, n(r.total))
               ))
             )
           )
