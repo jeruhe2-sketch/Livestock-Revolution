@@ -43,5 +43,5 @@ Call log:
   - navigating to "https://www.agriculture.gov.au/biosecurity-trade/export/controlled-goods/meat/statistics", waiting until "domcontentloaded"
 
 
-파싱 결과 저장: debug/aus_trade_parsed_33603286493.json (총 0건)
+파싱 결과 저장: debug/aus_trade_parsed_33603849996.json (총 0건)
 검증 모드: --merge 없이 실행되어 실제 데이터 파일은 갱신하지 않음

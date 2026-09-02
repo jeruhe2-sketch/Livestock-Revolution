@@ -1,7 +1,8 @@
 === 2024년 1월 국가별 소고기(0201+0202) 합계(kg) ===
-  China 0201: status=429 kg=None
+    (429, 5초 대기 후 재시도 1/5)
+  China 0201: status=200 kg=2567983.58
   China 0202: status=200 kg=11520407.9
-  -> China 합계: 11520407.9 kg = 11520.4 톤
+  -> China 합계: 14088391.48 kg = 14088.4 톤
   Hong Kong 0201: status=200 kg=184739.36
   Hong Kong 0202: status=200 kg=98270.93
   -> Hong Kong 합계: 283010.29 kg = 283.0 톤
@@ -15,8 +16,8 @@
   Philippines 0202: status=200 kg=2734808.64
   -> Philippines 합계: 2752549.41 kg = 2752.5 톤
   South Korea 0201: status=200 kg=2063353.13
-  South Korea 0202: status=429 kg=None
-  -> South Korea 합계: 2063353.13 kg = 2063.4 톤
+  South Korea 0202: status=200 kg=9768124.66
+  -> South Korea 합계: 11831477.79 kg = 11831.5 톤
   Taiwan 0201: status=200 kg=481924.92
   Taiwan 0202: status=200 kg=1416056.93
   -> Taiwan 합계: 1897981.8499999999 kg = 1898.0 톤
@@ -29,10 +30,5 @@
 
 === 최신 가용 시점 확인 (한국 대상 0201, 최근 달부터 역순) ===
   202608: status=200 kg=0
-  202607: status=429 kg=None
+  202607: status=200 kg=0
   202606: status=200 kg=2824758.34
-  202605: status=200 kg=2946835.71
-  202603: status=200 kg=2463380.97
-  202601: status=200 kg=1765359.22
-  202512: status=200 kg=3270337.76
-  202510: status=200 kg=2545229.93
