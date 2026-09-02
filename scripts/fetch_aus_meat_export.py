@@ -110,14 +110,28 @@ def download_all():
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     saved = {}  # (year, month) -> path
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        # net::ERR_HTTP2_PROTOCOL_ERROR 회피: HTTP/2 비활성화 + networkidle 대신
+        # domcontentloaded 사용(이 사이트는 추적 스크립트 때문에 networkidle이 잘 안 옴)
+        browser = p.chromium.launch(args=["--disable-http2"])
         context = browser.new_context(accept_downloads=True)
         page = context.new_page()
 
+        def goto_with_retry(pg, url, tries=3):
+            last_err = None
+            for attempt in range(tries):
+                try:
+                    pg.goto(url, wait_until="domcontentloaded", timeout=45000)
+                    pg.wait_for_timeout(1500)
+                    return
+                except Exception as e:
+                    last_err = e
+                    log(f"    goto 실패(시도 {attempt + 1}/{tries}): {e}")
+                    pg.wait_for_timeout(3000)
+            raise last_err
+
         # 1) 메인 페이지: 최근 몇 개월치
         log("메인 통계 페이지 접속")
-        page.goto(MAIN_URL, wait_until="networkidle", timeout=60000)
-        page.wait_for_timeout(1500)
+        goto_with_retry(page, MAIN_URL)
         hits = collect_download_links(page, "m57dest")
         log(f"메인 페이지에서 m57dest 링크 {len(hits)}개 발견")
         for h in hits:
@@ -146,8 +160,7 @@ def download_all():
 
         for year, url in sorted(year_pages.items()):
             try:
-                page.goto(url, wait_until="networkidle", timeout=60000)
-                page.wait_for_timeout(1000)
+                goto_with_retry(page, url)
                 hits = collect_download_links(page, "m57dest")
                 log(f"{year} 페이지: m57dest 링크 {len(hits)}개")
                 for h in hits:
