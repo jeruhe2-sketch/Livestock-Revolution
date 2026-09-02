@@ -1,0 +1,34 @@
+pwd: /home/runner/work/Livestock-Revolution/Livestock-Revolution
+--- ls -la debug/ ---
+total 72
+drwxr-xr-x 3 runner runner 4096 Sep  2 07:16 .
+drwxr-xr-x 9 runner runner 4096 Sep  2 07:13 ..
+-rw-r--r-- 1 runner runner 3146 Sep  2 07:13 api_diag.log
+drwxr-xr-x 2 runner runner 4096 Sep  2 07:13 aus_trade_downloads
+-rw-r--r-- 1 runner runner 3170 Sep  2 07:16 aus_trade_last.log
+-rw-r--r-- 1 runner runner    2 Sep  2 07:13 aus_trade_parsed_33599913061.json
+-rw-r--r-- 1 runner runner    2 Sep  2 07:13 aus_trade_parsed_33600057807.json
+-rw-r--r-- 1 runner runner    2 Sep  2 07:13 aus_trade_parsed_33600372512.json
+-rw-r--r-- 1 runner runner    2 Sep  2 07:13 aus_trade_parsed_33600954746.json
+-rw-r--r-- 1 runner runner    2 Sep  2 07:16 aus_trade_parsed_33602462798.json
+-rw-r--r-- 1 runner runner 1240 Sep  2 07:13 cepea_domestic_last.log
+-rw-r--r-- 1 runner runner   87 Sep  2 07:16 commit_diag.log
+-rw-r--r-- 1 runner runner 1295 Sep  2 07:13 daily_update_last.log
+-rw-r--r-- 1 runner runner  260 Sep  2 07:13 git_push_debug.log
+-rw-r--r-- 1 runner runner  923 Sep  2 07:13 last_run.log
+-rw-r--r-- 1 runner runner 3468 Sep  2 07:13 telegram_bot_last.log
+-rw-r--r-- 1 runner runner 4700 Sep  2 07:13 usda_domestic_last.log
+--- git status ---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   debug/aus_trade_last.log
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	debug/aus_trade_parsed_33602462798.json
+
+no changes added to commit (use "git add" and/or "git commit -a")
