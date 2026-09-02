@@ -63,6 +63,26 @@ jobs:
             debug/aus_trade_downloads/*
           retention-days: 14
           if-no-files-found: ignore
+      - name: (진단) 커밋 전 파일 상태를 무조건 기록/커밋 (디버깅용)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          {
+            echo "pwd: $(pwd)"
+            echo "--- ls -la debug/ ---"
+            ls -la debug/ 2>&1
+            echo "--- git status ---"
+            git status 2>&1
+          } > debug/commit_diag.log 2>&1
+          git add -f debug/commit_diag.log
+          git commit -m "debug: 커밋 전 상태 진단 $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "커밋할 것 없음(이상함, 항상 새 내용일텐데)"
+          for i in 1 2 3; do
+            git push && break
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; git add -f debug/commit_diag.log; git commit -m "debug: 커밋 전 상태 진단(재시도) $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true; }
+            sleep 3
+          done
       - name: (테스트 단계) 디버그 로그를 저장소에도 커밋해서 확인 가능하게 함
         if: always()
         run: |
