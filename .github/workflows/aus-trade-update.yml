@@ -41,6 +41,12 @@ jobs:
             head -c 1500 /tmp/comtrade.json; echo
           } > debug/api_diag.log 2>&1
           cat debug/api_diag.log
+      - name: (진단) UN Comtrade 10개국 Jan-2024 값 + 최신 가용 시점 확인
+        continue-on-error: true
+        run: |
+          mkdir -p debug
+          python3 scripts/_tmp_comtrade_diag.py > debug/comtrade_compare.log 2>&1
+          cat debug/comtrade_compare.log
       - name: 호주 축산물 수출통계 수집
         id: fetch
         continue-on-error: true
@@ -90,7 +96,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           echo "--- pwd ---"; pwd
           echo "--- ls debug/ ---"; ls -la debug/ || echo "(debug dir missing)"
-          git add -f debug/aus_trade_last.log debug/aus_trade_parsed_*.json debug/api_diag.log 2>&1 || true
+          git add -f debug/aus_trade_last.log debug/aus_trade_parsed_*.json debug/api_diag.log debug/comtrade_compare.log 2>&1 || true
           echo "--- git status ---"; git status
           echo "--- git diff --cached --stat ---"; git diff --cached --stat
           if git diff --cached --quiet; then
