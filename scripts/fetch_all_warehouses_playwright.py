@@ -258,6 +258,12 @@ def main():
 
     all_new_rows = []
     had_error = False
+    # (창고명, 통관상태) 단위로 "이번 실행에서 이 조합을 책임지는 계정이 성공적으로 돌았는지"를
+    # 직접 추적한다. 예전엔 all_new_rows에 그 조합의 행이 하나라도 있어야만 교체했는데,
+    # 삼진1냉장처럼 통관/미통관을 한 계정이 같이 긁는 경우 실제로 미통관 재고가 0건이 되면
+    # 그 조합이 결과에 아예 안 나타나서 "수집 실패"로 오인되어 옛날 재고가 영원히 안 지워지는
+    # 버그가 있었음 (실사례: 삼진1냉장 미통관 3개 품목이 20시간+ 고정).
+    succeeded_replace_keys = set()
 
     with sync_playwright() as p:
         for cfg in WAREHOUSE_CONFIGS:
@@ -269,6 +275,16 @@ def main():
                 apply_default_customs_status(rows, cfg)
                 print(f"[{cfg['창고명']}/{cfg['계정용도']}] {len(rows)}건 수집")
                 all_new_rows.extend(rows)
+
+                usage = cfg.get("계정용도", "")
+                if "미통관" in usage:
+                    responsible_statuses = {"미통관"}
+                elif "통관" in usage:
+                    responsible_statuses = {"통관"}
+                else:  # "전체" 등 구분 없는 단일 계정 -> 통관/미통관 둘 다 이 계정이 책임짐
+                    responsible_statuses = {"통관", "미통관"}
+                for st in responsible_statuses:
+                    succeeded_replace_keys.add((cfg["창고명"], st))
             except Exception as e:  # noqa: BLE001
                 had_error = True
                 print(f"[오류] {cfg['창고명']}/{cfg['계정용도']} 수집 실패: {e}", file=sys.stderr)
@@ -278,11 +294,11 @@ def main():
         sys.exit(1)
 
     # 버그 수정: "창고명"만 기준으로 지우면, 같은 창고의 다른 통관상태(예: 대청냉장/통관)까지
-    # 통째로 사라진다. 이번에 실제로 수집된 (창고명, 통관상태) 조합만 정확히 교체한다.
-    replace_keys = {(r.get("창고명"), r.get("통관상태")) for r in all_new_rows}
+    # 통째로 사라진다. 이번에 "성공적으로 수집을 시도한" (창고명, 통관상태) 조합만 정확히 교체한다.
+    # (수집된 행이 0건이어도, 그 조합을 책임지는 계정이 이번에 성공했다면 확실히 비운다.)
     kept_rows = [
         r for r in existing_rows
-        if (r.get("창고명"), r.get("통관상태")) not in replace_keys
+        if (r.get("창고명"), r.get("통관상태")) not in succeeded_replace_keys
     ]
     merged_rows = kept_rows + all_new_rows
 
