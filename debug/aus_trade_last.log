@@ -1,3 +1,4 @@
+[진단] requests GET 실패: ReadTimeout: HTTPSConnectionPool(host='www.agriculture.gov.au', port=443): Read timed out. (read timeout=20)
 메인 통계 페이지 접속
     goto 실패(시도 1/3): Page.goto: Timeout 45000ms exceeded.
 Call log:
@@ -13,14 +14,14 @@ Call log:
 
 === 다운로드 중 최상위 예외 ===
 Traceback (most recent call last):
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 273, in main
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 284, in main
     saved = download_all()
             ^^^^^^^^^^^^^^
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 134, in download_all
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 145, in download_all
     goto_with_retry(page, MAIN_URL)
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 130, in goto_with_retry
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 141, in goto_with_retry
     raise last_err
-  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 123, in goto_with_retry
+  File "/home/runner/work/Livestock-Revolution/Livestock-Revolution/scripts/fetch_aus_meat_export.py", line 134, in goto_with_retry
     pg.goto(url, wait_until="domcontentloaded", timeout=45000)
   File "/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/playwright/sync_api/_generated.py", line 9875, in goto
     self._sync(
@@ -42,5 +43,5 @@ Call log:
   - navigating to "https://www.agriculture.gov.au/biosecurity-trade/export/controlled-goods/meat/statistics", waiting until "domcontentloaded"
 
 
-파싱 결과 저장: debug/aus_trade_parsed_33600057807.json (총 0건)
+파싱 결과 저장: debug/aus_trade_parsed_33600372512.json (총 0건)
 검증 모드: --merge 없이 실행되어 실제 데이터 파일은 갱신하지 않음
