@@ -1992,7 +1992,7 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
   const [colDim, setColDim] = useState("\uD1B5\uAD00\uC0C1\uD0DC");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("\uC720\uD1B5\uAE30\uD55C");
-  const [sortDir, setSortDir] = useState("desc"); // \uC7AC\uACE0\uC218\uB7C9/\uC911\uB7C9 \uC5D1\uC140\uCC98\ub7fc \ud5e4\ub354 \ud074\ub9ad \uc624\ub984\ucc28\uc21c/\ub0b4\ub9bc\ucc28\uc21c \ud1a0\uae00
+  const [sortDir, setSortDir] = useState("asc"); // \uAE30\uBCF8\uAC12: \uC720\uD1B5\uAE30\uD55C \uC784\uBC15\uC21C(\uC624\uB984\uCC28\uC21C). \uC5D1\uC140\uCC98\ub7fc \ud5e4\ub354 \ud074\ub9ad \uc2dc \uc790\uc720\ub86d\uac8c \ud1a0\uae00 \uac00\ub2a5
   const [expiryFilter, setExpiryFilter] = useState("\uC804\uCCB4");
   const [accSearch, setAccSearch] = useState("");
   const [accGrade, setAccGrade] = useState("\uC804\uCCB4");
@@ -2006,7 +2006,7 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
   const changeMainTab = (tab) => {
     setSearch("");
     setSortKey("\uC720\uD1B5\uAE30\uD55C");
-    setSortDir("desc");
+    setSortDir("asc");
     setAccSearch("");
     setAccGrade("\uC804\uCCB4");
     setAccEst("\uC804\uCCB4");
