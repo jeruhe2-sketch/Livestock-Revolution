@@ -214,10 +214,12 @@ window.AusTradeApp = (function () {
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "overlay", ["group", "overlay"]));
     const [metric, setMetric] = useState(() => pOneOf("mk", "total", ["total", "chilled", "frozen", "goat"]));
-    const [destFilter, setDestFilter] = useState(() => pList("dest"));
-    const [yearFilter, setYearFilter] = useState(() => pList("yr"));
-    const [monthFrom, setMonthFrom] = useState(() => pInt("ms", 1));
-    const [monthTo, setMonthTo] = useState(() => pInt("me", 12));
+    const validDestLabels = useMemo(() => new Set(DEST_LIST.map((c) => DEST_LABEL_KO[c] || c)), [DEST_LIST]);
+    const [destFilter, setDestFilter] = useState(() => pList("dest").filter((v) => validDestLabels.has(v)));
+    const [yearFilter, setYearFilter] = useState(() => pList("yr").filter((v) => YEARS_ALL.includes(v)));
+    const clampMonth = (v, fallback) => (Number.isFinite(v) && v >= 1 && v <= 12 ? v : fallback);
+    const [monthFrom, setMonthFrom] = useState(() => clampMonth(pInt("ms", 1), 1));
+    const [monthTo, setMonthTo] = useState(() => clampMonth(pInt("me", 12), 12));
     const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
     const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
