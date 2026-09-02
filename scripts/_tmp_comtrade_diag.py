@@ -9,13 +9,20 @@ PARTNERS = {
 BASE = "https://comtradeapi.un.org/public/v1/preview/C/M/HS"
 
 
-def get(period, partner, cmd):
+def get(period, partner, cmd, tries=5):
     url = f"{BASE}?reporterCode=36&period={period}&partnerCode={partner}&cmdCode={cmd}&flowCode=X"
-    try:
-        r = requests.get(url, timeout=20)
-        return r.status_code, r.json()
-    except Exception as e:
-        return None, str(e)
+    for attempt in range(tries):
+        try:
+            r = requests.get(url, timeout=20)
+            if r.status_code == 429:
+                wait = 5 * (attempt + 1)
+                print(f"    (429, {wait}초 대기 후 재시도 {attempt + 1}/{tries})")
+                time.sleep(wait)
+                continue
+            return r.status_code, r.json()
+        except Exception as e:
+            return None, str(e)
+    return 429, None
 
 
 def net_kg(data):
@@ -37,16 +44,16 @@ def main():
             print(f"  {name} {cmd}: status={status} kg={kg}")
             if kg:
                 total += kg
-            time.sleep(1)
+            time.sleep(3)
         print(f"  -> {name} 합계: {total} kg = {total / 1000:.1f} 톤")
 
     print()
     print("=== 최신 가용 시점 확인 (한국 대상 0201, 최근 달부터 역순) ===")
-    for period in ["202608", "202607", "202606", "202605", "202603", "202601", "202512", "202510"]:
+    for period in ["202608", "202607", "202606"]:
         status, data = get(period, 410, "0201")
         kg = net_kg(data) if status == 200 else None
         print(f"  {period}: status={status} kg={kg}")
-        time.sleep(1)
+        time.sleep(3)
 
 
 if __name__ == "__main__":
