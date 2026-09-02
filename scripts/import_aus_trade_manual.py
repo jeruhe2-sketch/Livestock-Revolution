@@ -1,27 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-호주 축산물(소고기 Beef & Veal) 수출현황 - 수동 업로드 파일 임포터.
+호주 축산물(소고기 Beef & Veal) 수출현황 - 수동 업로드 파일 임포터 (v2, 로우데이터용).
 
-agriculture.gov.au는 GitHub Actions IP가 차단되어 있고(확인됨), UN Comtrade는
-접속은 되지만 DAFF 원본보다 1개월 더 느려서(치명적) 자동화를 포기함.
-대신 사용자가 agriculture.gov.au의 "57 Destination Report" 월별 파일들을 직접
-엑셀/파워쿼리로 모아서 만든 피벗 테이블(국가별 x 월별 Beef & Veal Total)을
-이 스크립트로 병합한다. CEPEA 내수현황과 동일한 수동 업로드 패턴.
+v1은 사용자가 만든 피벗(국가별 열)을 파싱했으나, 국가별 냉장/냉동/산양육
+분해가 없었음. v2는 DAFF "57 Destination Report"를 그대로 취합한 로우데이터
+(Month, Destinations, Chilled Beef & Veal Total, Frozen Total,
+Beef & Veal Total, Total Goat) 형식을 직접 파싱한다.
 
-기대하는 입력 파일 형식 (사용자가 보통 만드는 피벗 그대로):
-  - 시트 아무 이름이나 무방, 첫 시트를 사용
-  - 어딘가에 "행 레이블"(또는 "Row Labels") 헤더가 있는 행 = 헤더 행
-  - 그 헤더 행에 10개국(China/Hong Kong/Indonesia/Japan/Philippines/
-    South Korea/Taiwan/Thailand/USA East/USA West) 열이 존재
-    (5개국짜리 축약 피벗이 왼쪽에 같이 있어도 무시하고 10개국 쪽만 사용;
-    중복 열 이름은 pandas가 자동으로 ".1" 등을 붙이므로 그것도 처리)
-  - 데이터 행의 첫 칸은 "24.01월"처럼 "YY.MM월" 형식의 연월 라벨
-  - 값 단위는 톤(t) 기준 (기존 대조 검증 시 Comtrade kg/1000과 일치 확인됨)
+agriculture.gov.au는 GitHub Actions IP가 차단되어 있고, UN Comtrade는 접속은
+되지만 DAFF보다 1개월 더 느려서 자동화를 포기하고, 사용자가 직접 취합해서
+업로드하는 방식(CEPEA 내수현황과 동일 패턴)으로 운영한다.
+
+기대하는 입력 파일 형식:
+  - 헤더: Month, Destinations, Chilled Beef & Veal Total, Frozen Total,
+    Beef & Veal Total, Total Goat  (열 순서는 바뀌어도 이름으로 찾음)
+  - Month: "24.01월" 같은 "YY.MM월" 형식
+  - Destinations: 57개 개별 목적지 + "Total Asia"/"Total EU"/"Total Aus"/
+    "Total Middle East" 같은 소계 행 포함 (소계는 자동으로 걸러냄)
+  - 값이 없으면 "-"로 표기됨 -> 0으로 처리
+  - 단위: 톤(t) (기존 데이터와 대조 검증 완료)
 
 사용법:
-  python scripts/import_aus_trade_manual.py <업로드된_엑셀_경로>
-  python scripts/import_aus_trade_manual.py <경로> --merge   (실제 반영)
-  (--merge 없이 실행하면 파싱 결과만 보여주고 data 파일은 안 건드림)
+  python scripts/import_aus_trade_manual.py <업로드된_엑셀_경로>          # 검증만
+  python scripts/import_aus_trade_manual.py <업로드된_엑셀_경로> --merge  # 실제 반영
 
 출력: data/aus_meat_export.json
 """
@@ -35,99 +36,87 @@ import pandas as pd
 
 OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "aus_meat_export.json")
 
-# 피벗의 열 이름(한글/영문 혼용 가능성 대비, 소문자 비교) -> 우리 내부 코드
+# 목적지 표시명(소문자 비교) -> 우리 내부 코드. 10개국만 우선 취급하지만
+# 원본 데이터엔 57개 전체가 있으므로 나중에 쉽게 확장 가능.
 DEST_MATCH = {
-    "CN": ["china"],
-    "HK": ["hong kong"],
-    "ID": ["indonesia"],
-    "JP": ["japan"],
-    "PH": ["philippines"],
-    "KR": ["south korea", "korea"],
-    "TW": ["taiwan"],
-    "TH": ["thailand"],
-    "US_EAST": ["usa east", "us east"],
-    "US_WEST": ["usa west", "us west"],
+    "CN": "china", "HK": "hong kong", "ID": "indonesia", "JP": "japan",
+    "PH": "philippines", "KR": "south korea", "TW": "taiwan", "TH": "thailand",
+    "US_EAST": "usa east", "US_WEST": "usa west",
 }
 DEST_LABEL = {
     "CN": "China", "HK": "Hong Kong", "ID": "Indonesia", "JP": "Japan",
     "PH": "Philippines", "KR": "South Korea", "TW": "Taiwan", "TH": "Thailand",
     "US_EAST": "USA East", "US_WEST": "USA West",
 }
+CODE_BY_LOWER_NAME = {v: k for k, v in DEST_MATCH.items()}
 
 YM_RE = re.compile(r"^(\d{2})\.(\d{2})월?$")
 
-
-def find_header_row(raw: pd.DataFrame):
-    """'행 레이블'(또는 Row Labels) 헤더가 있는 행을 찾는다. 같은 헤더가
-    두 번(5개국 피벗 + 10개국 피벗) 있을 수 있으므로 전부 반환."""
-    hits = []
-    for r in range(min(6, len(raw))):
-        row_vals = [str(v).strip() for v in raw.iloc[r].tolist()]
-        for c, v in enumerate(row_vals):
-            if v in ("행 레이블", "Row Labels"):
-                hits.append((r, c))
-    return hits
+COL_ALIASES = {
+    "month": ["month", "연월", "월"],
+    "dest": ["destinations", "destination", "목적지"],
+    "chilled": ["chilled beef & veal total", "chilled"],
+    "frozen": ["frozen total", "frozen"],
+    "total": ["beef & veal total", "total"],
+    "goat": ["total goat", "goat"],
+}
 
 
-def pick_dest_columns(raw: pd.DataFrame, header_row: int):
-    """헤더 행 전체를 훑어서 10개국 열의 위치를 찾는다. 왼쪽에 5개국
-    축약 피벗이 같이 있으면 겹치는 이름(China 등)이 여러 번 나오므로,
-    10개국이 전부 모여 있는 '가장 넓은 연속 구간'을 찾는다."""
-    row_vals = [str(v).strip().lower() for v in raw.iloc[header_row].tolist()]
-    col_for_dest = {}
-    for code, hints in DEST_MATCH.items():
-        matches = [i for i, v in enumerate(row_vals) for h in hints if v == h]
-        if matches:
-            col_for_dest[code] = matches  # 여러 후보 열 인덱스
+def find_columns(df: pd.DataFrame):
+    lower_cols = {str(c).strip().lower(): c for c in df.columns}
+    found = {}
+    for key, aliases in COL_ALIASES.items():
+        for a in aliases:
+            if a in lower_cols:
+                found[key] = lower_cols[a]
+                break
+    missing = [k for k in ("month", "dest", "total") if k not in found]
+    if missing:
+        raise RuntimeError(f"필수 열을 찾지 못함: {missing} (실제 열: {list(df.columns)})")
+    return found
 
-    if not col_for_dest:
-        return {}
 
-    # 후보가 여러 개인 코드가 있으면(중복 피벗), 모든 코드가 동시에 존재하는
-    # 열 구간을 찾기 위해: 각 코드의 "마지막 등장 열"을 쓰는 방식이 보통
-    # 10개국 피벗이 시트 오른쪽에 있으므로 안전함.
-    result = {}
-    for code, cols in col_for_dest.items():
-        result[code] = cols[-1] if len(cols) > 1 else cols[0]
-    return result
+def to_num(val):
+    if pd.isna(val):
+        return 0.0
+    s = str(val).strip()
+    if s in ("-", ""):
+        return 0.0
+    try:
+        return float(s.replace(",", ""))
+    except ValueError:
+        return None
 
 
 def parse_file(path: str):
-    raw = pd.read_excel(path, sheet_name=0, header=None)
-    header_hits = find_header_row(raw)
-    if not header_hits:
-        raise RuntimeError("'행 레이블'/'Row Labels' 헤더를 찾지 못했습니다. 피벗 형식이 예상과 다릅니다.")
-    header_row = header_hits[0][0]
-    dest_cols = pick_dest_columns(raw, header_row)
-    missing = [DEST_LABEL[c] for c in DEST_LABEL if c not in dest_cols]
-    if missing:
-        print(f"  경고: 다음 목적지 열을 못 찾음(건너뜀): {missing}", file=sys.stderr)
-    if not dest_cols:
-        raise RuntimeError("목적지 국가 열을 하나도 찾지 못했습니다.")
-
-    ym_col = None
-    for c in range(raw.shape[1]):
-        if str(raw.iloc[header_row, c]).strip() in ("행 레이블", "Row Labels"):
-            ym_col = c
-            break
+    df = pd.read_excel(path, sheet_name=0, header=0)
+    cols = find_columns(df)
 
     records = []
-    for r in range(header_row + 1, len(raw)):
-        ym_raw = raw.iloc[r, ym_col]
-        m = YM_RE.match(str(ym_raw).strip())
+    skipped_dest = set()
+    for _, row in df.iterrows():
+        m = YM_RE.match(str(row[cols["month"]]).strip())
         if not m:
-            continue  # 총계 행 등 라벨이 없는 행은 건너뜀
+            continue
         year = 2000 + int(m.group(1))
         month = int(m.group(2))
-        for code, col in dest_cols.items():
-            val = raw.iloc[r, col]
-            if pd.isna(val) or str(val).strip() in ("-", ""):
-                continue
-            try:
-                tons = float(val)
-            except (TypeError, ValueError):
-                continue
-            records.append([year, month, code, tons])
+
+        dest_name = str(row[cols["dest"]]).strip().lower()
+        code = CODE_BY_LOWER_NAME.get(dest_name)
+        if code is None:
+            skipped_dest.add(str(row[cols["dest"]]).strip())
+            continue
+
+        chilled = to_num(row[cols["chilled"]]) if "chilled" in cols else 0.0
+        frozen = to_num(row[cols["frozen"]]) if "frozen" in cols else 0.0
+        total = to_num(row[cols["total"]])
+        goat = to_num(row[cols["goat"]]) if "goat" in cols else 0.0
+        if total is None:
+            continue
+        records.append([year, month, code, chilled or 0.0, frozen or 0.0, total, goat or 0.0])
+
+    print(f"  (참고) 목적지 매칭 안 돼서 건너뛴 이름들 일부: {sorted(skipped_dest)[:10]}"
+          f"{'...' if len(skipped_dest) > 10 else ''} (소계행 포함이라 정상)", file=sys.stderr)
     return records
 
 
@@ -137,9 +126,17 @@ def merge_into_json(records, do_merge: bool):
         with open(OUT_PATH, encoding="utf-8") as f:
             existing = json.load(f)
 
-    by_key = {(r[0], r[1], r[2]): r for r in existing.get("data", [])}
-    changed = 0
-    added = 0
+    by_key = {}
+    # 기존 데이터가 v1 스키마(4개 필드: year,month,dest,total)일 수도 있으니
+    # 길이를 보고 안전하게 처리 (v1 레코드는 chilled/frozen/goat를 0으로 채움)
+    for r in existing.get("data", []):
+        if len(r) == 4:
+            year, month, dest, total = r
+            by_key[(year, month, dest)] = [year, month, dest, 0.0, 0.0, total, 0.0]
+        else:
+            by_key[(r[0], r[1], r[2])] = r
+
+    added = changed = 0
     for r in records:
         key = (r[0], r[1], r[2])
         if key in by_key and by_key[key] != r:
@@ -150,14 +147,14 @@ def merge_into_json(records, do_merge: bool):
 
     import datetime
     out = {
-        "product": "Beef & Veal Total (10개 주요 목적지, 사용자 수동 취합)",
+        "product": "Beef & Veal (10개 주요 목적지, 사용자 수동 취합)",
         "sector": "Red meat",
-        "sourceNote": "호주 DAFF 'Australian red meat export statistics' 57 Destination Report를 사용자가 직접 취합한 피벗을 수동 업로드",
+        "sourceNote": "호주 DAFF 'Australian red meat export statistics' 57 Destination Report를 사용자가 직접 취합한 로우데이터를 수동 업로드",
         "unit": "ton",
         "collectedAt": datetime.datetime.now().astimezone().isoformat(),
         "granularity": "monthly",
         "destNames": DEST_LABEL,
-        "cols": ["year", "month", "dest", "totalBeefVealTon"],
+        "cols": ["year", "month", "dest", "chilledTon", "frozenTon", "totalBeefVealTon", "goatTon"],
         "data": sorted(by_key.values(), key=lambda r: (r[0], r[1], r[2])),
     }
 
@@ -174,13 +171,13 @@ def merge_into_json(records, do_merge: bool):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("path", help="업로드된 피벗 엑셀 파일 경로")
+    ap.add_argument("path", help="업로드된 로우데이터 엑셀 파일 경로")
     ap.add_argument("--merge", action="store_true", help="실제로 data/aus_meat_export.json에 반영")
     args = ap.parse_args()
 
     records = parse_file(args.path)
     if not records:
-        print("파싱된 레코드가 없습니다. 피벗 형식을 확인해주세요.", file=sys.stderr)
+        print("파싱된 레코드가 없습니다. 파일 형식을 확인해주세요.", file=sys.stderr)
         sys.exit(1)
 
     years_months = sorted(set((r[0], r[1]) for r in records))
