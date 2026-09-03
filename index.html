@@ -2572,7 +2572,7 @@ function WarehousePasswordGate({ children }) {
 
   const submit = (e) => {
     e.preventDefault();
-    tryPassword(input, false);
+    tryPassword(input.trim(), false);
   };
   return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#f2ead9", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 260 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, disabled: busy, onChange: (e) => {
     setInput(e.target.value);
