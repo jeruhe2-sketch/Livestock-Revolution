@@ -1,0 +1,58 @@
+name: (임시) Pages CDN 확인
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-main-git-write
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pages에서 직접 받아서 로컬 커밋본과 비교
+        run: |
+          mkdir -p debug
+          {
+            echo "=== Pages 응답 헤더 ==="
+            curl -sI "https://jeruhe2-sketch.github.io/Livestock-Revolution/data/warehouse_stock.enc.json"
+            echo
+            echo "=== Pages 본문 다운로드 ==="
+            curl -s "https://jeruhe2-sketch.github.io/Livestock-Revolution/data/warehouse_stock.enc.json" -o /tmp/pages_version.json -w "status=%{http_code}\n"
+            echo
+            echo "=== salt/iv 비교 (로컬 커밋본 vs Pages) ==="
+            python3 -c "
+import json
+local = json.load(open('data/warehouse_stock.enc.json'))
+pages = json.load(open('/tmp/pages_version.json'))
+print('local salt:', local['salt'])
+print('pages salt:', pages['salt'])
+print('local ciphertext[:30]:', local['ciphertext'][:30])
+print('pages ciphertext[:30]:', pages['ciphertext'][:30])
+print('완전히 동일함:', local['ciphertext'] == pages['ciphertext'])
+"
+            echo
+            echo "=== Pages 버전을 1004로 복호화 시도 ==="
+            pip install cryptography -q
+            python3 scripts/encrypt_warehouse_data.py --decrypt --password "1004" /tmp/pages_version.json /tmp/pages_decrypted.json && echo "1004로 복호화 성공" || echo "1004로 복호화 실패"
+          } > debug/pages_check.log 2>&1
+          cat debug/pages_check.log
+      - name: 결과 커밋
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/pages_check.log
+          git diff --cached --quiet && exit 0
+          git commit -m "debug: Pages CDN 확인 로그"
+          for i in 1 2 3; do
+            git push && exit 0
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; git add -f debug/pages_check.log; git commit -m "debug: Pages CDN 확인 로그(재시도)" || true; }
+            sleep 3
+          done
