@@ -1,4 +1,4 @@
-[2026-09-03T07:12:03.427210+09:00] 데이터 갱신 시작 (기준연도 2026)
+[2026-09-04T07:11:42.288776+09:00] 데이터 갱신 시작 (기준연도 2026)
   페이지 1 시도 1/5 실패: URLError(TimeoutError('timed out')) (5초 후 재시도)
   페이지 1 시도 2/5 실패: URLError(TimeoutError('timed out')) (10초 후 재시도)
   페이지 1 시도 3/5 실패: URLError(TimeoutError('timed out')) (15초 후 재시도)
