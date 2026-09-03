@@ -1786,6 +1786,35 @@ return UsdaTradeApp;
 })();
 
 
+// ── 창고 데이터 암호화 관련 (scripts/encrypt_warehouse_data.py 와 반드시 동일한 값/방식) ──
+// 반드시 IIFE 밖(전역 스코프)에 둬야 함: WarehouseDashboardApp은 아래 IIFE 안에서,
+// WarehousePasswordGate는 이 파일 뒤쪽 IIFE 밖에서 둘 다 이 함수들을 써야 하기 때문.
+const WAREHOUSE_ITERATIONS_FALLBACK = 100000;
+function b64ToBuf(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf;
+}
+async function decryptWarehousePayload(password, enc) {
+  const salt = b64ToBuf(enc.salt);
+  const iv = b64ToBuf(enc.iv);
+  const ciphertext = b64ToBuf(enc.ciphertext);
+  const passKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: enc.iterations || WAREHOUSE_ITERATIONS_FALLBACK, hash: "SHA-256" },
+    passKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+  );
+  const plainBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ciphertext);
+  return new TextDecoder().decode(plainBuf);
+}
+async function fetchAndDecryptWarehouseJson(password, url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("파일을 불러오지 못했습니다 (" + r.status + ")");
+  const enc = await r.json();
+  const text = await decryptWarehousePayload(password, enc);
+  return JSON.parse(text);
+}
 window.WarehouseDashboardApp = (function() {
 const { useState, useMemo, useRef } = React;
 const COLORS = {
@@ -2010,33 +2039,6 @@ function downloadXlsx(aoa, filename, sheetName) {
 }
 const DIM_LABEL = { \uCC3D\uACE0\uBA85: "\uCC3D\uACE0", \uACF5\uAE09\uC0AC: "\uACF5\uAE09\uC0AC", \uD1B5\uAD00\uC0C1\uD0DC: "\uD1B5\uAD00\uC0C1\uD0DC", \uCD95\uC885: "\uCD95\uC885", EST: "EST" };
 const DIM_OPTIONS = [["\uCC3D\uACE0\uBA85", "\uCC3D\uACE0"], ["\uACF5\uAE09\uC0AC", "\uACF5\uAE09\uC0AC"], ["\uD1B5\uAD00\uC0C1\uD0DC", "\uD1B5\uAD00\uC0C1\uD0DC"], ["\uCD95\uC885", "\uCD95\uC885"], ["EST", "EST(ACC \uC804\uC6A9)"]];
-// ── 창고 데이터 암호화 관련 (scripts/encrypt_warehouse_data.py 와 반드시 동일한 값/방식) ──
-const WAREHOUSE_ITERATIONS_FALLBACK = 100000;
-function b64ToBuf(b64) {
-  const bin = atob(b64);
-  const buf = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-  return buf;
-}
-async function decryptWarehousePayload(password, enc) {
-  const salt = b64ToBuf(enc.salt);
-  const iv = b64ToBuf(enc.iv);
-  const ciphertext = b64ToBuf(enc.ciphertext);
-  const passKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-  const aesKey = await crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: enc.iterations || WAREHOUSE_ITERATIONS_FALLBACK, hash: "SHA-256" },
-    passKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
-  );
-  const plainBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ciphertext);
-  return new TextDecoder().decode(plainBuf);
-}
-async function fetchAndDecryptWarehouseJson(password, url) {
-  const r = await fetch(url, { cache: "no-store" });
-  if (!r.ok) throw new Error("파일을 불러오지 못했습니다 (" + r.status + ")");
-  const enc = await r.json();
-  const text = await decryptWarehousePayload(password, enc);
-  return JSON.parse(text);
-}
 function WarehouseDashboardApp() {
   const [db, setDb] = useState(null);
   const [err, setErr] = useState(null);
