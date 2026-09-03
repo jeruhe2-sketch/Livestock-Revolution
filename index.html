@@ -48,7 +48,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./scripts/usda_domestic_app.js?v=20"></script>
 <script src="./scripts/cepea_domestic_app.js?v=20"></script>
-<script src="./scripts/aus_trade_app.js?v=9"></script>
+<script src="./scripts/aus_trade_app.js?v=10"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #151312; }
   * { box-sizing: border-box; }
@@ -764,7 +764,7 @@ function Dashboard({ db, exRates, fxHistory }) {
   const pInt = (key, fallback) => { const v = initParams.get(key); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : fallback; };
 
   const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
-  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "group", ["group", "overlay"]));
+  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay"]));
   const [valueKey, setValueKey] = useState(() => pOneOf("vk", "kg", ["kg", "euro"]));
   const [msFilter, setMsFilter] = useState(() => pList("ms"));
   const [partnerFilter, setPartnerFilter] = useState(() => pList("pt"));
@@ -791,8 +791,7 @@ function Dashboard({ db, exRates, fxHistory }) {
   const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["ms", "partner", "year", "month", "yearMonth", "week"]));
   const [sortDesc, setSortDesc] = useState(true);
   const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
-  const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "ms", "partner"]));
-  const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "week", "year"]));
+  const [trendDim, setTrendDim] = useState(() => pOneOf("td", "partner", ["ms", "partner"]));
 
   const val = (r) => (valueKey === "kg" ? r.kg / 1000 : r.euro);
   const unitLabel = valueKey === "kg" ? "톤" : "유로(€)";
@@ -882,70 +881,22 @@ function Dashboard({ db, exRates, fxHistory }) {
   }, [baseFilteredRows, groupBy, sortDesc, valueKey]);
   const isTimeGroup = groupBy === "year" || groupBy === "month" || groupBy === "yearMonth" || groupBy === "week";
   function exportGroupXlsx() {
-    const label = `EU돈육수출(${unitLabel})` + (isTimeGroup && smoothed ? " [3개월 이동평균]" : "");
-    const header = [DIM_LABEL[groupBy], label];
-    const body = grouped.map((g, i) => [g.key, Math.round((groupSeries[0].data[i] ?? g.v) * 100) / 100]);
+    const header = [DIM_LABEL[groupBy], `EU돈육수출(${unitLabel})`];
+    const body = grouped.map((g) => [g.key, Math.round(g.v * 100) / 100]);
     downloadXlsx([header, ...body], `EU돈육_${DIM_LABEL[groupBy]}별_${unitLabel}.xlsx`, "그룹비교");
   }
 
-  const overlayCandidates = useMemo(() => {
-    if (overlayDim === "year") return years.map(String);
-    const key = overlayDim === "ms" ? "ms" : "partner";
+  /* ── 추이: 전체 기간을 하나로 이어붙인 연속 시계열 (수출국/수입국 기준 선택, 이동평균 지원) ── */
+  const trendCandidates = useMemo(() => {
     const totals = {};
     baseFilteredRows.forEach((r) => {
-      const k = dimValue(r, key);
+      const k = dimValue(r, trendDim);
       totals[k] = (totals[k] || 0) + val(r);
     });
     return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
-  }, [overlayDim, baseFilteredRows, years, valueKey]);
-  const effectiveXAxis = overlayXAxis;
-  // 상단 필터(수출국/수입국/연도)에서 이미 고른 걸 그대로 겹쳐그림 - 별도로 또 고를 필요 없음.
-  // 너무 많으면(상단필터를 전체로 둔 경우) 상위 10개까지만 보여줘서 차트가 안 뒤엉키게 함.
-  const currentOverlayList = overlayCandidates.slice(0, 10);
-  // overlayDim==="year"일 땐 연도가 각각 하나의 선이라 X축은 그 해 안에서만(1~12월 또는
-  // 1~53주) 돌면 됨. overlayDim이 수출국/수입국일 땐 국가가 선이니, 기준연도 하나에
-  // 가두지 않고 선택된 전체 기간(여러 연도)을 월/주 단위로 쭉 이어붙여서 보여줌.
-  // 주차만 봐서는 몇 월인지 감이 안 와서, EU 원본 데이터에 이미 붙어있는 "그 주가
-  // 속한 월" 정보를 라벨에 같이 붙여줌(예: "34주(8월)"). overlayDim==="year"일 때는
-  // 여러 연도를 주 번호 하나로 합쳐 보여주는 거라, 그 주 번호가 여러 연도에서 걸린
-  // 월들 중 가장 흔한 월 하나를 대표로 삼음(연도마다 살짝 다를 수 있어서 근사치).
-  // 라벨과 실제 데이터 집계(xVal)가 반드시 똑같은 이 맵을 같이 써야 서로 어긋나지 않음.
-  const weekMonthMap = useMemo(() => {
-    const counts = {};
-    baseFilteredRows.forEach((r) => {
-      counts[r.week] = counts[r.week] || {};
-      counts[r.week][r.month] = (counts[r.week][r.month] || 0) + 1;
-    });
-    const map = {};
-    Object.keys(counts).forEach((w) => {
-      map[w] = Object.keys(counts[w]).sort((a, b) => counts[w][b] - counts[w][a])[0];
-    });
-    return map;
-  }, [baseFilteredRows]);
-  const overlayXLabels = useMemo(() => {
-    if (effectiveXAxis === "year") return years.map(String);
-    if (effectiveXAxis === "week") {
-      if (overlayDim === "year") {
-        return Array.from({ length: 53 }, (_, i) => {
-          const w = i + 1;
-          const m = weekMonthMap[w];
-          return m ? `${w}주(${m}월)` : `${w}주`;
-        });
-      }
-      const labels = [];
-      years.forEach((y) => {
-        const rowsInYear = baseFilteredRows.filter((r) => r.year === y);
-        const maxWeek = rowsInYear.length ? Math.max(...rowsInYear.map((r) => r.week)) : 0;
-        const monthOfWeek = {};
-        rowsInYear.forEach((r) => { monthOfWeek[r.week] = r.month; });
-        for (let w = 1; w <= maxWeek; w++) {
-          const m = monthOfWeek[w];
-          labels.push(m ? `${y}-W${String(w).padStart(2, "0")}(${m}월)` : `${y}-W${String(w).padStart(2, "0")}`);
-        }
-      });
-      return labels;
-    }
-    if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
+  }, [trendDim, baseFilteredRows, valueKey]);
+  const currentTrendList = trendCandidates.slice(0, 10);
+  const trendXLabels = useMemo(() => {
     const labels = [];
     years.forEach((y) => {
       for (let m = monthFrom; m <= monthTo; m++) {
@@ -956,39 +907,38 @@ function Dashboard({ db, exRates, fxHistory }) {
       }
     });
     return labels;
-  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, ymStart, ymEnd, baseFilteredRows, weekMonthMap]);
-  const overlaySeries = useMemo(() => {
-    return currentOverlayList.map((v0, idx) => {
-      const bucket = {};
-      baseFilteredRows.forEach((r) => {
-        const seriesVal = overlayDim === "year" ? String(r.year) : dimValue(r, overlayDim);
-        if (seriesVal !== v0) return;
-        let xVal;
-        if (effectiveXAxis === "year") xVal = String(r.year);
-        else if (effectiveXAxis === "week") {
-          if (overlayDim === "year") {
-            const m = weekMonthMap[r.week];
-            xVal = m ? `${r.week}주(${m}월)` : `${r.week}주`;
-          } else {
-            xVal = r.month ? `${r.year}-W${String(r.week).padStart(2, "0")}(${r.month}월)` : `${r.year}-W${String(r.week).padStart(2, "0")}`;
-          }
-        }
-        else xVal = overlayDim === "year" ? `${r.month}월` : `${r.year}.${String(r.month).padStart(2, "0")}`;
-        bucket[xVal] = (bucket[xVal] || 0) + val(r);
-      });
-      return { name: v0, color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10) };
+  }, [years, monthFrom, monthTo, ymStart, ymEnd]);
+  const trendSeries = useMemo(() => currentTrendList.map((v0, idx) => {
+    const bucket = {};
+    baseFilteredRows.forEach((r) => {
+      if (dimValue(r, trendDim) !== v0) return;
+      const xVal = `${r.year}.${String(r.month).padStart(2, "0")}`;
+      bucket[xVal] = (bucket[xVal] || 0) + val(r);
     });
-  }, [baseFilteredRows, overlayDim, effectiveXAxis, currentOverlayList, overlayXLabels, valueKey, weekMonthMap]);
-  function exportOverlayXlsx() {
-    const header = ["구분", ...currentOverlayList];
-    const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
-    downloadXlsx([header, ...body], `EU돈육_${DIM_LABEL[overlayDim]}겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
+    const raw = trendXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10);
+    return { name: v0 + (smoothed ? " (3개월 이동평균)" : ""), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: smoothed ? movingAvg(raw, 3) : raw };
+  }), [baseFilteredRows, trendDim, currentTrendList, trendXLabels, valueKey, smoothed]);
+  function exportTrendXlsx() {
+    const header = ["연월", ...currentTrendList];
+    const body = trendXLabels.map((x, i) => [x, ...trendSeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
+    downloadXlsx([header, ...body], `EU돈육_${DIM_LABEL[trendDim]}별_추이${smoothed ? "_3개월이동평균" : ""}.xlsx`, "추이");
   }
-  const groupSeries = useMemo(() => {
-    const raw = grouped.map((g) => g.v);
-    const data = (isTimeGroup && smoothed) ? movingAvg(raw, 3) : raw;
-    return [{ name: DIM_LABEL[groupBy] + (isTimeGroup && smoothed ? " (3개월 이동평균)" : ""), color: COLORS.amber, data }];
-  }, [grouped, groupBy, isTimeGroup, smoothed]);
+
+  /* ── 겹쳐보기: 연도별로 접어서 1~12월 축 위에 겹쳐그림 (계절성 비교) ── */
+  const overlayXLabels = useMemo(() => Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`), [monthFrom, monthTo]);
+  const overlaySeries = useMemo(() => years.map((y, idx) => {
+    const bucket = {};
+    baseFilteredRows.forEach((r) => {
+      if (r.year !== y) return;
+      bucket[`${r.month}월`] = (bucket[`${r.month}월`] || 0) + val(r);
+    });
+    return { name: String(y), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10) };
+  }), [baseFilteredRows, years, overlayXLabels, valueKey]);
+  function exportOverlayXlsx() {
+    const header = ["월", ...years.map(String)];
+    const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
+    downloadXlsx([header, ...body], `EU돈육_연도별겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
+  }
   useEffect(() => {
     const sp = new URLSearchParams();
     if (msFilter.length) sp.set("ms", msFilter.join(","));
@@ -1006,15 +956,12 @@ function Dashboard({ db, exRates, fxHistory }) {
       if (displayMode !== "abs") sp.set("dm", displayMode);
     } else {
       sp.set("csub", chartSub);
-      if (chartSub === "group") { sp.set("gb", groupBy); if (smoothed) sp.set("sm", "1"); }
-      if (chartSub === "overlay") {
-        sp.set("od", overlayDim);
-        sp.set("oxa", overlayXAxis);
-      }
+      if (chartSub === "group") sp.set("gb", groupBy);
+      if (chartSub === "trend") { sp.set("td", trendDim); if (smoothed) sp.set("sm", "1"); }
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, smoothed]);
+  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1126,34 +1073,43 @@ function Dashboard({ db, exRates, fxHistory }) {
       mainTab === "chart" && React.createElement(React.Fragment, null,
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
           React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "그룹 비교" }),
+          React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
           React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" })
         ),
         chartSub === "group" && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
             React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }),
             React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
-              isTimeGroup && React.createElement("div", { style: { display: "flex", gap: 4 } },
-                React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "원자료" }),
-                React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" })
-              ),
               !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "⇅ ", sortDesc ? "내림차순" : "오름차순"),
               React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
             )
           ),
+          React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } }, "각 ", DIM_LABEL[groupBy], "의 총합을 비교합니다."),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-            isTimeGroup
-              ? React.createElement(SvgLineChart, { categories: grouped.map((g) => g.key), series: groupSeries, height: 280, formatValue: chartFormatValue })
-              : React.createElement(BarRanking, { items: grouped, formatValue: chartFormatValue })
+            React.createElement(BarRanking, { items: grouped, formatValue: chartFormatValue })
+          )
+        ),
+        chartSub === "trend" && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement(HoverAxisPicker, { label: "기준", value: trendDim, onChange: setTrendDim, options: [["ms", "수출국"], ["partner", "수입국"]] }),
+            React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "원자료" }),
+            React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" }),
+            React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+          ),
+          React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
+            "* 전체 기간을 하나로 이어붙인 시계열입니다. 위쪽 ", DIM_LABEL[trendDim], " 필터에서 고른 항목이 그대로 표시됩니다", trendCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${trendCandidates.length}개)` : "", "."
+          ),
+          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+            React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 300, formatValue: chartFormatValue }),
+            React.createElement(ChartLegend, { series: trendSeries })
           )
         ),
         chartSub === "overlay" && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
-            React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: setOverlayDim, options: [["year", "연도"], ["ms", "수출국"], ["partner", "수입국"]] }),
-            React.createElement(HoverAxisPicker, { label: "X축", value: overlayXAxis, onChange: setOverlayXAxis, options: [["week", "주별"], ["month", "월별"], ["year", "연도별"]] }),
-            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
+            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
           ),
           React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
-            "* 위쪽 ", DIM_LABEL[overlayDim], " 필터에서 고른 항목이 그대로 겹쳐그려집니다", overlayCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${overlayCandidates.length}개)` : "", "."
+            "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다."
           ),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
             React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 300, formatValue: chartFormatValue }),
@@ -1427,7 +1383,7 @@ function Dashboard({ db }) {
   const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
 
   const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
-  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "group", ["group", "overlay"]));
+  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay"]));
   const [valueKey, setValueKey] = useState(() => pOneOf("vk", "weeklyExports", ["weeklyExports", "outstandingSales", "accumulatedExports"]));
   const [countryFilter, setCountryFilter] = useState(() => pList("c"));
   const [yearFilter, setYearFilter] = useState(() => pList("yr").filter((v) => YEARS_ALL.includes(v)));
@@ -1446,8 +1402,6 @@ function Dashboard({ db }) {
   const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "year", ["country", "year", "month", "yearMonth", "week"]));
   const [sortDesc, setSortDesc] = useState(true);
   const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
-  const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "year", ["year", "country"]));
-  const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
 
   const aggBy = (list) => (valueKey === "outstandingSales" || valueKey === "currentMYTotalCommitment")
     ? (list.length ? list[list.length - 1][valueKey] : 0)
@@ -1536,34 +1490,25 @@ function Dashboard({ db }) {
   }, [baseFilteredRows, groupBy, sortDesc, valueKey]);
   const isTimeGroup = groupBy === "year" || groupBy === "month" || groupBy === "yearMonth" || groupBy === "week";
   function exportGroupXlsx() {
-    const label = `${VALUE_LABEL[valueKey] || valueKey}(${unitLabel})` + (isTimeGroup && smoothed ? " [3개월 이동평균]" : "");
-    const header = [DIM_LABEL[groupBy], label];
-    const body = grouped.map((g, i) => [g.key, Math.round((groupSeries[0].data[i] ?? g.v) * 100) / 100]);
+    const header = [DIM_LABEL[groupBy], `${VALUE_LABEL[valueKey] || valueKey}(${unitLabel})`];
+    const body = grouped.map((g) => [g.key, Math.round(g.v * 100) / 100]);
     downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_${DIM_LABEL[groupBy]}별_${unitLabel}.xlsx`, "그룹비교");
   }
 
-  const overlayCandidates = useMemo(() => {
-    if (overlayDim === "year") return years.map(String);
-    const totals = {};
+  /* ── 추이: 수입국별로 전체 기간을 하나로 이어붙인 연속 시계열 (이동평균 지원) ── */
+  const trendCandidates = useMemo(() => {
     const lists = {};
     baseFilteredRows.forEach((r) => {
       const k = dimValue(r, "country");
       if (!lists[k]) lists[k] = [];
       lists[k].push(r);
     });
+    const totals = {};
     Object.keys(lists).forEach((k) => totals[k] = aggBy(lists[k]));
     return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
-  }, [overlayDim, baseFilteredRows, years, valueKey]);
-  const effectiveXAxis = overlayDim === "year" ? "month" : overlayXAxis;
-  // 상단 필터(수출국/수입국/연도)에서 이미 고른 걸 그대로 겹쳐그림 - 별도로 또 고를 필요 없음.
-  // 너무 많으면(상단필터를 전체로 둔 경우) 상위 10개까지만 보여줘서 차트가 안 뒤엉키게 함.
-  const currentOverlayList = overlayCandidates.slice(0, 10);
-  // overlayDim==="year"일 땐 연도가 각각 하나의 선이라 X축은 1~12월 그대로.
-  // overlayDim이 수입국일 땐 국가가 선이니, 기준연도 하나에 가두지 않고
-  // 선택된 전체 기간(여러 연도)을 월 단위로 쭉 이어붙여서 다년간 추세를 한 선으로 보여줌.
-  const overlayXLabels = useMemo(() => {
-    if (effectiveXAxis !== "month") return years.map(String);
-    if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
+  }, [baseFilteredRows, valueKey]);
+  const currentTrendList = trendCandidates.slice(0, 10);
+  const trendXLabels = useMemo(() => {
     const labels = [];
     years.forEach((y) => {
       for (let m = monthFrom; m <= monthTo; m++) {
@@ -1574,33 +1519,41 @@ function Dashboard({ db }) {
       }
     });
     return labels;
-  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, ymStart, ymEnd]);
-  const overlaySeries = useMemo(() => {
-    return currentOverlayList.map((v0, idx) => {
-      const buckets = {};
-      baseFilteredRows.forEach((r) => {
-        const seriesVal = overlayDim === "year" ? String(r.year) : dimValue(r, "country");
-        if (seriesVal !== v0) return;
-        let xVal;
-        if (effectiveXAxis !== "month") xVal = String(r.year);
-        else if (overlayDim === "year") xVal = `${r.month}월`;
-        else xVal = `${r.year}.${String(r.month).padStart(2, "0")}`;
-        if (!buckets[xVal]) buckets[xVal] = [];
-        buckets[xVal].push(r);
-      });
-      return { name: v0, color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round(aggBy(buckets[x] || []) * 10) / 10) };
+  }, [years, monthFrom, monthTo, ymStart, ymEnd]);
+  const trendSeries = useMemo(() => currentTrendList.map((v0, idx) => {
+    const buckets = {};
+    baseFilteredRows.forEach((r) => {
+      if (dimValue(r, "country") !== v0) return;
+      const xVal = `${r.year}.${String(r.month).padStart(2, "0")}`;
+      if (!buckets[xVal]) buckets[xVal] = [];
+      buckets[xVal].push(r);
     });
-  }, [baseFilteredRows, overlayDim, effectiveXAxis, currentOverlayList, overlayXLabels, valueKey]);
-  function exportOverlayXlsx() {
-    const header = ["구분", ...currentOverlayList];
-    const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
-    downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_${DIM_LABEL[overlayDim] || "연도"}겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
+    const raw = trendXLabels.map((x) => Math.round(aggBy(buckets[x] || []) * 10) / 10);
+    return { name: v0 + (smoothed ? " (3개월 이동평균)" : ""), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: smoothed ? movingAvg(raw, 3) : raw };
+  }), [baseFilteredRows, currentTrendList, trendXLabels, valueKey, smoothed]);
+  function exportTrendXlsx() {
+    const header = ["연월", ...currentTrendList];
+    const body = trendXLabels.map((x, i) => [x, ...trendSeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
+    downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_추이${smoothed ? "_3개월이동평균" : ""}.xlsx`, "추이");
   }
-  const groupSeries = useMemo(() => {
-    const raw = grouped.map((g) => g.v);
-    const data = (isTimeGroup && smoothed) ? movingAvg(raw, 3) : raw;
-    return [{ name: DIM_LABEL[groupBy] + (isTimeGroup && smoothed ? " (3개월 이동평균)" : ""), color: COLORS.amber, data }];
-  }, [grouped, groupBy, isTimeGroup, smoothed]);
+
+  /* ── 겹쳐보기: 연도별로 접어서 1~12월 축 위에 겹쳐그림 (계절성 비교) ── */
+  const overlayXLabels = useMemo(() => Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`), [monthFrom, monthTo]);
+  const overlaySeries = useMemo(() => years.map((y, idx) => {
+    const buckets = {};
+    baseFilteredRows.forEach((r) => {
+      if (r.year !== y) return;
+      const xVal = `${r.month}월`;
+      if (!buckets[xVal]) buckets[xVal] = [];
+      buckets[xVal].push(r);
+    });
+    return { name: String(y), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round(aggBy(buckets[x] || []) * 10) / 10) };
+  }), [baseFilteredRows, years, overlayXLabels, valueKey]);
+  function exportOverlayXlsx() {
+    const header = ["월", ...years.map(String)];
+    const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
+    downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_연도별겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
+  }
   useEffect(() => {
     const sp = new URLSearchParams();
     sp.set("cm", commodity);
@@ -1618,15 +1571,12 @@ function Dashboard({ db }) {
       if (displayMode !== "abs") sp.set("dm", displayMode);
     } else {
       sp.set("csub", chartSub);
-      if (chartSub === "group") { sp.set("gb", groupBy); if (smoothed) sp.set("sm", "1"); }
-      if (chartSub === "overlay") {
-        sp.set("od", overlayDim);
-        if (overlayDim !== "year") sp.set("oxa", overlayXAxis);
-      }
+      if (chartSub === "group") sp.set("gb", groupBy);
+      if (chartSub === "trend" && smoothed) sp.set("sm", "1");
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [commodity, countryFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, smoothed]);
+  }, [commodity, countryFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1725,34 +1675,42 @@ function Dashboard({ db }) {
       mainTab === "chart" && React.createElement(React.Fragment, null,
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
           React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "그룹 비교" }),
+          React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
           React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" })
         ),
         chartSub === "group" && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
             React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }),
             React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
-              isTimeGroup && React.createElement("div", { style: { display: "flex", gap: 4 } },
-                React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "원자료" }),
-                React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" })
-              ),
               !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "⇅ ", sortDesc ? "내림차순" : "오름차순"),
               React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
             )
           ),
+          React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } }, "각 ", DIM_LABEL[groupBy], "의 총합을 비교합니다."),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-            isTimeGroup
-              ? React.createElement(SvgLineChart, { categories: grouped.map((g) => g.key), series: groupSeries, height: 280 })
-              : React.createElement(BarRanking, { items: grouped })
+            React.createElement(BarRanking, { items: grouped })
+          )
+        ),
+        chartSub === "trend" && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "원자료" }),
+            React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" }),
+            React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+          ),
+          React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
+            "* 전체 기간을 하나로 이어붙인 시계열입니다. 위쪽 수입국 필터에서 고른 항목이 그대로 표시됩니다", trendCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${trendCandidates.length}개)` : "", "."
+          ),
+          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+            React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 300 }),
+            React.createElement(ChartLegend, { series: trendSeries })
           )
         ),
         chartSub === "overlay" && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
-            React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: setOverlayDim, options: [["year", "연도"], ["country", "수입국"]] }),
-            overlayDim !== "year" && React.createElement(HoverAxisPicker, { label: "X축", value: overlayXAxis, onChange: setOverlayXAxis, options: [["month", "월별"], ["year", "연도별"]] }),
-            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
+            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
           ),
           React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
-            "* 위쪽 ", overlayDim === "year" ? "연도" : "수입국", " 필터에서 고른 항목이 그대로 겹쳐그려집니다", overlayCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${overlayCandidates.length}개)` : "", "."
+            "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다."
           ),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
             React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 300 }),
