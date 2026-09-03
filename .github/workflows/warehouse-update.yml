@@ -27,10 +27,20 @@ jobs:
           python-version: '3.11'
 
       - name: 필요 패키지 설치
-        run: pip install playwright beautifulsoup4
+        run: pip install playwright beautifulsoup4 cryptography
 
       - name: Chromium 브라우저 엔진 설치
         run: python -m playwright install --with-deps chromium
+
+      - name: (암호화) 기존 이력 파일 복호화 - 병합 스크립트가 평문을 읽어야 함
+        env:
+          WAREHOUSE_PASSWORD: ${{ secrets.WAREHOUSE_PASSWORD }}
+        run: |
+          if [ -f data/warehouse_history.enc.json ]; then
+            python scripts/encrypt_warehouse_data.py --decrypt --password-env WAREHOUSE_PASSWORD data/warehouse_history.enc.json data/warehouse_history.json
+          else
+            echo "이력 암호화 파일이 아직 없음(최초 실행) - 스킵"
+          fi
 
       - name: 창고 데이터 수집 스크립트 실행 (Playwright)
         id: run_script
@@ -70,16 +80,25 @@ jobs:
           echo "exit_code=$?" >> debug/last_run.log
           cat debug/last_run.log
 
+      - name: (암호화) 새로 수집한 데이터를 암호화
+        env:
+          WAREHOUSE_PASSWORD: ${{ secrets.WAREHOUSE_PASSWORD }}
+        run: |
+          python scripts/encrypt_warehouse_data.py --password-env WAREHOUSE_PASSWORD data/warehouse_stock.json data/warehouse_stock.enc.json
+          python scripts/encrypt_warehouse_data.py --password-env WAREHOUSE_PASSWORD data/warehouse_history.json data/warehouse_history.enc.json
+
       - name: 디버그 로그 및 변경사항 커밋 및 푸시
         id: commit
         if: always()
+        env:
+          WAREHOUSE_PASSWORD: ${{ secrets.WAREHOUSE_PASSWORD }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           pushed=0
           : > debug/git_push_debug.log
           for i in $(seq 1 20); do
-            git add data/warehouse_stock.json data/warehouse_history.json
+            git add data/warehouse_stock.enc.json data/warehouse_history.enc.json
             if git diff --cached --quiet; then
               echo "[시도 $i] 변경 없음, 커밋 스킵" >> debug/git_push_debug.log
               pushed=1
@@ -95,10 +114,14 @@ jobs:
             echo "[시도 $i] push 실패, 재시도 준비" >> debug/git_push_debug.log
             git fetch origin main >> debug/git_push_debug.log 2>&1
             git reset --mixed origin/main >> debug/git_push_debug.log 2>&1
-            # history.json은 이번 실행 시작 시점 스냅샷이라, 재시도할 때마다
+            # history.enc.json은 이번 실행 시작 시점 스냅샷이라, 재시도할 때마다
             # origin의 최신 상태 위에 "오늘 레코드만" 다시 병합해야 다른 실행이
-            # 넣어둔 다른 날짜 기록이 사라지지 않는다.
+            # 넣어둔 다른 날짜 기록이 사라지지 않는다. 병합 스크립트는 평문을
+            # 다루므로 복호화 -> 병합 -> 재암호화 순서로 감싼다.
+            git checkout origin/main -- data/warehouse_history.enc.json 2>>debug/git_push_debug.log || true
+            python scripts/encrypt_warehouse_data.py --decrypt --password-env WAREHOUSE_PASSWORD data/warehouse_history.enc.json data/warehouse_history.json >> debug/git_push_debug.log 2>&1
             python scripts/merge_warehouse_history.py >> debug/git_push_debug.log 2>&1
+            python scripts/encrypt_warehouse_data.py --password-env WAREHOUSE_PASSWORD data/warehouse_history.json data/warehouse_history.enc.json >> debug/git_push_debug.log 2>&1
             sleep $((RANDOM % 15 + 5))
           done
           cat debug/git_push_debug.log

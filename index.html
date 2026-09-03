@@ -1905,6 +1905,20 @@ function expiryColor(days) {
 function isWithinNineMonthsDays(days) {
   return days <= 274;
 }
+function oneYearFromNow() {
+  const d = /* @__PURE__ */ new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+function isWithinOneYear(dateStr) {
+  if (!dateStr) return false;
+  const target = new Date(dateStr);
+  return target <= oneYearFromNow();
+}
+function isWithinOneYearDays(days) {
+  return days <= 365;
+}
 // ACC 브랜드 품목명 파싱: "우척갈비 ACC 9956 GF YP 1620" 형식과
 // "(우)갈비GF(YP)(23004)/1620/ACC" 형식(ACC가 맨 뒤에 오는 신규 표기) 둘 다 대응.
 // ACC 위치에 상관없이 문자열 전체에서 등급(YG/YP/S)/EST(1620/239)를 찾고,
@@ -1996,6 +2010,33 @@ function downloadXlsx(aoa, filename, sheetName) {
 }
 const DIM_LABEL = { \uCC3D\uACE0\uBA85: "\uCC3D\uACE0", \uACF5\uAE09\uC0AC: "\uACF5\uAE09\uC0AC", \uD1B5\uAD00\uC0C1\uD0DC: "\uD1B5\uAD00\uC0C1\uD0DC", \uCD95\uC885: "\uCD95\uC885", EST: "EST" };
 const DIM_OPTIONS = [["\uCC3D\uACE0\uBA85", "\uCC3D\uACE0"], ["\uACF5\uAE09\uC0AC", "\uACF5\uAE09\uC0AC"], ["\uD1B5\uAD00\uC0C1\uD0DC", "\uD1B5\uAD00\uC0C1\uD0DC"], ["\uCD95\uC885", "\uCD95\uC885"], ["EST", "EST(ACC \uC804\uC6A9)"]];
+// ── 창고 데이터 암호화 관련 (scripts/encrypt_warehouse_data.py 와 반드시 동일한 값/방식) ──
+const WAREHOUSE_ITERATIONS_FALLBACK = 100000;
+function b64ToBuf(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf;
+}
+async function decryptWarehousePayload(password, enc) {
+  const salt = b64ToBuf(enc.salt);
+  const iv = b64ToBuf(enc.iv);
+  const ciphertext = b64ToBuf(enc.ciphertext);
+  const passKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: enc.iterations || WAREHOUSE_ITERATIONS_FALLBACK, hash: "SHA-256" },
+    passKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+  );
+  const plainBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ciphertext);
+  return new TextDecoder().decode(plainBuf);
+}
+async function fetchAndDecryptWarehouseJson(password, url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("파일을 불러오지 못했습니다 (" + r.status + ")");
+  const enc = await r.json();
+  const text = await decryptWarehousePayload(password, enc);
+  return JSON.parse(text);
+}
 function WarehouseDashboardApp() {
   const [db, setDb] = useState(null);
   const [err, setErr] = useState(null);
@@ -2005,18 +2046,21 @@ function WarehouseDashboardApp() {
   const load = () => {
     setLoading(true);
     setErr(null);
-    fetch("./data/warehouse_stock.json", { cache: "no-store" }).then((r) => {
-      if (!r.ok) throw new Error("\uB370\uC774\uD130 \uD30C\uC77C\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4 (" + r.status + ")");
-      return r.json();
-    }).then((d) => {
+    const password = sessionStorage.getItem("warehouse_pw");
+    if (!password) {
+      setErr("\uBE44\uBC00\uBC88\uD638 \uC815\uBCF4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uC0C8\uB85C\uACE0\uCE68 \uD6C4 \uB2E4\uC2DC \uC785\uB825\uD574\uC8FC\uC138\uC694.");
+      setLoading(false);
+      return;
+    }
+    fetchAndDecryptWarehouseJson(password, "./data/warehouse_stock.enc.json").then((d) => {
       setDb(d);
       setLoading(false);
     }).catch((e) => {
-      setErr(e.message);
+      setErr("\uB370\uC774\uD130 \uD30C\uC77C\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: " + e.message);
       setLoading(false);
     });
     // \uC774\uB825 \uD30C\uC77C\uC740 \uC544\uC9C1 \uC5C6\uC744 \uC218\uB3C4 \uC788\uC5B4\uC11C(\uCCAB \uC790\uB3D9\uC218\uC9D1 \uC804) \uC2E4\uD328\uD574\uB3C4 \uC870\uC6A9\uD788 \uBB34\uC2DC
-    fetch("./data/warehouse_history.json", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then(setHistory).catch(() => setHistory(null));
+    fetchAndDecryptWarehouseJson(password, "./data/warehouse_history.enc.json").then(setHistory).catch(() => setHistory(null));
   };
   React.useEffect(load, [reloadKey]);
   if (err) return /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", fontSize: 14 } }, /* @__PURE__ */ React.createElement("div", null, err), /* @__PURE__ */ React.createElement("button", { onClick: () => setReloadKey((k) => k + 1), style: { padding: "6px 14px", borderRadius: 8, border: `1px solid ${COLORS.rust}`, background: "none", color: COLORS.rust, cursor: "pointer", fontSize: 12 } }, "\uB2E4\uC2DC \uC2DC\uB3C4"));
@@ -2088,6 +2132,7 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
       if (animalFilter.length && !animalFilter.includes(r.\uCD95\uC885)) return false;
       if (customsFilter !== "\uC804\uCCB4" && r.\uD1B5\uAD00\uC0C1\uD0DC !== customsFilter) return false;
       if (expiryFilter === "9\uAC1C\uC6D4\uC774\uB0B4" && !isWithinNineMonths(r.\uC720\uD1B5\uAE30\uD55C)) return false;
+      if (expiryFilter === "1\uB144\uC774\uB0B4" && !isWithinOneYear(r.\uC720\uD1B5\uAE30\uD55C)) return false;
       return true;
     });
     // 상세검색 탭의 자유텍스트(search)는 이 공통(전역) 필터에 포함하지 않는다.
@@ -2266,7 +2311,7 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
     const body = detailSorted.map((r) => [r.\uCC3D\uACE0\uBA85, r.\uD488\uBAA9\uBA85, r.\uC7AC\uACE0\uC218\uB7C9, r.\uC911\uB7C9_kg, r["B/L NO"], r.\uC720\uD1B5\uAE30\uD55C || "", r.\uD1B5\uAD00\uC0C1\uD0DC]);
     downloadXlsx([header, ...body], "\uCC3D\uACE0\uC7AC\uACE0_\uC0C1\uC138.xlsx", "\uC0C1\uC138");
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "\uCC3D\uACE0 \uD1B5\uD569 \uC7AC\uACE0 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC2E4\uC2DC\uAC04 \uC7AC\uACE0 \uD604\uD669"), fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01) && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft } }, "\uD83D\uDD52 ", fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCC3D\uACE0", options: warehouses, selected: warehouseFilter, onToggle: (v) => toggle(warehouseFilter, setWarehouseFilter, v), onSelectAll: () => setWarehouseFilter([...warehouses]), onClear: () => setWarehouseFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uACF5\uAE09\uC0AC", options: suppliers, selected: supplierFilter, onToggle: (v) => toggle(supplierFilter, setSupplierFilter, v), onSelectAll: () => setSupplierFilter([...suppliers]), onClear: () => setSupplierFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCD95\uC885", options: animalTypes, selected: animalFilter, onToggle: (v) => toggle(animalFilter, setAnimalFilter, v), onSelectAll: () => setAnimalFilter([...animalTypes]), onClear: () => setAnimalFilter([]) }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uD1B5\uAD00\uC0C1\uD0DC", options: ["\uC804\uCCB4", "\uD1B5\uAD00", "\uBBF8\uD1B5\uAD00"], value: customsFilter, onChange: setCustomsFilter }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uC720\uD1B5\uAE30\uD55C", options: ["\uC804\uCCB4", "9\uAC1C\uC6D4\uC774\uB0B4"], value: expiryFilter, onChange: setExpiryFilter })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(KpiCard, { label: "\uAC80\uC0C9\uB41C SKU \uAC74\uC218", value: n(kpi.count), accent: COLORS.amber }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC7AC\uACE0\uC218\uB7C9", value: n(kpi.totalQty), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC911\uB7C9 (kg)", value: n(kpi.totalWeight), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uC720\uD1B5\uAE30\uD55C 9\uAC1C\uC6D4 \uC774\uB0B4", value: n(kpi.soon), accent: kpi.soon > 0 ? COLORS.rust : COLORS.sage, warn: kpi.soon > 0 })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "summary", onClick: () => changeMainTab("summary"), label: "\uC694\uC57D(\uD53C\uBC97)" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "detail", onClick: () => changeMainTab("detail"), label: "\uC0C1\uC138\uAC80\uC0C9" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "acc", onClick: () => changeMainTab("acc"), label: "ACC \uD1B5\uD569\uC870\uD68C" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => changeMainTab("chart"), label: "\uCC28\uD2B8" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "trend", onClick: () => changeMainTab("trend"), label: "\uCD94\uC774" })), mainTab === "summary" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAC12\uAE30\uC900", options: ["\uC7AC\uACE0\uC218\uB7C9", "\uC911\uB7C9_kg"], value: valueMode, onChange: setValueMode }), /* @__PURE__ */ React.createElement("button", { onClick: exportSummaryXlsx, style: { marginLeft: "auto", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", maxHeight: 520, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 110 } }, DIM_LABEL[rowDim]), colLabels.map((cl) => /* @__PURE__ */ React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 90 } }, cl)), /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 100, color: COLORS.amberSoft } }, "\uCD1D\uD569\uACC4"))), /* @__PURE__ */ React.createElement("tbody", null, rowLabels.map((rl) => /* @__PURE__ */ React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, rl), colLabels.map((cl) => {
+  return /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "\uCC3D\uACE0 \uD1B5\uD569 \uC7AC\uACE0 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC2E4\uC2DC\uAC04 \uC7AC\uACE0 \uD604\uD669"), fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01) && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft } }, "\uD83D\uDD52 ", fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCC3D\uACE0", options: warehouses, selected: warehouseFilter, onToggle: (v) => toggle(warehouseFilter, setWarehouseFilter, v), onSelectAll: () => setWarehouseFilter([...warehouses]), onClear: () => setWarehouseFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uACF5\uAE09\uC0AC", options: suppliers, selected: supplierFilter, onToggle: (v) => toggle(supplierFilter, setSupplierFilter, v), onSelectAll: () => setSupplierFilter([...suppliers]), onClear: () => setSupplierFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCD95\uC885", options: animalTypes, selected: animalFilter, onToggle: (v) => toggle(animalFilter, setAnimalFilter, v), onSelectAll: () => setAnimalFilter([...animalTypes]), onClear: () => setAnimalFilter([]) }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uD1B5\uAD00\uC0C1\uD0DC", options: ["\uC804\uCCB4", "\uD1B5\uAD00", "\uBBF8\uD1B5\uAD00"], value: customsFilter, onChange: setCustomsFilter }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uC720\uD1B5\uAE30\uD55C", options: ["\uC804\uCCB4", "9\uAC1C\uC6D4\uC774\uB0B4", "1\uB144\uC774\uB0B4"], value: expiryFilter, onChange: setExpiryFilter })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(KpiCard, { label: "\uAC80\uC0C9\uB41C SKU \uAC74\uC218", value: n(kpi.count), accent: COLORS.amber }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC7AC\uACE0\uC218\uB7C9", value: n(kpi.totalQty), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC911\uB7C9 (kg)", value: n(kpi.totalWeight), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uC720\uD1B5\uAE30\uD55C 9\uAC1C\uC6D4 \uC774\uB0B4", value: n(kpi.soon), accent: kpi.soon > 0 ? COLORS.rust : COLORS.sage, warn: kpi.soon > 0 })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "summary", onClick: () => changeMainTab("summary"), label: "\uC694\uC57D(\uD53C\uBC97)" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "detail", onClick: () => changeMainTab("detail"), label: "\uC0C1\uC138\uAC80\uC0C9" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "acc", onClick: () => changeMainTab("acc"), label: "ACC \uD1B5\uD569\uC870\uD68C" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => changeMainTab("chart"), label: "\uCC28\uD2B8" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "trend", onClick: () => changeMainTab("trend"), label: "\uCD94\uC774" })), mainTab === "summary" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAC12\uAE30\uC900", options: ["\uC7AC\uACE0\uC218\uB7C9", "\uC911\uB7C9_kg"], value: valueMode, onChange: setValueMode }), /* @__PURE__ */ React.createElement("button", { onClick: exportSummaryXlsx, style: { marginLeft: "auto", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", maxHeight: 520, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 110 } }, DIM_LABEL[rowDim]), colLabels.map((cl) => /* @__PURE__ */ React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 90 } }, cl)), /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 100, color: COLORS.amberSoft } }, "\uCD1D\uD569\uACC4"))), /* @__PURE__ */ React.createElement("tbody", null, rowLabels.map((rl) => /* @__PURE__ */ React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, rl), colLabels.map((cl) => {
     var _a;
     return /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n(((_a = matrix[rl]) == null ? void 0 : _a[cl]) || 0));
   }), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#1a1613" } }, n(rowTotals[rl]))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#1a1613" } }, n(grandTotal)))))))), mainTab === "detail" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(
@@ -2491,23 +2536,48 @@ function ShellApp() {
   ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "austrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.AusTradeApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
 }
 function WarehousePasswordGate({ children }) {
-  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("warehouse_unlocked") === "1");
+  const [phase, setPhase] = useState("checking"); // checking | locked | unlocked
   const [input, setInput] = useState("");
   const [error, setError] = useState(false);
-  if (unlocked) return children;
+  const [busy, setBusy] = useState(false);
+
+  const tryPassword = (password, silent) => {
+    setBusy(true);
+    setError(false);
+    return fetch("./data/warehouse_stock.enc.json", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
+      .then((enc) => decryptWarehousePayload(password, enc))
+      .then(() => {
+        sessionStorage.setItem("warehouse_pw", password);
+        setPhase("unlocked");
+      })
+      .catch(() => {
+        sessionStorage.removeItem("warehouse_pw");
+        if (!silent) setError(true);
+        setPhase("locked");
+      })
+      .finally(() => setBusy(false));
+  };
+
+  React.useEffect(() => {
+    const saved = sessionStorage.getItem("warehouse_pw");
+    if (saved) tryPassword(saved, true);
+    else setPhase("locked");
+  }, []);
+
+  if (phase === "checking") {
+    return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#8f857a", fontSize: 14 } }, "\uD655\uC778\uD558\uB294 \uC911...");
+  }
+  if (phase === "unlocked") return children;
+
   const submit = (e) => {
     e.preventDefault();
-    if (input === "1004") {
-      sessionStorage.setItem("warehouse_unlocked", "1");
-      setUnlocked(true);
-    } else {
-      setError(true);
-    }
+    tryPassword(input, false);
   };
-  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#f2ead9", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 260 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, onChange: (e) => {
+  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#f2ead9", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 260 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, disabled: busy, onChange: (e) => {
     setInput(e.target.value);
     setError(false);
-  }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #3a332e", background: "#1d1a18", color: "#f2ead9", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#c0533a", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#d98b3f", color: "#1a1512", fontWeight: 700, cursor: "pointer" } }, "\uD655\uC778")));
+  }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #3a332e", background: "#1d1a18", color: "#f2ead9", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#c0533a", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", disabled: busy, style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#d98b3f", color: "#1a1512", fontWeight: 700, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 } }, busy ? "\uD655\uC778\uD558\uB294 \uC911..." : "\uD655\uC778")));
 }
 function NavItem({ active, onClick, icon, iconImg, label }) {
   return /* @__PURE__ */ React.createElement("button", { className: "app-nav-item", onClick, style: {
