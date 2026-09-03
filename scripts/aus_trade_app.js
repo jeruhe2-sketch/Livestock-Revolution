@@ -223,6 +223,18 @@ window.AusTradeApp = (function () {
     const validDestLabels = useMemo(() => new Set(DEST_LIST.map((c) => DEST_LABEL_KO[c] || c)), [DEST_LIST]);
     const [destFilter, setDestFilter] = useState(() => pList("dest").filter((v) => validDestLabels.has(v)));
     const [yearFilter, setYearFilter] = useState(() => pList("yr").filter((v) => YEARS_ALL.includes(v)));
+    const speciesRowsForRange = useMemo(() => ROWS.filter((r) => r.species === species), [ROWS, species]);
+    const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
+      const set = new Set();
+      speciesRowsForRange.forEach((r) => set.add(r.year * 100 + r.month));
+      const all = [...set].sort((a, b) => a - b);
+      return { ALL_YM: all, YM_MIN: all[0], YM_MAX: all[all.length - 1] };
+    }, [speciesRowsForRange]);
+    const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
+    const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
+    const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
+    const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
     const clampMonth = (v, fallback) => (Number.isFinite(v) && v >= 1 && v <= 12 ? v : fallback);
     const [monthFrom, setMonthFrom] = useState(() => clampMonth(pInt("ms", 1), 1));
     const [monthTo, setMonthTo] = useState(() => clampMonth(pInt("me", 12), 12));
@@ -244,9 +256,12 @@ window.AusTradeApp = (function () {
     const baseFilteredRows = useMemo(() => speciesRows.filter((r) => {
       if (destFilter.length && !destFilter.includes(DEST_LABEL_KO[r.dest] || r.dest)) return false;
       if (yearFilter.length && !yearFilter.includes(String(r.year))) return false;
+      const ym = r.year * 100 + r.month;
+      if (ymStart != null && ym < ymStart) return false;
+      if (ymEnd != null && ym > ymEnd) return false;
       if (r.month < monthFrom || r.month > monthTo) return false;
       return true;
-    }), [speciesRows, destFilter, yearFilter, monthFrom, monthTo]);
+    }), [speciesRows, destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo]);
 
     const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + val(r), 0), [baseFilteredRows, form]);
     const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
@@ -346,6 +361,8 @@ window.AusTradeApp = (function () {
       const sp = new URLSearchParams();
       if (destFilter.length) sp.set("dest", destFilter.join(","));
       if (yearFilter.length) sp.set("yr", yearFilter.join(","));
+      if (ymStart != null) sp.set("ys", ymStart);
+      if (ymEnd != null) sp.set("ye", ymEnd);
       if (monthFrom !== 1) sp.set("ms", monthFrom);
       if (monthTo !== 12) sp.set("me", monthTo);
       if (species !== "beef") sp.set("sp", species);
@@ -361,7 +378,7 @@ window.AusTradeApp = (function () {
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
-    }, [destFilter, yearFilter, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim]);
+    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -403,12 +420,16 @@ window.AusTradeApp = (function () {
           React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) })
         ),
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "월별"),
+          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
+          ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+          ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          (monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setMonthFrom(1); setMonthTo(12); },
-            style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체월")
+          (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+            style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
         ),
 
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
@@ -416,6 +437,7 @@ window.AusTradeApp = (function () {
             `호주 ${SPECIES_LABEL_KO[species]}(${FORM_LABEL[form]})`,
             destFilter.length ? ` · 목적지 ${destFilter.length}개` : "",
             yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "",
+            ymStart != null ? ` · ${ymLabel(ymStart)}~${ymLabel(ymEnd)}` : "",
             (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
           ),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },

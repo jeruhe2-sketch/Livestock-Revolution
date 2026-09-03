@@ -48,7 +48,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./scripts/usda_domestic_app.js?v=20"></script>
 <script src="./scripts/cepea_domestic_app.js?v=20"></script>
-<script src="./scripts/aus_trade_app.js?v=5"></script>
+<script src="./scripts/aus_trade_app.js?v=6"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #151312; }
   * { box-sizing: border-box; }
@@ -757,6 +757,17 @@ function Dashboard({ db, exRates, fxHistory }) {
   const [msFilter, setMsFilter] = useState(() => pList("ms"));
   const [partnerFilter, setPartnerFilter] = useState(() => pList("pt"));
   const [yearFilter, setYearFilter] = useState(() => pList("yr"));
+  const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
+    const set = new Set();
+    ROWS.forEach((r) => set.add(r.year * 100 + r.month));
+    const all = [...set].sort((a, b) => a - b);
+    return { ALL_YM: all, YM_MIN: all[0], YM_MAX: all[all.length - 1] };
+  }, [ROWS]);
+  const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
+  const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
+  const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
+  const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
+  const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
   const [monthFrom, setMonthFrom] = useState(() => pInt("ms2", 1));
   const [monthTo, setMonthTo] = useState(() => pInt("me", 12));
   const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
@@ -778,10 +789,13 @@ function Dashboard({ db, exRates, fxHistory }) {
       if (msFilter.length && !msFilter.includes(msNames[r.msCode])) return false;
       if (partnerFilter.length && !partnerFilter.includes(PARTNER_LABEL[r.partnerCode])) return false;
       if (yearFilter.length && !yearFilter.includes(String(r.year))) return false;
+      const ym = r.year * 100 + r.month;
+      if (ymStart != null && ym < ymStart) return false;
+      if (ymEnd != null && ym > ymEnd) return false;
       if (r.month < monthFrom || r.month > monthTo) return false;
       return true;
     });
-  }, [ROWS, msFilter, partnerFilter, yearFilter, monthFrom, monthTo, msNames]);
+  }, [ROWS, msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, msNames]);
   const periodKrwRate = useMemo(() => {
     if (valueKey !== "euro") return null;
     const totalEuro = baseFilteredRows.reduce((s, r) => s + r.euro, 0);
@@ -957,6 +971,8 @@ function Dashboard({ db, exRates, fxHistory }) {
     if (msFilter.length) sp.set("ms", msFilter.join(","));
     if (partnerFilter.length) sp.set("pt", partnerFilter.join(","));
     if (yearFilter.length) sp.set("yr", yearFilter.join(","));
+    if (ymStart != null) sp.set("ys", ymStart);
+    if (ymEnd != null) sp.set("ye", ymEnd);
     if (monthFrom !== 1) sp.set("ms2", monthFrom);
     if (monthTo !== 12) sp.set("me", monthTo);
     if (valueKey !== "kg") sp.set("vk", valueKey);
@@ -975,7 +991,7 @@ function Dashboard({ db, exRates, fxHistory }) {
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [msFilter, partnerFilter, yearFilter, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis]);
+  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1007,12 +1023,16 @@ function Dashboard({ db, exRates, fxHistory }) {
         React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) })
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
-        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "월별"),
+        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
+        ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+        React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+        ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
         React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
         React.createElement("span", { style: { color: COLORS.mute } }, "–"),
         React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-        (monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setMonthFrom(1); setMonthTo(12); },
-          style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체월")
+        (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+          style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
       ),
       React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
         React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } },
@@ -1020,6 +1040,7 @@ function Dashboard({ db, exRates, fxHistory }) {
           msFilter.length ? ` · 수출국 ${msFilter.length}개` : "",
           partnerFilter.length ? ` · 수입국 ${partnerFilter.length}개` : "",
           yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "",
+          ymStart != null ? ` · ${ymLabel(ymStart)}~${ymLabel(ymEnd)}` : "",
           (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
         ),
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
