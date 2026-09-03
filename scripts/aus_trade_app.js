@@ -247,6 +247,7 @@ window.AusTradeApp = (function () {
     const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "dest", ["dest", "year", "month", "yearMonth"]));
     const [sortDesc, setSortDesc] = useState(true);
     const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "dest", ["dest", "year"]));
+    const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
 
     const unitLabel = "톤";
     // 종별로 축종 먼저 걸러내고, 형태(합계/냉장/냉동)에 맞는 값을 뽑음
@@ -333,23 +334,27 @@ window.AusTradeApp = (function () {
       baseFilteredRows.forEach((r) => { const k = dimValue(r, "dest"); totals[k] = (totals[k] || 0) + val(r); });
       return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
     }, [overlayDim, baseFilteredRows, years, form]);
+    const effectiveXAxis = overlayDim === "year" ? "month" : overlayXAxis;
     const currentOverlayList = overlayCandidates.slice(0, 10);
     const overlayXLabels = useMemo(() => {
+      if (effectiveXAxis !== "month") return years.map(String);
       if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
       const labels = [];
       years.forEach((y) => { for (let m = monthFrom; m <= monthTo; m++) labels.push(`${y}.${String(m).padStart(2, "0")}`); });
       return labels;
-    }, [overlayDim, years, monthFrom, monthTo]);
+    }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo]);
     const overlaySeries = useMemo(() => currentOverlayList.map((v0, idx) => {
       const bucket = {};
       baseFilteredRows.forEach((r) => {
         const seriesVal = overlayDim === "year" ? String(r.year) : dimValue(r, "dest");
         if (seriesVal !== v0) return;
-        const xVal = overlayDim === "year" ? `${r.month}월` : `${r.year}.${String(r.month).padStart(2, "0")}`;
+        let xVal;
+        if (effectiveXAxis === "year") xVal = String(r.year);
+        else xVal = overlayDim === "year" ? `${r.month}월` : `${r.year}.${String(r.month).padStart(2, "0")}`;
         bucket[xVal] = (bucket[xVal] || 0) + val(r);
       });
       return { name: v0, color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10) };
-    }), [baseFilteredRows, overlayDim, currentOverlayList, overlayXLabels, form]);
+    }), [baseFilteredRows, overlayDim, effectiveXAxis, currentOverlayList, overlayXLabels, form]);
     function exportOverlayXlsx() {
       const header = ["구분", ...currentOverlayList];
       const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
@@ -375,10 +380,11 @@ window.AusTradeApp = (function () {
         sp.set("csub", chartSub);
         if (chartSub === "group") sp.set("gb", groupBy);
         if (chartSub === "overlay") sp.set("od", overlayDim);
+        if (chartSub === "overlay" && overlayDim !== "year") sp.set("oxa", overlayXAxis);
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
-    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim]);
+    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -513,6 +519,7 @@ window.AusTradeApp = (function () {
           chartSub === "overlay" && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement(HoverAxisPicker, { label: "비교기준", value: overlayDim, onChange: setOverlayDim, options: [["dest", "목적지"], ["year", "연도"]] }),
+              overlayDim !== "year" && React.createElement(HoverAxisPicker, { label: "X축", value: overlayXAxis, onChange: setOverlayXAxis, options: [["month", "월별"], ["year", "연도별"]] }),
               React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
             ),
             React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
