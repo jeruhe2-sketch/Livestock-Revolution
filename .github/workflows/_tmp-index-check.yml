@@ -1,0 +1,47 @@
+name: (임시) index.html 배포 확인
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-main-git-write
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 비교
+        run: |
+          mkdir -p debug
+          {
+            curl -s "https://jeruhe2-sketch.github.io/Livestock-Revolution/" -o /tmp/pages_index.html -w "status=%{http_code}\n"
+            echo "local bytes: $(wc -c < index.html)"
+            echo "pages bytes: $(wc -c < /tmp/pages_index.html)"
+            echo "동일함: $(diff -q index.html /tmp/pages_index.html > /dev/null && echo YES || echo NO)"
+            echo "--- pages에 decryptWarehousePayload 정의 있는지 ---"
+            grep -c "async function decryptWarehousePayload" /tmp/pages_index.html || echo 0
+            echo "--- pages에 WarehousePasswordGate 정의 있는지 ---"
+            grep -c "function WarehousePasswordGate" /tmp/pages_index.html || echo 0
+            echo "--- pages에서 decryptWarehousePayload 호출 개수 ---"
+            grep -o "decryptWarehousePayload" /tmp/pages_index.html | wc -l
+          } > debug/index_check.log 2>&1
+          cat debug/index_check.log
+      - name: 커밋
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/index_check.log
+          git diff --cached --quiet && exit 0
+          git commit -m "debug: index.html 배포 확인 로그"
+          for i in 1 2 3; do
+            git push && exit 0
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; git add -f debug/index_check.log; git commit -m "debug: index.html 배포 확인 로그(재시도)" || true; }
+            sleep 3
+          done
