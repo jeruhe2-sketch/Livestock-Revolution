@@ -2540,20 +2540,31 @@ function WarehousePasswordGate({ children }) {
   const [input, setInput] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   const tryPassword = (password, silent) => {
     setBusy(true);
     setError(false);
+    let dbg = { step: "fetch 시작", password_len: password.length };
     return fetch("./data/warehouse_stock.enc.json", { cache: "no-store" })
-      .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
-      .then((enc) => decryptWarehousePayload(password, enc))
+      .then((r) => {
+        dbg = { ...dbg, step: "fetch 완료", status: r.status, ok: r.ok };
+        if (!r.ok) throw new Error("no-file");
+        return r.json();
+      })
+      .then((enc) => {
+        dbg = { ...dbg, step: "json 파싱 완료", salt: enc.salt, iterations: enc.iterations, iv: enc.iv, ciphertext_len: (enc.ciphertext || "").length };
+        return decryptWarehousePayload(password, enc);
+      })
       .then(() => {
+        dbg = { ...dbg, step: "복호화 성공" };
         sessionStorage.setItem("warehouse_pw", password);
         setPhase("unlocked");
       })
-      .catch(() => {
+      .catch((e) => {
+        dbg = { ...dbg, step: "실패: " + dbg.step, errorName: e && e.name, errorMsg: e && e.message };
         sessionStorage.removeItem("warehouse_pw");
-        if (!silent) setError(true);
+        if (!silent) { setError(true); setDebugInfo(dbg); }
         setPhase("locked");
       })
       .finally(() => setBusy(false));
@@ -2574,10 +2585,10 @@ function WarehousePasswordGate({ children }) {
     e.preventDefault();
     tryPassword(input.trim(), false);
   };
-  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#f2ead9", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 260 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, disabled: busy, onChange: (e) => {
+  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#f2ead9", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 320 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, disabled: busy, onChange: (e) => {
     setInput(e.target.value);
     setError(false);
-  }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #3a332e", background: "#1d1a18", color: "#f2ead9", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#c0533a", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", disabled: busy, style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#d98b3f", color: "#1a1512", fontWeight: 700, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 } }, busy ? "\uD655\uC778\uD558\uB294 \uC911..." : "\uD655\uC778")));
+  }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #3a332e", background: "#1d1a18", color: "#f2ead9", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#c0533a", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", disabled: busy, style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#d98b3f", color: "#1a1512", fontWeight: 700, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 } }, busy ? "\uD655\uC778\uD558\uB294 \uC911..." : "\uD655\uC778"), debugInfo && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, padding: 8, background: "#0f0d0c", border: "1px solid #3a332e", borderRadius: 6, fontSize: 10, color: "#8f857a", fontFamily: "monospace", wordBreak: "break-all" } }, "\uC774 \uD654\uba74\uc744 \ucea1\ucc98\ud574\uc11c \ubcf4\ub0b4\uc8fc\uc138\uc694:", /* @__PURE__ */ React.createElement("pre", { style: { whiteSpace: "pre-wrap", margin: "4px 0 0" } }, JSON.stringify(debugInfo, null, 1)))));
 }
 function NavItem({ active, onClick, icon, iconImg, label }) {
   return /* @__PURE__ */ React.createElement("button", { className: "app-nav-item", onClick, style: {
