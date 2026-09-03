@@ -26,16 +26,7 @@ jobs:
             curl -s "https://jeruhe2-sketch.github.io/Livestock-Revolution/data/warehouse_stock.enc.json" -o /tmp/pages_version.json -w "status=%{http_code}\n"
             echo
             echo "=== salt/iv 비교 (로컬 커밋본 vs Pages) ==="
-            python3 -c "
-import json
-local = json.load(open('data/warehouse_stock.enc.json'))
-pages = json.load(open('/tmp/pages_version.json'))
-print('local salt:', local['salt'])
-print('pages salt:', pages['salt'])
-print('local ciphertext[:30]:', local['ciphertext'][:30])
-print('pages ciphertext[:30]:', pages['ciphertext'][:30])
-print('완전히 동일함:', local['ciphertext'] == pages['ciphertext'])
-"
+            python3 scripts/_tmp_compare.py
             echo
             echo "=== Pages 버전을 1004로 복호화 시도 ==="
             pip install cryptography -q
