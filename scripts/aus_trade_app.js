@@ -24,6 +24,7 @@ window.AusTradeApp = (function () {
   const FORM_LABEL = { total: "합계", chilled: "냉장", frozen: "냉동" };
   const DIM_LABEL = { dest: "목적지", year: "연도", month: "월", yearMonth: "연월" };
   const DIM_OPTIONS = [["dest", "목적지"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"]];
+  const GROUP_DIM_OPTIONS = [["dest", "목적지"], ["year", "연도"], ["month", "월"]]; // 연월은 91개나 돼서 막대비교엔 안 맞음(추이 탭이 담당)
 
   function n(v) { return v == null || !isFinite(v) ? "—" : Math.round(v).toLocaleString(); }
   function fmtShort(v) {
@@ -126,15 +127,19 @@ window.AusTradeApp = (function () {
     );
   }
   function BarRanking({ items }) {
-    const maxVal = Math.max(1, ...items.map((i) => i.v));
-    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
-      items.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
-        React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-        React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
-          React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
-        ),
-        React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
-      ))
+    const capped = items.length > 40 ? items.slice(0, 40) : items;
+    const maxVal = Math.max(1, ...capped.map((i) => i.v));
+    return React.createElement(React.Fragment, null,
+      React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
+        capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
+          React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+          React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
+            React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
+          ),
+          React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
+        ))
+      ),
+      items.length > 40 && React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10, textAlign: "center" } }, `상위 40개만 표시 중 (전체 ${items.length}개)`)
     );
   }
   function SheetTab({ active, onClick, label }) {
@@ -257,7 +262,7 @@ window.AusTradeApp = (function () {
     const [rowDim, setRowDim] = useState(() => pOneOf("rd", "dest", ["dest", "year", "month", "yearMonth"]));
     const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["dest", "year", "month", "yearMonth"]));
     const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
-    const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "dest", ["dest", "year", "month", "yearMonth"]));
+    const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "dest", ["dest", "year", "month"]));
     const [sortDesc, setSortDesc] = useState(true);
     const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
 
@@ -534,7 +539,7 @@ window.AusTradeApp = (function () {
           ),
           chartSub === "group" && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
-              React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }),
+              React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: GROUP_DIM_OPTIONS }),
               React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
                 !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "⇅ ", sortDesc ? "내림차순" : "오름차순"),
                 React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
