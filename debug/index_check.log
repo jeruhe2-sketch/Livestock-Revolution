@@ -1,0 +1,10 @@
+status=200
+local bytes: 214485
+pages bytes: 214485
+동일함: YES
+--- pages에 decryptWarehousePayload 정의 있는지 ---
+1
+--- pages에 WarehousePasswordGate 정의 있는지 ---
+1
+--- pages에서 decryptWarehousePayload 호출 개수 ---
+3
