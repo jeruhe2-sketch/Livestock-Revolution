@@ -1,33 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-호주 축산물(소고기 Beef & Veal) 수출현황 - DAFF 공식 원본 파일 임포터 (v3).
+호주 축산물 수출현황 - DAFF 공식 원본 파일 임포터 (v4).
 
-v1(사용자 피벗), v2(사용자가 취합한 로우데이터)를 거쳐, 이번엔 DAFF가 매달
-발행하는 원본 "Monthly - 57 Destination Report" 엑셀 파일 그 자체를 여러 개
-(여러 연도치) 한꺼번에 받아서 직접 파싱한다. 파일명(예: "2607_m57dest.xlsx")은
-신뢰하지 않고, 매 파일 1행("Monthly - 57 Destination Report - July 2026 - ...")
-의 월/연도 문구를 직접 읽어서 사용한다 (파일명이 틀리게 붙은 경우가 실제로
-있었음: 2109/2110/2111월 파일이 각각 3009/3110/qid96840_2111로 잘못 붙어있었음).
+v3까지는 "소고기"로 품목을 고정하고 냉장/냉동/산양육을 뒤섞은 버튼으로
+처리했으나, 이번엔 EU/USDA 탭과 동일하게:
+  - 축종(소고기/양고기/램/산양육/돼지고기)을 완전히 분리된 선택지로,
+  - 형태(냉장/냉동/합계)도 분리된 선택지로,
+  - 목적지는 다중선택 필터로
+둘 수 있도록 데이터를 정규화된 롱포맷으로 저장한다.
+행 1개 = (연, 월, 목적지, 축종) 조합 하나, 그 안에 냉장/냉동/합계 3개 값.
 
-원본 파일 구조 (2019~2026 전체 기간 동일하게 확인됨):
-  - 시트 1개, 1행: 제목("... - <Month> <Year> - Tonnes Shipped Weight")
-  - 2행: 컬럼 헤더 49개 (Destinations, Chilled Beef & Veal Total, Frozen Total,
-    Beef & Veal Total, ..., Total Goat, ..., Total Meats)
-  - 3행: 공백
-  - 4행부터: 목적지별 데이터 (57개 개별 목적지 + Total EU/Total Asia/
-    Total Middle East/Total Aus 같은 소계 행 포함, 소계는 걸러냄)
-  - 단위: 톤(Tonnes Shipped Weight) - 기존 데이터와 대조 검증 완료
+목적지는 원래 10개국에서, 91개월 전체 데이터 기준 "Total Meats"(전체
+축종 합계) 물량 순위로 상위 16개국(전체 물량의 91.9% 커버)까지 확장함:
+  기존 10개국: China, Hong Kong, Indonesia, Japan, Philippines,
+    South Korea, Taiwan, Thailand, USA East, USA West
+  추가 6개국: Malaysia, Saudi Arabia, Singapore, Dubai, Canada East,
+    Papua New Guinea
 
-agriculture.gov.au는 GitHub Actions IP가 차단되어 있고, UN Comtrade는 접속은
-되지만 DAFF보다 1개월 더 느려서 자동화를 포기하고, 사용자가 원본 파일을
-직접 받아서 업로드하는 방식으로 운영한다.
+원본 파일 구조는 v3와 동일 (1행 제목에서 연월 파싱, 2행 헤더, 4행부터
+데이터, 단위 톤).
 
 사용법:
-  python scripts/import_aus_trade_manual.py <파일 또는 폴더> [<파일 또는 폴더> ...]
+  python scripts/import_aus_trade_manual.py <파일 또는 폴더> [...]
   python scripts/import_aus_trade_manual.py /mnt/user-data/uploads --merge
-
-  인자로 디렉토리를 주면 그 안의 *m57dest*.xlsx 전부를 찾아서 처리한다.
-  --merge 없이 실행하면 파싱 결과만 보여주고 data 파일은 안 건드림.
 
 출력: data/aus_meat_export.json
 """
@@ -42,31 +37,37 @@ import pandas as pd
 
 OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "aus_meat_export.json")
 
+# 목적지 16개 (91.9% 커버). 표시명(소문자) -> 내부 코드.
 DEST_MATCH = {
-    "CN": "china", "HK": "hong kong", "ID": "indonesia", "JP": "japan",
-    "PH": "philippines", "KR": "south korea", "TW": "taiwan", "TH": "thailand",
-    "US_EAST": "usa east", "US_WEST": "usa west",
+    "CN": "china", "US_EAST": "usa east", "JP": "japan", "KR": "south korea",
+    "ID": "indonesia", "US_WEST": "usa west", "MY": "malaysia", "SA": "saudi arabia",
+    "TW": "taiwan", "PH": "philippines", "SG": "singapore", "DXB": "dubai",
+    "CA_EAST": "canada east", "PG": "papua new guinea", "HK": "hong kong", "TH": "thailand",
 }
 DEST_LABEL = {
-    "CN": "China", "HK": "Hong Kong", "ID": "Indonesia", "JP": "Japan",
-    "PH": "Philippines", "KR": "South Korea", "TW": "Taiwan", "TH": "Thailand",
-    "US_EAST": "USA East", "US_WEST": "USA West",
+    "CN": "China", "US_EAST": "USA East", "JP": "Japan", "KR": "South Korea",
+    "ID": "Indonesia", "US_WEST": "USA West", "MY": "Malaysia", "SA": "Saudi Arabia",
+    "TW": "Taiwan", "PH": "Philippines", "SG": "Singapore", "DXB": "Dubai",
+    "CA_EAST": "Canada East", "PG": "Papua New Guinea", "HK": "Hong Kong", "TH": "Thailand",
 }
 CODE_BY_LOWER_NAME = {v: k for k, v in DEST_MATCH.items()}
+
+SPECIES_LABEL = {"beef": "Beef & Veal", "mutton": "Mutton", "lamb": "Lamb", "goat": "Goat", "pork": "Pork"}
+# 축종별 (냉장 컬럼, 냉동 컬럼, 합계 컬럼). 돼지고기는 냉장/냉동 구분이 없고
+# CS/B-In/B-Out(선적형태) 구분만 있어서 합계만 사용(냉장/냉동은 0으로 채움).
+SPECIES_COLS = {
+    "beef": ("Chilled Beef & Veal Total", "Frozen Total", "Beef & Veal Total"),
+    "mutton": ("Chilled Mutton Total", "Frozen Mutton Total", "Total  Mutton"),
+    "lamb": ("Chilled Lamb Total", "Frozen Lamb Total", "Total Lamb"),
+    "goat": ("Chilled Goat Total", "Frozen Goat Total", "Total Goat"),
+    "pork": (None, None, "Pork Total"),
+}
 
 MONTH_NAMES = {
     "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
     "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
 }
-TITLE_RE = re.compile(
-    r"(" + "|".join(MONTH_NAMES.keys()) + r")\s*(\d{4})", re.IGNORECASE
-)
-
-# 원본 파일의 실제 컬럼 헤더 이름 (2019~2026 전체 기간 동일 확인됨)
-COL_CHILLED = "Chilled Beef & Veal Total"
-COL_FROZEN = "Frozen Total"
-COL_TOTAL = "Beef & Veal Total"
-COL_GOAT = "Total Goat"
+TITLE_RE = re.compile(r"(" + "|".join(MONTH_NAMES.keys()) + r")\s*(\d{4})", re.IGNORECASE)
 COL_DEST = "Destinations"
 
 
@@ -78,9 +79,7 @@ def find_input_files(paths):
             files.extend(sorted(glob.glob(os.path.join(p, "*m57dest*.xls"))))
         else:
             files.append(p)
-    # 중복 제거, 순서 유지
-    seen = set()
-    uniq = []
+    seen, uniq = set(), []
     for f in files:
         if f not in seen:
             seen.add(f)
@@ -92,16 +91,14 @@ def parse_title_date(title: str):
     m = TITLE_RE.search(title or "")
     if not m:
         return None
-    month = MONTH_NAMES[m.group(1).lower()]
-    year = int(m.group(2))
-    return year, month
+    return int(m.group(2)), MONTH_NAMES[m.group(1).lower()]
 
 
 def to_num(val):
-    if pd.isna(val):
+    if val is None or (isinstance(val, float) and pd.isna(val)):
         return 0.0
     s = str(val).strip()
-    if s in ("-", ""):
+    if s in ("-", "", "nan"):
         return 0.0
     try:
         return float(s.replace(",", ""))
@@ -118,14 +115,13 @@ def parse_file(path: str):
     year, month = ym
 
     header = [str(v).strip() for v in raw.iloc[1].tolist()]
-    try:
-        col_dest = header.index(COL_DEST)
-        col_chilled = header.index(COL_CHILLED)
-        col_frozen = header.index(COL_FROZEN)
-        col_total = header.index(COL_TOTAL)
-        col_goat = header.index(COL_GOAT)
-    except ValueError as e:
-        raise RuntimeError(f"예상한 컬럼을 못 찾음 ({e}). 헤더: {header}")
+    col_dest = header.index(COL_DEST)
+    species_cols = {}
+    for sp, (c_chilled, c_frozen, c_total) in SPECIES_COLS.items():
+        idx_chilled = header.index(c_chilled) if c_chilled else None
+        idx_frozen = header.index(c_frozen) if c_frozen else None
+        idx_total = header.index(c_total)
+        species_cols[sp] = (idx_chilled, idx_frozen, idx_total)
 
     records = []
     for r in range(2, len(raw)):
@@ -133,13 +129,15 @@ def parse_file(path: str):
         code = CODE_BY_LOWER_NAME.get(dest_name)
         if code is None:
             continue
-        chilled = to_num(raw.iloc[r, col_chilled]) or 0.0
-        frozen = to_num(raw.iloc[r, col_frozen]) or 0.0
-        total = to_num(raw.iloc[r, col_total])
-        goat = to_num(raw.iloc[r, col_goat]) or 0.0
-        if total is None:
-            continue
-        records.append([year, month, code, chilled, frozen, total, goat])
+        for sp, (ic, ifz, it) in species_cols.items():
+            chilled = to_num(raw.iloc[r, ic]) if ic is not None else 0.0
+            frozen = to_num(raw.iloc[r, ifz]) if ifz is not None else 0.0
+            total = to_num(raw.iloc[r, it])
+            if total is None:
+                continue
+            if (chilled or 0) == 0 and (frozen or 0) == 0 and total == 0:
+                continue  # 전부 0인 행은 굳이 안 쌓음 (용량 절약)
+            records.append([year, month, code, sp, chilled or 0.0, frozen or 0.0, total])
     return year, month, records
 
 
@@ -148,18 +146,16 @@ def merge_into_json(records, do_merge: bool):
     if os.path.exists(OUT_PATH):
         with open(OUT_PATH, encoding="utf-8") as f:
             existing = json.load(f)
-
+    # v1~v3 스키마(5~7개 필드, species 없음)는 형식이 완전히 달라서 호환 불가 ->
+    # 새 스키마(연,월,목적지,축종,냉장,냉동,합계)로 전면 교체.
     by_key = {}
-    for r in existing.get("data", []):
-        if len(r) == 4:  # 옛 v1 스키마(합계만) 호환
-            year, month, dest, total = r
-            by_key[(year, month, dest)] = [year, month, dest, 0.0, 0.0, total, 0.0]
-        else:
-            by_key[(r[0], r[1], r[2])] = r
+    if existing.get("cols") == ["year", "month", "dest", "species", "chilledTon", "frozenTon", "totalTon"]:
+        for r in existing.get("data", []):
+            by_key[(r[0], r[1], r[2], r[3])] = r
 
     added = changed = 0
     for r in records:
-        key = (r[0], r[1], r[2])
+        key = (r[0], r[1], r[2], r[3])
         if key in by_key and by_key[key] != r:
             changed += 1
         elif key not in by_key:
@@ -168,17 +164,17 @@ def merge_into_json(records, do_merge: bool):
 
     import datetime
     out = {
-        "product": "Beef & Veal (10개 주요 목적지)",
-        "sector": "Red meat",
+        "product": "축산물(소고기·양고기·램·산양육·돼지고기), 16개 주요 목적지",
+        "sector": "Red meat & pork",
         "sourceNote": "호주 DAFF 'Australian red meat export statistics' 57 Destination Report 원본 월별 파일을 사용자가 직접 다운로드해 업로드",
         "unit": "ton",
         "collectedAt": datetime.datetime.now().astimezone().isoformat(),
         "granularity": "monthly",
         "destNames": DEST_LABEL,
-        "cols": ["year", "month", "dest", "chilledTon", "frozenTon", "totalBeefVealTon", "goatTon"],
-        "data": sorted(by_key.values(), key=lambda r: (r[0], r[1], r[2])),
+        "speciesNames": SPECIES_LABEL,
+        "cols": ["year", "month", "dest", "species", "chilledTon", "frozenTon", "totalTon"],
+        "data": sorted(by_key.values(), key=lambda r: (r[0], r[1], r[2], r[3])),
     }
-
     print(f"병합: 신규 {added}건, 갱신 {changed}건, 최종 총 {len(out['data'])}건")
     if do_merge:
         os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
@@ -192,8 +188,8 @@ def merge_into_json(records, do_merge: bool):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("paths", nargs="+", help="원본 xlsx 파일 경로 또는 폴더 경로 (여러 개 가능)")
-    ap.add_argument("--merge", action="store_true", help="실제로 data/aus_meat_export.json에 반영")
+    ap.add_argument("paths", nargs="+")
+    ap.add_argument("--merge", action="store_true")
     args = ap.parse_args()
 
     files = find_input_files(args.paths)
@@ -208,10 +204,7 @@ def main():
     for f in files:
         try:
             year, month, records = parse_file(f)
-            key = (year, month)
-            if key in seen_months:
-                print(f"  경고: {year}.{month:02d} 이 이미 다른 파일에서도 나왔음 (중복 업로드?) - {os.path.basename(f)}", file=sys.stderr)
-            seen_months.add(key)
+            seen_months.add((year, month))
             all_records.extend(records)
             print(f"  {os.path.basename(f):30s} -> {year}.{month:02d}, {len(records)}건")
         except Exception as e:
@@ -224,7 +217,6 @@ def main():
     months_sorted = sorted(seen_months)
     if months_sorted:
         print(f"\n기간: {months_sorted[0][0]}.{months_sorted[0][1]:02d} ~ {months_sorted[-1][0]}.{months_sorted[-1][1]:02d} ({len(months_sorted)}개월)")
-        # 연속성 체크(빠진 달 있는지)
         expected = []
         y, m = months_sorted[0]
         while (y, m) <= months_sorted[-1]:
@@ -234,15 +226,11 @@ def main():
                 m = 1
                 y += 1
         missing = [f"{y}.{m:02d}" for (y, m) in expected if (y, m) not in seen_months]
-        if missing:
-            print(f"⚠️  빠진 달: {missing}")
-        else:
-            print("✅ 빠진 달 없음 (연속)")
+        print("⚠️  빠진 달:" if missing else "✅ 빠진 달 없음", missing or "")
 
     if not all_records:
         print("파싱된 레코드가 없습니다.", file=sys.stderr)
         sys.exit(1)
-
     merge_into_json(all_records, args.merge)
 
 

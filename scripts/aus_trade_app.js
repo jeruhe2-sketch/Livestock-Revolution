@@ -1,8 +1,8 @@
-/* 축산레이더 · 호주 축산물(소고기 Beef & Veal) 수출현황
-   EU/USDA 수출현황 탭과 완전히 동일한 UI 패턴(피벗표, 그룹비교/겹쳐보기 차트,
-   다중선택 필터, 공유링크)으로 맞춤. 이 파일은 index.html의 거대 인라인
-   스크립트보다 먼저 로드되므로 공용 헬퍼를 못 쓰고, 필요한 걸 이 안에서
-   전부 자체 구현함(usda_domestic_app.js/cepea_domestic_app.js와 동일 패턴). */
+/* 축산레이더 · 호주 축산물 수출현황
+   EU/USDA 수출현황 탭과 완전히 동일한 UI 패턴. 이번 버전은 축종(소고기/양고기/
+   램/산양육/돼지고기)과 형태(냉장/냉동/합계)를 완전히 분리된 선택지로 두고,
+   목적지는 16개국(전체 물량의 91.9% 커버) 다중선택 필터로 둔다.
+   이 파일은 index.html의 인라인 스크립트보다 먼저 로드되므로 자체 구현. */
 window.AusTradeApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
 
@@ -14,12 +14,16 @@ window.AusTradeApp = (function () {
   const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f", "#8b7bb0", "#5fa88a", "#e0985a", "#7ea0c4"];
 
   const DEST_LABEL_KO = {
-    CN: "중국", HK: "홍콩", ID: "인도네시아", JP: "일본", PH: "필리핀",
-    KR: "한국", TW: "대만", TH: "태국", US_EAST: "미국 동부", US_WEST: "미국 서부"
+    CN: "중국", US_EAST: "미국 동부", JP: "일본", KR: "한국", ID: "인도네시아",
+    US_WEST: "미국 서부", MY: "말레이시아", SA: "사우디아라비아", TW: "대만",
+    PH: "필리핀", SG: "싱가포르", DXB: "두바이", CA_EAST: "캐나다 동부",
+    PG: "파푸아뉴기니", HK: "홍콩", TH: "태국"
   };
+  const SPECIES_LABEL_KO = { beef: "소고기", mutton: "양고기", lamb: "램", goat: "산양육", pork: "돼지고기" };
+  const SPECIES_ORDER = ["beef", "mutton", "lamb", "goat", "pork"];
+  const FORM_LABEL = { total: "합계", chilled: "냉장", frozen: "냉동" };
   const DIM_LABEL = { dest: "목적지", year: "연도", month: "월", yearMonth: "연월" };
   const DIM_OPTIONS = [["dest", "목적지"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"]];
-  const METRIC_LABEL = { total: "합계", chilled: "냉장", frozen: "냉동", goat: "산양육" };
 
   function n(v) { return v == null || !isFinite(v) ? "—" : Math.round(v).toLocaleString(); }
   function fmtShort(v) {
@@ -44,7 +48,7 @@ window.AusTradeApp = (function () {
     XLSX.writeFile(wb, filename);
   }
 
-  /* ---- EU/USDA 탭과 동일한 공용 위젯들 (이 파일 안에 자체 구현) ---- */
+  /* ---- EU/USDA 탭과 동일한 공용 위젯들 (자체 구현) ---- */
   function SvgLineChart({ categories, series, height = 260 }) {
     const width = 760;
     const manyLabels = categories.length > 16;
@@ -112,7 +116,7 @@ window.AusTradeApp = (function () {
     const maxVal = Math.max(1, ...items.map((i) => i.v));
     return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
       items.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
-        React.createElement("div", { style: { width: 84, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+        React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
         React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
           React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
         ),
@@ -192,7 +196,7 @@ window.AusTradeApp = (function () {
     }, []);
 
     const ROWS = useMemo(() => (db.data || []).map((r) => ({
-      year: r[0], month: r[1], dest: r[2], chilled: r[3] || 0, frozen: r[4] || 0, total: r[5] || 0, goat: r[6] || 0,
+      year: r[0], month: r[1], dest: r[2], species: r[3], chilled: r[4] || 0, frozen: r[5] || 0, total: r[6] || 0,
     })), [db]);
     const DEST_LIST = useMemo(() => [...new Set(ROWS.map((r) => r.dest))].sort(), [ROWS]);
     const YEARS_ALL = useMemo(() => [...new Set(ROWS.map((r) => String(r.year)))].sort(), [ROWS]);
@@ -213,7 +217,9 @@ window.AusTradeApp = (function () {
 
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "overlay", ["group", "overlay"]));
-    const [metric, setMetric] = useState(() => pOneOf("mk", "total", ["total", "chilled", "frozen", "goat"]));
+    const [species, setSpecies] = useState(() => pOneOf("sp", "beef", SPECIES_ORDER));
+    const [form, setForm] = useState(() => pOneOf("fm", "total", ["total", "chilled", "frozen"]));
+
     const validDestLabels = useMemo(() => new Set(DEST_LIST.map((c) => DEST_LABEL_KO[c] || c)), [DEST_LIST]);
     const [destFilter, setDestFilter] = useState(() => pList("dest").filter((v) => validDestLabels.has(v)));
     const [yearFilter, setYearFilter] = useState(() => pList("yr").filter((v) => YEARS_ALL.includes(v)));
@@ -230,17 +236,19 @@ window.AusTradeApp = (function () {
     const [sortDesc, setSortDesc] = useState(true);
     const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "dest", ["dest", "year"]));
 
-    const val = (r) => r[metric];
     const unitLabel = "톤";
+    // 종별로 축종 먼저 걸러내고, 형태(합계/냉장/냉동)에 맞는 값을 뽑음
+    const speciesRows = useMemo(() => ROWS.filter((r) => r.species === species), [ROWS, species]);
+    const val = (r) => (form === "total" ? r.total : form === "chilled" ? r.chilled : r.frozen);
 
-    const baseFilteredRows = useMemo(() => ROWS.filter((r) => {
+    const baseFilteredRows = useMemo(() => speciesRows.filter((r) => {
       if (destFilter.length && !destFilter.includes(DEST_LABEL_KO[r.dest] || r.dest)) return false;
       if (yearFilter.length && !yearFilter.includes(String(r.year))) return false;
       if (r.month < monthFrom || r.month > monthTo) return false;
       return true;
-    }), [ROWS, destFilter, yearFilter, monthFrom, monthTo]);
+    }), [speciesRows, destFilter, yearFilter, monthFrom, monthTo]);
 
-    const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + val(r), 0), [baseFilteredRows, metric]);
+    const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + val(r), 0), [baseFilteredRows, form]);
     const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
 
     function sortLabels(dimKey, labels, totalsMap) {
@@ -266,7 +274,7 @@ window.AusTradeApp = (function () {
         colLabels: sortLabels(colDim, Object.keys(colTotalsRaw), colTotalsRaw),
         matrix: matrix2, rowTotals: rowTotalsRaw, colTotals: colTotalsRaw, grandTotal: grandTotal2
       };
-    }, [baseFilteredRows, rowDim, colDim, metric]);
+    }, [baseFilteredRows, rowDim, colDim, form]);
 
     function cellDisplay(rowLabel, colLabel, colIdx) {
       const val2 = (matrix[rowLabel] && matrix[rowLabel][colLabel]) || 0;
@@ -283,7 +291,7 @@ window.AusTradeApp = (function () {
       const header = [DIM_LABEL[rowDim], ...colLabels, "총합계"];
       const body = rowLabels.map((rl) => [rl, ...colLabels.map((cl) => Math.round(((matrix[rl] && matrix[rl][cl]) || 0) * 10) / 10), Math.round(rowTotals[rl] * 10) / 10]);
       const footer = ["총합계", ...colLabels.map((cl) => Math.round((colTotals[cl] || 0) * 10) / 10), Math.round(grandTotal * 10) / 10];
-      downloadXlsx([header, ...body, footer], `호주축산물_${DIM_LABEL[rowDim]}x${DIM_LABEL[colDim]}_${METRIC_LABEL[metric]}.xlsx`, "피벗표");
+      downloadXlsx([header, ...body, footer], `호주축산물_${SPECIES_LABEL_KO[species]}_${FORM_LABEL[form]}_${DIM_LABEL[rowDim]}x${DIM_LABEL[colDim]}.xlsx`, "피벗표");
     }
 
     const grouped = useMemo(() => {
@@ -295,12 +303,12 @@ window.AusTradeApp = (function () {
       else if (groupBy === "yearMonth") arr.sort((a, b) => a.key.localeCompare(b.key));
       else arr.sort((a, b) => sortDesc ? b.v - a.v : a.v - b.v);
       return arr;
-    }, [baseFilteredRows, groupBy, sortDesc, metric]);
+    }, [baseFilteredRows, groupBy, sortDesc, form]);
     const isTimeGroup = groupBy === "year" || groupBy === "month" || groupBy === "yearMonth";
     function exportGroupXlsx() {
-      const header = [DIM_LABEL[groupBy], `호주 소고기수출 ${METRIC_LABEL[metric]}(${unitLabel})`];
+      const header = [DIM_LABEL[groupBy], `${SPECIES_LABEL_KO[species]} ${FORM_LABEL[form]}(${unitLabel})`];
       const body = grouped.map((g) => [g.key, Math.round(g.v * 10) / 10]);
-      downloadXlsx([header, ...body], `호주축산물_${DIM_LABEL[groupBy]}별_${METRIC_LABEL[metric]}.xlsx`, "그룹비교");
+      downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_${DIM_LABEL[groupBy]}별.xlsx`, "그룹비교");
     }
 
     const years = useMemo(() => [...new Set(baseFilteredRows.map((r) => r.year))].sort((a, b) => a - b), [baseFilteredRows]);
@@ -309,7 +317,7 @@ window.AusTradeApp = (function () {
       const totals = {};
       baseFilteredRows.forEach((r) => { const k = dimValue(r, "dest"); totals[k] = (totals[k] || 0) + val(r); });
       return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
-    }, [overlayDim, baseFilteredRows, years, metric]);
+    }, [overlayDim, baseFilteredRows, years, form]);
     const currentOverlayList = overlayCandidates.slice(0, 10);
     const overlayXLabels = useMemo(() => {
       if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
@@ -326,11 +334,11 @@ window.AusTradeApp = (function () {
         bucket[xVal] = (bucket[xVal] || 0) + val(r);
       });
       return { name: v0, color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10) };
-    }), [baseFilteredRows, overlayDim, currentOverlayList, overlayXLabels, metric]);
+    }), [baseFilteredRows, overlayDim, currentOverlayList, overlayXLabels, form]);
     function exportOverlayXlsx() {
       const header = ["구분", ...currentOverlayList];
       const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
-      downloadXlsx([header, ...body], `호주축산물_${overlayDim === "year" ? "연도" : "목적지"}겹쳐보기_${METRIC_LABEL[metric]}.xlsx`, "겹쳐보기");
+      downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_${overlayDim === "year" ? "연도" : "목적지"}겹쳐보기.xlsx`, "겹쳐보기");
     }
     const groupSeries = useMemo(() => [{ name: DIM_LABEL[groupBy], color: COLORS.amber, data: grouped.map((g) => g.v) }], [grouped, groupBy]);
 
@@ -340,7 +348,8 @@ window.AusTradeApp = (function () {
       if (yearFilter.length) sp.set("yr", yearFilter.join(","));
       if (monthFrom !== 1) sp.set("ms", monthFrom);
       if (monthTo !== 12) sp.set("me", monthTo);
-      if (metric !== "total") sp.set("mk", metric);
+      if (species !== "beef") sp.set("sp", species);
+      if (form !== "total") sp.set("fm", form);
       sp.set("tab", mainTab);
       if (mainTab === "table") {
         sp.set("rd", rowDim); sp.set("cd", colDim);
@@ -352,7 +361,7 @@ window.AusTradeApp = (function () {
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
-    }, [destFilter, yearFilter, monthFrom, monthTo, metric, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim]);
+    }, [destFilter, yearFilter, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -360,21 +369,34 @@ window.AusTradeApp = (function () {
     }
 
     const destOptions = DEST_LIST.map((c) => DEST_LABEL_KO[c] || c);
+    const porkNoBreakdown = species === "pork" && form !== "total";
 
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
-        React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 10개국"),
-        React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "호주산 소고기(Beef & Veal) 수출 현황"),
+        React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 16개국"),
+        React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "호주 축산물 수출 현황"),
 
-        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
-          ["total", "chilled", "frozen", "goat"].map((k) => React.createElement("button", {
-            key: k, onClick: () => setMetric(k),
-            style: { padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-              border: `1px solid ${k === metric ? COLORS.amber : COLORS.panelBorder}`,
-              background: k === metric ? "rgba(217,139,63,0.14)" : COLORS.panel,
-              color: k === metric ? COLORS.amber : COLORS.mute }
-          }, METRIC_LABEL[k]))
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 10, alignItems: "center" } },
+          React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+            SPECIES_ORDER.map((sp) => React.createElement("button", {
+              key: sp, onClick: () => setSpecies(sp),
+              style: { padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                border: `1px solid ${sp === species ? COLORS.amber : COLORS.panelBorder}`,
+                background: sp === species ? "rgba(217,139,63,0.14)" : COLORS.panel,
+                color: sp === species ? COLORS.amber : COLORS.mute }
+            }, SPECIES_LABEL_KO[sp]))
+          ),
+          React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+            ["total", "chilled", "frozen"].map((k) => React.createElement("button", {
+              key: k, onClick: () => setForm(k),
+              style: { padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                border: `1px solid ${k === form ? COLORS.sage : COLORS.panelBorder}`,
+                background: k === form ? "rgba(111,148,130,0.16)" : COLORS.panel,
+                color: k === form ? COLORS.sage : COLORS.mute }
+            }, FORM_LABEL[k]))
+          )
         ),
+        porkNoBreakdown && React.createElement("div", { style: { fontSize: 10.5, color: COLORS.rust, marginBottom: 10 } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } },
           React.createElement(HoverMultiPicker, { label: "목적지", options: destOptions, selected: destFilter, onToggle: (v) => toggleFilter(destFilter, setDestFilter, v), onSelectAll: () => setDestFilter([...destOptions]), onClear: () => setDestFilter([]) }),
@@ -391,7 +413,7 @@ window.AusTradeApp = (function () {
 
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
           React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } },
-            "호주 소고기(" + METRIC_LABEL[metric] + ")",
+            `호주 ${SPECIES_LABEL_KO[species]}(${FORM_LABEL[form]})`,
             destFilter.length ? ` · 목적지 ${destFilter.length}개` : "",
             yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "",
             (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
@@ -480,7 +502,7 @@ window.AusTradeApp = (function () {
             )
           )
         ),
-        React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report. agriculture.gov.au가 GitHub Actions IP를 차단하고 UN Comtrade는 갱신이 한 달 더 느려서, 사용자가 직접 취합한 데이터를 수동 업로드하는 방식으로 운영합니다.")
+        React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report 원본. 목적지는 91개월(2019.01~) 전체 물량 기준 상위 16개국(91.9% 커버). agriculture.gov.au가 GitHub Actions IP를 차단하고 UN Comtrade는 갱신이 한 달 더 느려서, 원본 파일을 사용자가 직접 다운로드해 업로드하는 방식으로 운영합니다.")
       )
     );
   }
