@@ -48,6 +48,19 @@ window.AusTradeApp = (function () {
     XLSX.writeFile(wb, filename);
   }
 
+  function movingAvg(arr, win) {
+    const out = new Array(arr.length).fill(null);
+    let sum = 0, count = 0, buf = [];
+    for (let i = 0; i < arr.length; i++) {
+      const v = arr[i];
+      buf.push(v);
+      if (v != null && isFinite(v)) { sum += v; count++; }
+      if (buf.length > win) { const removed = buf.shift(); if (removed != null && isFinite(removed)) { sum -= removed; count--; } }
+      out[i] = count ? sum / count : null;
+    }
+    return out;
+  }
+
   /* ---- EU/USDA 탭과 동일한 공용 위젯들 (자체 구현) ---- */
   function SvgLineChart({ categories, series, height = 260 }) {
     const width = 760;
@@ -246,6 +259,7 @@ window.AusTradeApp = (function () {
     const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
     const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "dest", ["dest", "year", "month", "yearMonth"]));
     const [sortDesc, setSortDesc] = useState(true);
+    const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
     const [overlayDim, setOverlayDim] = useState(() => pOneOf("od", "dest", ["dest", "year"]));
     const [overlayXAxis, setOverlayXAxis] = useState(() => pOneOf("oxa", "month", ["month", "year"]));
 
@@ -321,9 +335,15 @@ window.AusTradeApp = (function () {
       return arr;
     }, [baseFilteredRows, groupBy, sortDesc, form]);
     const isTimeGroup = groupBy === "year" || groupBy === "month" || groupBy === "yearMonth";
+    const groupSeries = useMemo(() => {
+      const raw = grouped.map((g) => g.v);
+      const data = (isTimeGroup && smoothed) ? movingAvg(raw, 3) : raw;
+      return [{ name: DIM_LABEL[groupBy] + (isTimeGroup && smoothed ? " (3개월 이동평균)" : ""), color: COLORS.amber, data }];
+    }, [grouped, groupBy, isTimeGroup, smoothed]);
     function exportGroupXlsx() {
-      const header = [DIM_LABEL[groupBy], `${SPECIES_LABEL_KO[species]} ${FORM_LABEL[form]}(${unitLabel})`];
-      const body = grouped.map((g) => [g.key, Math.round(g.v * 10) / 10]);
+      const label = `${SPECIES_LABEL_KO[species]} ${FORM_LABEL[form]}(${unitLabel})` + (isTimeGroup && smoothed ? " [3개월 이동평균]" : "");
+      const header = [DIM_LABEL[groupBy], label];
+      const body = grouped.map((g, i) => [g.key, Math.round((groupSeries[0].data[i] ?? g.v) * 10) / 10]);
       downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_${DIM_LABEL[groupBy]}별.xlsx`, "그룹비교");
     }
 
@@ -360,7 +380,6 @@ window.AusTradeApp = (function () {
       const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
       downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_${overlayDim === "year" ? "연도" : "목적지"}겹쳐보기.xlsx`, "겹쳐보기");
     }
-    const groupSeries = useMemo(() => [{ name: DIM_LABEL[groupBy], color: COLORS.amber, data: grouped.map((g) => g.v) }], [grouped, groupBy]);
 
     useEffect(() => {
       const sp = new URLSearchParams();
@@ -378,13 +397,13 @@ window.AusTradeApp = (function () {
         if (displayMode !== "abs") sp.set("dm", displayMode);
       } else {
         sp.set("csub", chartSub);
-        if (chartSub === "group") sp.set("gb", groupBy);
+        if (chartSub === "group") { sp.set("gb", groupBy); if (smoothed) sp.set("sm", "1"); }
         if (chartSub === "overlay") sp.set("od", overlayDim);
         if (chartSub === "overlay" && overlayDim !== "year") sp.set("oxa", overlayXAxis);
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
-    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis]);
+    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, overlayDim, overlayXAxis, smoothed]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -506,6 +525,10 @@ window.AusTradeApp = (function () {
             React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
               React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }),
               React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
+                isTimeGroup && React.createElement("div", { style: { display: "flex", gap: 4 } },
+                  React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "월별 원자료" }),
+                  React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" })
+                ),
                 !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "⇅ ", sortDesc ? "내림차순" : "오름차순"),
                 React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
               )
