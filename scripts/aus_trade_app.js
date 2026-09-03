@@ -577,7 +577,7 @@ window.AusTradeApp = (function () {
             )
           )
         ),
-        React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report 원본. 목적지는 91개월(2019.01~) 전체 물량 기준 상위 16개국(91.9% 커버). agriculture.gov.au가 GitHub Actions IP를 차단하고 UN Comtrade는 갱신이 한 달 더 느려서, 원본 파일을 사용자가 직접 다운로드해 업로드하는 방식으로 운영합니다.")
+        React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report. 사용자 수동 업로드로 갱신됩니다.")
       )
     );
   }
