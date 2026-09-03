@@ -360,9 +360,16 @@ window.AusTradeApp = (function () {
       if (effectiveXAxis !== "month") return years.map(String);
       if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
       const labels = [];
-      years.forEach((y) => { for (let m = monthFrom; m <= monthTo; m++) labels.push(`${y}.${String(m).padStart(2, "0")}`); });
+      years.forEach((y) => {
+        for (let m = monthFrom; m <= monthTo; m++) {
+          const ym = y * 100 + m;
+          if (ymStart != null && ym < ymStart) continue;
+          if (ymEnd != null && ym > ymEnd) continue;
+          labels.push(`${y}.${String(m).padStart(2, "0")}`);
+        }
+      });
       return labels;
-    }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo]);
+    }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, ymStart, ymEnd]);
     const overlaySeries = useMemo(() => currentOverlayList.map((v0, idx) => {
       const bucket = {};
       baseFilteredRows.forEach((r) => {

@@ -48,7 +48,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./scripts/usda_domestic_app.js?v=20"></script>
 <script src="./scripts/cepea_domestic_app.js?v=20"></script>
-<script src="./scripts/aus_trade_app.js?v=8"></script>
+<script src="./scripts/aus_trade_app.js?v=9"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #151312; }
   * { box-sizing: border-box; }
@@ -948,10 +948,15 @@ function Dashboard({ db, exRates, fxHistory }) {
     if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
     const labels = [];
     years.forEach((y) => {
-      for (let m = monthFrom; m <= monthTo; m++) labels.push(`${y}.${String(m).padStart(2, "0")}`);
+      for (let m = monthFrom; m <= monthTo; m++) {
+        const ym = y * 100 + m;
+        if (ymStart != null && ym < ymStart) continue;
+        if (ymEnd != null && ym > ymEnd) continue;
+        labels.push(`${y}.${String(m).padStart(2, "0")}`);
+      }
     });
     return labels;
-  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, baseFilteredRows, weekMonthMap]);
+  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, ymStart, ymEnd, baseFilteredRows, weekMonthMap]);
   const overlaySeries = useMemo(() => {
     return currentOverlayList.map((v0, idx) => {
       const bucket = {};
@@ -1561,10 +1566,15 @@ function Dashboard({ db }) {
     if (overlayDim === "year") return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
     const labels = [];
     years.forEach((y) => {
-      for (let m = monthFrom; m <= monthTo; m++) labels.push(`${y}.${String(m).padStart(2, "0")}`);
+      for (let m = monthFrom; m <= monthTo; m++) {
+        const ym = y * 100 + m;
+        if (ymStart != null && ym < ymStart) continue;
+        if (ymEnd != null && ym > ymEnd) continue;
+        labels.push(`${y}.${String(m).padStart(2, "0")}`);
+      }
     });
     return labels;
-  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo]);
+  }, [effectiveXAxis, overlayDim, years, monthFrom, monthTo, ymStart, ymEnd]);
   const overlaySeries = useMemo(() => {
     return currentOverlayList.map((v0, idx) => {
       const buckets = {};
@@ -2452,6 +2462,14 @@ function ShellApp() {
   } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-title", style: { fontSize: 13, fontWeight: 800, color: "#f2ead9", marginBottom: 2, letterSpacing: "-0.01em" } }, "\u{1F3E2} \uD1B5\uD569 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-subtitle", style: { fontSize: 10, color: "#8f857a", marginBottom: 20 } }, "\uD68C\uC0AC \uB0B4\uBD80 \uD1B5\uD569 \uC870\uD68C"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-nav" }, /* @__PURE__ */ React.createElement(
     NavItem,
     {
+      active: view === "warehouse",
+      onClick: () => selectView("warehouse"),
+      icon: "\u{1F3ED}",
+      label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    NavItem,
+    {
       active: view === "quarantine",
       onClick: () => selectView("quarantine"),
       icon: "\u{1F4E6}",
@@ -2463,6 +2481,7 @@ function ShellApp() {
       active: view === "eutrade",
       onClick: () => selectView("eutrade"),
       icon: "\u{1F1EA}\u{1F1FA}",
+      iconImg: "https://flagcdn.com/w40/eu.png",
       label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669"
     }
   ), /* @__PURE__ */ React.createElement(
@@ -2471,6 +2490,7 @@ function ShellApp() {
       active: view === "usda",
       onClick: () => selectView("usda"),
       icon: "\u{1F1FA}\u{1F1F8}",
+      iconImg: "https://flagcdn.com/w40/us.png",
       label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669"
     }
   ), /* AUS trade */ React.createElement(
@@ -2479,15 +2499,8 @@ function ShellApp() {
       active: view === "austrade",
       onClick: () => selectView("austrade"),
       icon: "\u{1F1E6}\u{1F1FA}",
+      iconImg: "https://flagcdn.com/w40/au.png",
       label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669"
-    }
-  ), /* @__PURE__ */ React.createElement(
-    NavItem,
-    {
-      active: view === "warehouse",
-      onClick: () => selectView("warehouse"),
-      icon: "\u{1F3ED}",
-      label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669"
     }
   ), /* USDA domestic */ React.createElement(
     NavItem,
@@ -2495,6 +2508,7 @@ function ShellApp() {
       active: view === "usdedomestic",
       onClick: () => selectView("usdedomestic"),
       icon: "\u{1F1FA}\u{1F1F8}",
+      iconImg: "https://flagcdn.com/w40/us.png",
       label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669"
     }
   ), /* CEPEA domestic */ React.createElement(
@@ -2503,6 +2517,7 @@ function ShellApp() {
       active: view === "cepeadomestic",
       onClick: () => selectView("cepeadomestic"),
       icon: "\u{1F1E7}\u{1F1F7}",
+      iconImg: "https://flagcdn.com/w40/br.png",
       label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669"
     }
   ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "austrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.AusTradeApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
@@ -2526,7 +2541,7 @@ function WarehousePasswordGate({ children }) {
     setError(false);
   }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #3a332e", background: "#1d1a18", color: "#f2ead9", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#c0533a", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#d98b3f", color: "#1a1512", fontWeight: 700, cursor: "pointer" } }, "\uD655\uC778")));
 }
-function NavItem({ active, onClick, icon, label }) {
+function NavItem({ active, onClick, icon, iconImg, label }) {
   return /* @__PURE__ */ React.createElement("button", { className: "app-nav-item", onClick, style: {
     display: "flex",
     alignItems: "center",
@@ -2543,7 +2558,9 @@ function NavItem({ active, onClick, icon, label }) {
     whiteSpace: "nowrap",
     background: active ? "rgba(217,139,63,0.16)" : "transparent",
     color: active ? "#d98b3f" : "#8f857a"
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, icon), " ", label);
+  } }, iconImg
+    ? /* @__PURE__ */ React.createElement("img", { src: iconImg, alt: "", style: { width: 18, height: 13, borderRadius: 2, objectFit: "cover", flexShrink: 0 } })
+    : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, icon), " ", label);
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
