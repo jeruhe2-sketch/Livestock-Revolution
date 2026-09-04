@@ -72,6 +72,8 @@ jobs:
           NWILL_SAMIL_PW: ${{ secrets.NWILL_SAMIL_PW }}
           NWILL_GANGDONG_ID: ${{ secrets.NWILL_GANGDONG_ID }}
           NWILL_GANGDONG_PW: ${{ secrets.NWILL_GANGDONG_PW }}
+          NWILL_GANGDONG2_ID: ${{ secrets.NWILL_GANGDONG2_ID }}
+          NWILL_GANGDONG2_PW: ${{ secrets.NWILL_GANGDONG2_PW }}
           ACECS_ID: ${{ secrets.ACECS_ID }}
           ACECS_PW: ${{ secrets.ACECS_PW }}
         run: |
