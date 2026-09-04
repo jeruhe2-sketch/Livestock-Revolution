@@ -14,14 +14,38 @@ ID 설정됨: True, PW 설정됨: True
    dataTables-example 테이블 존재: True
    실제 데이터 행 개수: 1
    DataTables info 텍스트: Showing 1 to 1 of 1 entries
+=== scripts/debug 안에 잘못 들어간 파일 있는지 확인 (경로버그 방지) ===
+total 704
+drwxr-xr-x 2 runner runner   4096 Sep  4 14:08 .
+drwxr-xr-x 3 runner runner   4096 Sep  4 14:08 ..
+-rw-r--r-- 1 runner runner  24601 Sep  4 14:08 gd2_step1.html
+-rw-r--r-- 1 runner runner  42887 Sep  4 14:08 gd2_step1_loaded.png
+-rw-r--r-- 1 runner runner  33589 Sep  4 14:08 gd2_step2.html
+-rw-r--r-- 1 runner runner  95282 Sep  4 14:08 gd2_step2_after_login.png
+-rw-r--r-- 1 runner runner  38484 Sep  4 14:08 gd2_step3.html
+-rw-r--r-- 1 runner runner 119324 Sep  4 14:08 gd2_step3_stock_page.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step4.html
+-rw-r--r-- 1 runner runner 121458 Sep  4 14:08 gd2_step4_after_query.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step5.html
+-rw-r--r-- 1 runner runner 117004 Sep  4 14:08 gd2_step5_full_rows.png
 === debug 폴더 내용 ===
-total 40
-drwxr-xr-x 2 runner runner 4096 Sep  4 14:05 .
-drwxr-xr-x 9 runner runner 4096 Sep  4 14:05 ..
--rw-r--r-- 1 runner runner 1240 Sep  4 14:05 cepea_domestic_last.log
--rw-r--r-- 1 runner runner 1295 Sep  4 14:05 daily_update_last.log
--rw-r--r-- 1 runner runner  795 Sep  4 14:06 gd2_diagnosis.log
--rw-r--r-- 1 runner runner  260 Sep  4 14:05 git_push_debug.log
--rw-r--r-- 1 runner runner  923 Sep  4 14:05 last_run.log
--rw-r--r-- 1 runner runner 3468 Sep  4 14:05 telegram_bot_last.log
--rw-r--r-- 1 runner runner 4700 Sep  4 14:05 usda_domestic_last.log
+total 736
+drwxr-xr-x 2 runner runner   4096 Sep  4 14:08 .
+drwxr-xr-x 9 runner runner   4096 Sep  4 14:07 ..
+-rw-r--r-- 1 runner runner   1240 Sep  4 14:07 cepea_domestic_last.log
+-rw-r--r-- 1 runner runner   1295 Sep  4 14:07 daily_update_last.log
+-rw-r--r-- 1 runner runner   1663 Sep  4 14:08 gd2_diagnosis.log
+-rw-r--r-- 1 runner runner  24601 Sep  4 14:08 gd2_step1.html
+-rw-r--r-- 1 runner runner  42887 Sep  4 14:08 gd2_step1_loaded.png
+-rw-r--r-- 1 runner runner  33589 Sep  4 14:08 gd2_step2.html
+-rw-r--r-- 1 runner runner  95282 Sep  4 14:08 gd2_step2_after_login.png
+-rw-r--r-- 1 runner runner  38484 Sep  4 14:08 gd2_step3.html
+-rw-r--r-- 1 runner runner 119324 Sep  4 14:08 gd2_step3_stock_page.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step4.html
+-rw-r--r-- 1 runner runner 121458 Sep  4 14:08 gd2_step4_after_query.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step5.html
+-rw-r--r-- 1 runner runner 117004 Sep  4 14:08 gd2_step5_full_rows.png
+-rw-r--r-- 1 runner runner    260 Sep  4 14:07 git_push_debug.log
+-rw-r--r-- 1 runner runner    923 Sep  4 14:07 last_run.log
+-rw-r--r-- 1 runner runner   3468 Sep  4 14:07 telegram_bot_last.log
+-rw-r--r-- 1 runner runner   4700 Sep  4 14:07 usda_domestic_last.log
