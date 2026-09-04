@@ -1948,6 +1948,16 @@ function isWithinOneYear(dateStr) {
 function isWithinOneYearDays(days) {
   return days <= 365;
 }
+// 검색어/품목명 표기 차이(예: 백립/빽립) 때문에 검색이 안 걸리는 문제 방지용.
+// 필요한 이표기 쌍이 늘어나면 이 배열에 추가하면 됨.
+const SEARCH_SYNONYM_PAIRS = [["빽립", "백립"]];
+function normalizeSearchText(s) {
+  let out = s;
+  for (const [from, to] of SEARCH_SYNONYM_PAIRS) {
+    out = out.split(from).join(to);
+  }
+  return out;
+}
 // ACC 브랜드 품목명 파싱: "우척갈비 ACC 9956 GF YP 1620" 형식과
 // "(우)갈비GF(YP)(23004)/1620/ACC" 형식(ACC가 맨 뒤에 오는 신규 표기) 둘 다 대응.
 // ACC 위치에 상관없이 문자열 전체에서 등급(YG/YP/S)/EST(1620/239)를 찾고,
@@ -2143,9 +2153,9 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
   }, [warehouseFilter, supplierFilter, animalFilter, customsFilter, expiryFilter]);
   const detailFiltered = useMemo(() => {
     if (!search.trim()) return filtered;
-    const q = search.trim().toUpperCase();
+    const q = normalizeSearchText(search.trim().toUpperCase());
     return filtered.filter((r) => {
-      const hay = `${r.품목명} ${r["B/L NO"]}`.toUpperCase();
+      const hay = normalizeSearchText(`${r.품목명} ${r["B/L NO"]}`.toUpperCase());
       return hay.includes(q);
     });
   }, [filtered, search]);
@@ -2160,8 +2170,8 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
       if (accGrade !== "전체" && r.등급 !== accGrade) return false;
       if (accEst !== "전체" && r.EST !== accEst) return false;
       if (accSearch.trim()) {
-        const q = accSearch.trim().toUpperCase();
-        const hay = `${r.정규화명} ${r.품목명} ${r["B/L NO"] || ""}`.toUpperCase();
+        const q = normalizeSearchText(accSearch.trim().toUpperCase());
+        const hay = normalizeSearchText(`${r.정규화명} ${r.품목명} ${r["B/L NO"] || ""}`.toUpperCase());
         if (!hay.includes(q)) return false;
       }
       return true;
