@@ -1,0 +1,48 @@
+name: (임시) 강동2 로그인 진단
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-main-git-write
+  cancel-in-progress: false
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 패키지 설치
+        run: pip install playwright beautifulsoup4
+      - name: Chromium 설치
+        run: python -m playwright install --with-deps chromium
+      - name: 강동2 로그인 진단 실행
+        env:
+          NWILL_GANGDONG2_ID: ${{ secrets.NWILL_GANGDONG2_ID }}
+          NWILL_GANGDONG2_PW: ${{ secrets.NWILL_GANGDONG2_PW }}
+        run: |
+          mkdir -p debug
+          cd scripts
+          python _tmp_debug_gd2.py > ../debug/gd2_diagnosis.log 2>&1 || true
+          cd ..
+          cat debug/gd2_diagnosis.log
+      - name: 결과 커밋
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m "debug: 강동2 로그인 진단 결과"
+          for i in 1 2 3; do
+            git push && exit 0
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; git add -f debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png 2>/dev/null || true; git commit -m "debug: 강동2 로그인 진단 결과(재시도)" || true; }
+            sleep 3
+          done
