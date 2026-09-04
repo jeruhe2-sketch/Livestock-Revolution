@@ -800,7 +800,7 @@ function Dashboard({ db, exRates, fxHistory }) {
   const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay", "shift"]));
   const [shiftMonths, setShiftMonths] = useState(() => pOneOf("shm", "3", ["3", "6", "12"]));
   const [shiftCompare, setShiftCompare] = useState(() => pOneOf("shc", "prev", ["prev", "yoy"]));
-  const [valueKey, setValueKey] = useState(() => pOneOf("vk", "kg", ["kg", "euro"]));
+  const [valueKey, setValueKey] = useState(() => pOneOf("vk", "kg", ["kg", "euro", "unitprice"]));
   const [msFilter, setMsFilter] = useState(() => pList("ms"));
   const [partnerFilter, setPartnerFilter] = useState(() => pList("pt"));
   const [yearFilter, setYearFilter] = useState(() => pList("yr"));
@@ -828,8 +828,21 @@ function Dashboard({ db, exRates, fxHistory }) {
   const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
   const [trendDim, setTrendDim] = useState(() => pOneOf("td", "partner", ["ms", "partner"]));
 
-  const val = (r) => (valueKey === "kg" ? r.kg / 1000 : r.euro);
-  const unitLabel = valueKey === "kg" ? "톤" : "유로(€)";
+  const val = (r) => (valueKey === "kg" ? r.kg / 1000 : valueKey === "euro" ? r.euro : (r.kg !== 0 ? r.euro / (r.kg / 1000) : 0));
+  const unitLabel = valueKey === "kg" ? "톤" : valueKey === "euro" ? "유로(€)" : "유로/톤(€/t)";
+  // 단가(unitprice)는 행별 값을 그냥 더하면 안 되고(가중평균 필요: 금액합계÷물량합계),
+  // 그래서 물량/금액처럼 값을 누적하는 모든 집계 지점에서 "행 배열"을 모았다가
+  // 이 함수로 한 번에 계산하도록 통일함.
+  function aggregateGroup(rows) {
+    if (valueKey === "unitprice") {
+      let sumEuro = 0, sumKg = 0;
+      rows.forEach((r) => { sumEuro += r.euro; sumKg += r.kg; });
+      return sumKg !== 0 ? sumEuro / (sumKg / 1000) : 0;
+    }
+    let s = 0;
+    rows.forEach((r) => { s += val(r); });
+    return s;
+  }
 
   const baseFilteredRows = useMemo(() => {
     return ROWS.filter((r) => {
@@ -852,7 +865,7 @@ function Dashboard({ db, exRates, fxHistory }) {
   }, [baseFilteredRows, valueKey, exRates]);
   const chartFormatValue = valueKey === "euro" && periodKrwRate ? (v) => fmtWonChart(v * periodKrwRate) : undefined;
   const years = useMemo(() => [...new Set(baseFilteredRows.map((r) => r.year))].sort((a, b) => a - b), [baseFilteredRows]);
-  const grandTotalAll = useMemo(() => baseFilteredRows.reduce((s, r) => s + val(r), 0), [baseFilteredRows, valueKey]);
+  const grandTotalAll = useMemo(() => aggregateGroup(baseFilteredRows), [baseFilteredRows, valueKey]);
   const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
 
   function sortLabels(dimKey, labels, totalsMap) {
@@ -863,19 +876,25 @@ function Dashboard({ db, exRates, fxHistory }) {
     return [...labels].sort((a, b) => (totalsMap[b] || 0) - (totalsMap[a] || 0));
   }
   const { rowLabels, colLabels, matrix, rowTotals, colTotals, grandTotal } = useMemo(() => {
-    const rowTotalsRaw = {}, colTotalsRaw = {};
-    const matrix2 = {};
-    let grandTotal2 = 0;
+    const rowBuckets = {}, colBuckets = {}, cellBuckets = {};
+    let allRows = [];
     baseFilteredRows.forEach((r) => {
       const rl = dimValue(r, rowDim);
       const cl = dimValue(r, colDim);
-      const v = val(r);
-      rowTotalsRaw[rl] = (rowTotalsRaw[rl] || 0) + v;
-      colTotalsRaw[cl] = (colTotalsRaw[cl] || 0) + v;
-      if (!matrix2[rl]) matrix2[rl] = {};
-      matrix2[rl][cl] = (matrix2[rl][cl] || 0) + v;
-      grandTotal2 += v;
+      (rowBuckets[rl] || (rowBuckets[rl] = [])).push(r);
+      (colBuckets[cl] || (colBuckets[cl] = [])).push(r);
+      if (!cellBuckets[rl]) cellBuckets[rl] = {};
+      (cellBuckets[rl][cl] || (cellBuckets[rl][cl] = [])).push(r);
+      allRows.push(r);
     });
+    const rowTotalsRaw = {}, colTotalsRaw = {}, matrix2 = {};
+    Object.keys(rowBuckets).forEach((rl) => { rowTotalsRaw[rl] = aggregateGroup(rowBuckets[rl]); });
+    Object.keys(colBuckets).forEach((cl) => { colTotalsRaw[cl] = aggregateGroup(colBuckets[cl]); });
+    Object.keys(cellBuckets).forEach((rl) => {
+      matrix2[rl] = {};
+      Object.keys(cellBuckets[rl]).forEach((cl) => { matrix2[rl][cl] = aggregateGroup(cellBuckets[rl][cl]); });
+    });
+    const grandTotal2 = aggregateGroup(allRows);
     const rowLabels2 = sortLabels(rowDim, Object.keys(rowTotalsRaw), rowTotalsRaw);
     const colLabels2 = sortLabels(colDim, Object.keys(colTotalsRaw), colTotalsRaw);
     return { rowLabels: rowLabels2, colLabels: colLabels2, matrix: matrix2, rowTotals: rowTotalsRaw, colTotals: colTotalsRaw, grandTotal: grandTotal2 };
@@ -904,9 +923,10 @@ function Dashboard({ db, exRates, fxHistory }) {
     const map = new Map();
     baseFilteredRows.forEach((r) => {
       let key = dimValue(r, groupBy);
-      map.set(key, (map.get(key) || 0) + val(r));
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(r);
     });
-    let arr = [...map.entries()].map(([key, v]) => ({ key, v }));
+    let arr = [...map.entries()].map(([key, rows]) => ({ key, v: aggregateGroup(rows) }));
     if (groupBy === "year") arr.sort((a, b) => +a.key - +b.key);
     else if (groupBy === "month") arr.sort((a, b) => monthNum(a.key) - monthNum(b.key));
     else if (groupBy === "yearMonth") arr.sort((a, b) => a.key.localeCompare(b.key));
@@ -948,9 +968,9 @@ function Dashboard({ db, exRates, fxHistory }) {
     baseFilteredRows.forEach((r) => {
       if (dimValue(r, trendDim) !== v0) return;
       const xVal = `${r.year}.${String(r.month).padStart(2, "0")}`;
-      bucket[xVal] = (bucket[xVal] || 0) + val(r);
+      (bucket[xVal] || (bucket[xVal] = [])).push(r);
     });
-    const raw = trendXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10);
+    const raw = trendXLabels.map((x) => Math.round(aggregateGroup(bucket[x] || []) * 10) / 10);
     return { name: v0 + (smoothed ? " (3개월 이동평균)" : ""), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: smoothed ? movingAvg(raw, 3) : raw };
   }), [baseFilteredRows, trendDim, currentTrendList, trendXLabels, valueKey, smoothed]);
   function exportTrendXlsx() {
@@ -965,9 +985,10 @@ function Dashboard({ db, exRates, fxHistory }) {
     const bucket = {};
     baseFilteredRows.forEach((r) => {
       if (r.year !== y) return;
-      bucket[`${r.month}월`] = (bucket[`${r.month}월`] || 0) + val(r);
+      const xVal = `${r.month}월`;
+      (bucket[xVal] || (bucket[xVal] = [])).push(r);
     });
-    return { name: String(y), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round((bucket[x] || 0) * 10) / 10) };
+    return { name: String(y), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => Math.round(aggregateGroup(bucket[x] || []) * 10) / 10) };
   }), [baseFilteredRows, years, overlayXLabels, valueKey]);
   function exportOverlayXlsx() {
     const header = ["월", ...years.map(String)];
@@ -982,18 +1003,18 @@ function Dashboard({ db, exRates, fxHistory }) {
   const shiftPrevEnd = shiftCompare === "yoy" ? addYm(shiftRecentEnd, -12) : addYm(shiftRecentStart, -1);
   const shiftPrevStart = shiftCompare === "yoy" ? addYm(shiftRecentStart, -12) : addYm(shiftPrevEnd, -(shiftN - 1));
   const shiftData = useMemo(() => {
-    const recent = {}, prev = {};
+    const recentLists = {}, prevLists = {};
     ROWS.forEach((r) => {
       if (msFilter.length && !msFilter.includes(dimValue(r, "ms"))) return;
       if (partnerFilter.length && !partnerFilter.includes(dimValue(r, "partner"))) return;
       const ym = r.year * 100 + r.month;
       const key = dimValue(r, "partner");
-      if (ym >= shiftRecentStart && ym <= shiftRecentEnd) recent[key] = (recent[key] || 0) + val(r);
-      else if (ym >= shiftPrevStart && ym <= shiftPrevEnd) prev[key] = (prev[key] || 0) + val(r);
+      if (ym >= shiftRecentStart && ym <= shiftRecentEnd) { (recentLists[key] || (recentLists[key] = [])).push(r); }
+      else if (ym >= shiftPrevStart && ym <= shiftPrevEnd) { (prevLists[key] || (prevLists[key] = [])).push(r); }
     });
-    const keys = new Set([...Object.keys(recent), ...Object.keys(prev)]);
+    const keys = new Set([...Object.keys(recentLists), ...Object.keys(prevLists)]);
     let arr = [...keys].map((k) => {
-      const r0 = recent[k] || 0, p0 = prev[k] || 0;
+      const r0 = aggregateGroup(recentLists[k] || []), p0 = aggregateGroup(prevLists[k] || []);
       return { key: k, recent: r0, prev: p0, delta: Math.round((r0 - p0) * 10) / 10, pct: p0 !== 0 ? (r0 - p0) / p0 * 100 : null };
     });
     arr.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
@@ -1045,13 +1066,13 @@ function Dashboard({ db, exRates, fxHistory }) {
       React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU → 한국 · 미국 · 영국 · 중국 · 일본 · 필리핀"),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "유럽산 돈육(냉동) 수출 현황"),
       React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
-        ["kg", "euro"].map((k) => React.createElement("button", {
+        ["kg", "euro", "unitprice"].map((k) => React.createElement("button", {
           key: k, onClick: () => setValueKey(k),
           style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
             border: `1px solid ${k === valueKey ? COLORS.amber : COLORS.panelBorder}`,
             background: k === valueKey ? "rgba(217,139,63,0.14)" : COLORS.panel,
             color: k === valueKey ? COLORS.amber : COLORS.mute }
-        }, k === "kg" ? "톤(t)" : "유로(€)"))
+        }, k === "kg" ? "톤(t)" : k === "euro" ? "유로(€)" : "단가(€/t)"))
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
         React.createElement(HoverMultiPicker, { label: "수출국(EU 회원국)", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
@@ -1092,7 +1113,7 @@ function Dashboard({ db, exRates, fxHistory }) {
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
           React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사"),
           React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end" } },
-            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "합계 ", n(grandTotalAll), " ", unitLabel),
+            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, valueKey === "unitprice" ? "평균 " : "합계 ", n(grandTotalAll), " ", unitLabel),
             valueKey === "euro" && React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, fontWeight: 600, display: "flex", gap: 8 } },
               React.createElement("span", null, "≈ ", fmtUsd(baseFilteredRows.reduce((s, r) => s + (r.usdEquiv || 0), 0))),
               React.createElement("span", null, "≈ ", fmtWon(baseFilteredRows.reduce((s, r) => s + (r.krwEquiv || 0), 0)))
