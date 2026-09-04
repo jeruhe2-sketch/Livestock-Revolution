@@ -12,14 +12,16 @@ ID 설정됨: True, PW 설정됨: True
 4) 전체조회 버튼 클릭 시도
    조회 후 URL: http://211.239.173.90/kd2dst/rtv_stock02.do
    dataTables-example 테이블 존재: True
+   실제 데이터 행 개수: 1
+   DataTables info 텍스트: Showing 1 to 1 of 1 entries
 === debug 폴더 내용 ===
 total 40
-drwxr-xr-x 2 runner runner 4096 Sep  4 14:03 .
-drwxr-xr-x 9 runner runner 4096 Sep  4 14:03 ..
--rw-r--r-- 1 runner runner 1240 Sep  4 14:03 cepea_domestic_last.log
--rw-r--r-- 1 runner runner 1295 Sep  4 14:03 daily_update_last.log
--rw-r--r-- 1 runner runner  703 Sep  4 14:03 gd2_diagnosis.log
--rw-r--r-- 1 runner runner  260 Sep  4 14:03 git_push_debug.log
--rw-r--r-- 1 runner runner  923 Sep  4 14:03 last_run.log
--rw-r--r-- 1 runner runner 3468 Sep  4 14:03 telegram_bot_last.log
--rw-r--r-- 1 runner runner 4700 Sep  4 14:03 usda_domestic_last.log
+drwxr-xr-x 2 runner runner 4096 Sep  4 14:05 .
+drwxr-xr-x 9 runner runner 4096 Sep  4 14:05 ..
+-rw-r--r-- 1 runner runner 1240 Sep  4 14:05 cepea_domestic_last.log
+-rw-r--r-- 1 runner runner 1295 Sep  4 14:05 daily_update_last.log
+-rw-r--r-- 1 runner runner  795 Sep  4 14:06 gd2_diagnosis.log
+-rw-r--r-- 1 runner runner  260 Sep  4 14:05 git_push_debug.log
+-rw-r--r-- 1 runner runner  923 Sep  4 14:05 last_run.log
+-rw-r--r-- 1 runner runner 3468 Sep  4 14:05 telegram_bot_last.log
+-rw-r--r-- 1 runner runner 4700 Sep  4 14:05 usda_domestic_last.log
