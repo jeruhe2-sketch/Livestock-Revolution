@@ -44,6 +44,43 @@ with sync_playwright() as p:
                 f.write(page.content())
             success = "logout.do" in page.content()
             print(f"   로그인 성공 여부(logout.do 존재): {success}")
+
+            if success:
+                print("3) 재고조회 화면 이동 시도")
+                try:
+                    page.goto(
+                        f"{BASE_URL}/rtv_stock02.do?nav_num=0107",
+                        wait_until="networkidle",
+                        timeout=60000,
+                    )
+                    print(f"   재고조회 화면 URL: {page.url}")
+                    page.screenshot(path="debug/gd2_step3_stock_page.png")
+                    with open("debug/gd2_step3.html", "w", encoding="utf-8") as f:
+                        f.write(page.content())
+
+                    has_pass_fg = page.locator("select[name='pass_fg']").count() > 0
+                    has_dt = page.locator("input[name='dt']").count() > 0
+                    print(f"   pass_fg select 존재: {has_pass_fg}, dt input 존재: {has_dt}")
+
+                    if has_pass_fg:
+                        page.select_option("select[name='pass_fg']", "*")
+                        print("4) 전체조회 버튼 클릭 시도")
+                        try:
+                            with page.expect_navigation(wait_until="networkidle", timeout=60000):
+                                page.click("button[type='submit']:has-text('조회')")
+                            print(f"   조회 후 URL: {page.url}")
+                        except Exception as e:
+                            print(f"   조회 버튼 클릭/네비게이션 예외: {e}")
+                        page.screenshot(path="debug/gd2_step4_after_query.png")
+                        with open("debug/gd2_step4.html", "w", encoding="utf-8") as f:
+                            f.write(page.content())
+                        has_table = page.locator(".dataTables-example").count() > 0
+                        print(f"   dataTables-example 테이블 존재: {has_table}")
+                except Exception as e:
+                    print(f"   재고조회 화면 이동 중 오류: {type(e).__name__}: {e}")
+                    page.screenshot(path="debug/gd2_step3_error.png")
+                    with open("debug/gd2_step3_error.html", "w", encoding="utf-8") as f:
+                        f.write(page.content())
         else:
             print("   로그인 폼 필드를 못 찾음 - 페이지 구조가 다른 것 같음")
     except Exception as e:

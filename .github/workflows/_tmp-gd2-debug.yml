@@ -34,7 +34,7 @@ jobs:
           cat debug/gd2_diagnosis.log
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for f in debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png; do
+          for f in debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step3.html debug/gd2_step4.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_step3_stock_page.png debug/gd2_step4_after_query.png debug/gd2_step3_error.html debug/gd2_step3_error.png debug/gd2_error.html debug/gd2_error.png; do
             if [ -f "$f" ]; then git add -f "$f"; echo "added: $f"; else echo "missing: $f"; fi
           done
           git diff --cached --quiet && { echo "커밋할 변경사항 없음"; exit 0; }
@@ -42,6 +42,6 @@ jobs:
           for i in 1 2 3; do
             git push && exit 0
             git fetch origin main
-            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; for f in debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png; do [ -f "$f" ] && git add -f "$f"; done; git commit -m "debug: 강동2 로그인 진단 결과(재시도)" || true; }
+            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; for f in debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step3.html debug/gd2_step4.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_step3_stock_page.png debug/gd2_step4_after_query.png debug/gd2_step3_error.html debug/gd2_step3_error.png debug/gd2_error.html debug/gd2_error.png; do [ -f "$f" ] && git add -f "$f"; done; git commit -m "debug: 강동2 로그인 진단 결과(재시도)" || true; }
             sleep 3
           done
