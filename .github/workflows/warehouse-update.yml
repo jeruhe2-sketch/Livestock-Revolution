@@ -99,6 +99,10 @@ jobs:
           : > debug/git_push_debug.log
           for i in $(seq 1 20); do
             git add data/warehouse_stock.enc.json data/warehouse_history.enc.json
+            # 파싱 0건일 때 남기는 원본 페이지 스냅샷도 같이 커밋(평소 .gitignore에
+            # 걸려서 조용히 유실되고 있었음 - 강동2냉장 0건 원인 파악할 때 이걸
+            # 못 봐서 한참 헤맸음). 있을 때만 강제로 추가.
+            git add -f debug/snapshot_*.html 2>/dev/null || true
             if git diff --cached --quiet; then
               echo "[시도 $i] 변경 없음, 커밋 스킵" >> debug/git_push_debug.log
               pushed=1
