@@ -189,6 +189,35 @@ window.AusTradeApp = (function () {
   const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
   const tdStyle = { padding: "9px 10px", color: "#1f2420" };
 
+  function addYm(ym, delta) {
+    let y = Math.floor(ym / 100), m = ym % 100;
+    m += delta;
+    while (m > 12) { m -= 12; y++; }
+    while (m < 1) { m += 12; y--; }
+    return y * 100 + m;
+  }
+  function ShiftRanking({ items }) {
+    const maxAbs = Math.max(1, ...items.map((i) => Math.abs(i.delta)));
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 9 } },
+      items.map((it) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
+        React.createElement("div", { style: { width: 100, fontSize: 13, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+        React.createElement("div", { style: { flex: 1, position: "relative", height: 22, background: "#e5e7e2", borderRadius: 5 } },
+          React.createElement("div", { style: {
+            position: "absolute", top: 0, bottom: 0,
+            left: it.delta >= 0 ? "50%" : `${50 - Math.abs(it.delta) / maxAbs * 50}%`,
+            width: `${Math.abs(it.delta) / maxAbs * 50}%`,
+            background: it.delta >= 0 ? COLORS.sage : COLORS.rust, borderRadius: 4
+          } }),
+          React.createElement("div", { style: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#b9bdb4" } })
+        ),
+        React.createElement("div", { style: { width: 165, fontSize: 13, textAlign: "right", flexShrink: 0, fontFamily: "ui-monospace,monospace" } },
+          React.createElement("span", { style: { color: it.delta >= 0 ? COLORS.sage : COLORS.rust, fontWeight: 700 } }, (it.delta >= 0 ? "+" : "") + n(it.delta)),
+          " ", React.createElement("span", { style: { color: COLORS.mute, fontSize: 11.5 } }, it.pct != null ? `(${it.pct >= 0 ? "+" : ""}${it.pct.toFixed(1)}%)` : "(신규)")
+        )
+      ))
+    );
+  }
+
   /* ---- 메인 앱 ---- */
   function AusTradeApp() {
     const [db, setDb] = useState(null);
@@ -234,7 +263,8 @@ window.AusTradeApp = (function () {
     const pInt = (key, fallback) => { const v = initParams.get(key); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : fallback; };
 
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
-    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay"]));
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay", "shift"]));
+    const [shiftMonths, setShiftMonths] = useState(() => pOneOf("shm", "3", ["3", "6", "12"]));
     const [species, setSpecies] = useState(() => pOneOf("sp", "beef", SPECIES_ORDER));
     const [form, setForm] = useState(() => pOneOf("fm", "total", ["total", "chilled", "frozen"]));
 
@@ -397,6 +427,35 @@ window.AusTradeApp = (function () {
       downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_연도별겹쳐보기.xlsx`, "겹쳐보기");
     }
 
+    /* ── 재배분: 최근 N개월 vs 직전 N개월 목적지별 물량 이동 비교 ── */
+    const shiftN = Number(shiftMonths);
+    const shiftRecentEnd = ymEnd;
+    const shiftRecentStart = addYm(ymEnd, -(shiftN - 1));
+    const shiftPrevEnd = addYm(shiftRecentStart, -1);
+    const shiftPrevStart = addYm(shiftPrevEnd, -(shiftN - 1));
+    const shiftData = useMemo(() => {
+      const recent = {}, prev = {};
+      speciesRows.forEach((r) => {
+        if (destFilter.length && !destFilter.includes(DEST_LABEL_KO[r.dest] || r.dest)) return;
+        const ym = r.year * 100 + r.month;
+        const key = DEST_LABEL_KO[r.dest] || r.dest;
+        if (ym >= shiftRecentStart && ym <= shiftRecentEnd) recent[key] = (recent[key] || 0) + val(r);
+        else if (ym >= shiftPrevStart && ym <= shiftPrevEnd) prev[key] = (prev[key] || 0) + val(r);
+      });
+      const keys = new Set([...Object.keys(recent), ...Object.keys(prev)]);
+      let arr = [...keys].map((k) => {
+        const r0 = recent[k] || 0, p0 = prev[k] || 0;
+        return { key: k, recent: r0, prev: p0, delta: Math.round((r0 - p0) * 10) / 10, pct: p0 !== 0 ? (r0 - p0) / p0 * 100 : null };
+      });
+      arr.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+      return arr.slice(0, 15);
+    }, [speciesRows, destFilter, shiftRecentStart, shiftRecentEnd, shiftPrevStart, shiftPrevEnd, form]);
+    function exportShiftXlsx() {
+      const header = ["목적지", `최근 ${shiftN}개월`, `직전 ${shiftN}개월`, "증감", "증감률(%)"];
+      const body = shiftData.map((it) => [it.key, it.recent, it.prev, it.delta, it.pct != null ? Math.round(it.pct * 10) / 10 : "신규"]);
+      downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_재배분_${shiftN}개월.xlsx`, "재배분");
+    }
+
     useEffect(() => {
       const sp = new URLSearchParams();
       if (destFilter.length) sp.set("dest", destFilter.join(","));
@@ -415,10 +474,11 @@ window.AusTradeApp = (function () {
         sp.set("csub", chartSub);
         if (chartSub === "group") sp.set("gb", groupBy);
         if (chartSub === "trend" && smoothed) sp.set("sm", "1");
+        if (chartSub === "shift") sp.set("shm", shiftMonths);
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
-    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed]);
+    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed, shiftMonths]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -455,12 +515,22 @@ window.AusTradeApp = (function () {
         ),
         porkNoBreakdown && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.rust, marginBottom: 10 } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } },
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
           React.createElement(HoverMultiPicker, { label: "목적지", options: destOptions, selected: destFilter, onToggle: (v) => toggleFilter(destFilter, setDestFilter, v), onSelectAll: () => setDestFilter([...destOptions]), onClear: () => setDestFilter([]) }),
-          React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) })
+          React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
+          (destFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+            onClick: () => { setDestFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+            style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
+          }, "필터 초기화")
         ),
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
+          [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
+            key: m,
+            active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
+            onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); },
+            label: lbl
+          })),
           ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
@@ -535,7 +605,8 @@ window.AusTradeApp = (function () {
           React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
             React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "그룹 비교" }),
             React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
-            React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" })
+            React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" }),
+            React.createElement(SubTab, { active: chartSub === "shift", onClick: () => setChartSub("shift"), label: "재배분" })
           ),
           chartSub === "group" && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
@@ -574,6 +645,19 @@ window.AusTradeApp = (function () {
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
               React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }),
               React.createElement(ChartLegend, { series: overlaySeries })
+            )
+          ),
+          chartSub === "shift" && React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+              React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "비교 구간"),
+              ["3", "6", "12"].map((m) => React.createElement(ToggleBtn, { key: m, active: shiftMonths === m, onClick: () => setShiftMonths(m), label: `${m}개월` })),
+              React.createElement("button", { onClick: exportShiftXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+            ),
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
+              `* 최근 ${shiftN}개월(${ymLabel(shiftRecentStart)}~${ymLabel(shiftRecentEnd)}) vs 직전 ${shiftN}개월(${ymLabel(shiftPrevStart)}~${ymLabel(shiftPrevEnd)}) 비교, 변화량 절대값 순 상위 15개 목적지.`
+            ),
+            React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+              shiftData.length ? React.createElement(ShiftRanking, { items: shiftData }) : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 20 } }, "비교할 데이터가 부족합니다.")
             )
           )
         ),

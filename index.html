@@ -48,7 +48,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./scripts/usda_domestic_app.js?v=22"></script>
 <script src="./scripts/cepea_domestic_app.js?v=22"></script>
-<script src="./scripts/aus_trade_app.js?v=14"></script>
+<script src="./scripts/aus_trade_app.js?v=15"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
   * { box-sizing: border-box; }
@@ -594,6 +594,34 @@ function movingAvg(arr, win) {
   }
   return out;
 }
+function addYm(ym, delta) {
+  let y = Math.floor(ym / 100), m = ym % 100;
+  m += delta;
+  while (m > 12) { m -= 12; y++; }
+  while (m < 1) { m += 12; y--; }
+  return y * 100 + m;
+}
+function ShiftRanking({ items }) {
+  const maxAbs = Math.max(1, ...items.map((i) => Math.abs(i.delta)));
+  return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 9 } },
+    items.map((it) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
+      React.createElement("div", { style: { width: 100, fontSize: 13, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+      React.createElement("div", { style: { flex: 1, position: "relative", height: 22, background: "#e5e7e2", borderRadius: 5 } },
+        React.createElement("div", { style: {
+          position: "absolute", top: 0, bottom: 0,
+          left: it.delta >= 0 ? "50%" : `${50 - Math.abs(it.delta) / maxAbs * 50}%`,
+          width: `${Math.abs(it.delta) / maxAbs * 50}%`,
+          background: it.delta >= 0 ? COLORS.sage : COLORS.rust, borderRadius: 4
+        } }),
+        React.createElement("div", { style: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#b9bdb4" } })
+      ),
+      React.createElement("div", { style: { width: 165, fontSize: 13, textAlign: "right", flexShrink: 0, fontFamily: "ui-monospace,monospace" } },
+        React.createElement("span", { style: { color: it.delta >= 0 ? COLORS.sage : COLORS.rust, fontWeight: 700 } }, (it.delta >= 0 ? "+" : "") + n(it.delta)),
+        " ", React.createElement("span", { style: { color: COLORS.mute, fontSize: 11.5 } }, it.pct != null ? `(${it.pct >= 0 ? "+" : ""}${it.pct.toFixed(1)}%)` : "(신규)")
+      )
+    ))
+  );
+}
 const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH", "VN", "MY", "CL", "TW"];
 const PARTNER_LABEL = { KR: "한국", US: "미국", GB: "영국", CN: "중국", JP: "일본", PH: "필리핀", VN: "베트남", MY: "말레이시아", CL: "칠레", TW: "대만" };
 const DIM_LABEL = { ms: "수출국", partner: "수입국", year: "연도", month: "월", yearMonth: "연월", week: "주차" };
@@ -769,7 +797,8 @@ function Dashboard({ db, exRates, fxHistory }) {
   const pInt = (key, fallback) => { const v = initParams.get(key); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : fallback; };
 
   const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
-  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay"]));
+  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay", "shift"]));
+  const [shiftMonths, setShiftMonths] = useState(() => pOneOf("shm", "3", ["3", "6", "12"]));
   const [valueKey, setValueKey] = useState(() => pOneOf("vk", "kg", ["kg", "euro"]));
   const [msFilter, setMsFilter] = useState(() => pList("ms"));
   const [partnerFilter, setPartnerFilter] = useState(() => pList("pt"));
@@ -944,6 +973,36 @@ function Dashboard({ db, exRates, fxHistory }) {
     const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
     downloadXlsx([header, ...body], `EU돈육_연도별겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
   }
+
+  /* ── 재배분: 최근 N개월 vs 직전 N개월 수입국별 물량 이동 비교 ── */
+  const shiftN = Number(shiftMonths);
+  const shiftRecentEnd = ymEnd;
+  const shiftRecentStart = addYm(ymEnd, -(shiftN - 1));
+  const shiftPrevEnd = addYm(shiftRecentStart, -1);
+  const shiftPrevStart = addYm(shiftPrevEnd, -(shiftN - 1));
+  const shiftData = useMemo(() => {
+    const recent = {}, prev = {};
+    ROWS.forEach((r) => {
+      if (msFilter.length && !msFilter.includes(dimValue(r, "ms"))) return;
+      if (partnerFilter.length && !partnerFilter.includes(dimValue(r, "partner"))) return;
+      const ym = r.year * 100 + r.month;
+      const key = dimValue(r, "partner");
+      if (ym >= shiftRecentStart && ym <= shiftRecentEnd) recent[key] = (recent[key] || 0) + val(r);
+      else if (ym >= shiftPrevStart && ym <= shiftPrevEnd) prev[key] = (prev[key] || 0) + val(r);
+    });
+    const keys = new Set([...Object.keys(recent), ...Object.keys(prev)]);
+    let arr = [...keys].map((k) => {
+      const r0 = recent[k] || 0, p0 = prev[k] || 0;
+      return { key: k, recent: r0, prev: p0, delta: Math.round((r0 - p0) * 10) / 10, pct: p0 !== 0 ? (r0 - p0) / p0 * 100 : null };
+    });
+    arr.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    return arr.slice(0, 15);
+  }, [ROWS, msFilter, partnerFilter, shiftRecentStart, shiftRecentEnd, shiftPrevStart, shiftPrevEnd, valueKey]);
+  function exportShiftXlsx() {
+    const header = ["수입국", `최근 ${shiftN}개월`, `직전 ${shiftN}개월`, "증감", "증감률(%)"];
+    const body = shiftData.map((it) => [it.key, it.recent, it.prev, it.delta, it.pct != null ? Math.round(it.pct * 10) / 10 : "신규"]);
+    downloadXlsx([header, ...body], `EU돈육_재배분_${shiftN}개월.xlsx`, "재배분");
+  }
   useEffect(() => {
     const sp = new URLSearchParams();
     if (msFilter.length) sp.set("ms", msFilter.join(","));
@@ -963,10 +1022,11 @@ function Dashboard({ db, exRates, fxHistory }) {
       sp.set("csub", chartSub);
       if (chartSub === "group") sp.set("gb", groupBy);
       if (chartSub === "trend") { sp.set("td", trendDim); if (smoothed) sp.set("sm", "1"); }
+      if (chartSub === "shift") sp.set("shm", shiftMonths);
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed]);
+  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed, shiftMonths]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -992,13 +1052,23 @@ function Dashboard({ db, exRates, fxHistory }) {
             color: k === valueKey ? COLORS.amber : COLORS.mute }
         }, k === "kg" ? "톤(t)" : "유로(€)"))
       ),
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } },
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
         React.createElement(HoverMultiPicker, { label: "수출국(EU 회원국)", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
         React.createElement(HoverMultiPicker, { label: "수입국", options: partnerOptions, selected: partnerFilter, onToggle: (v) => toggleFilter(partnerFilter, setPartnerFilter, v), onSelectAll: () => setPartnerFilter([...partnerOptions]), onClear: () => setPartnerFilter([]) }),
-        React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) })
+        React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
+        (msFilter.length > 0 || partnerFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+          onClick: () => { setMsFilter([]); setPartnerFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+          style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
+        }, "필터 초기화")
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
         React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
+        [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
+          key: m,
+          active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
+          onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); },
+          label: lbl
+        })),
         ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
         React.createElement("span", { style: { color: COLORS.mute } }, "–"),
         ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
@@ -1079,7 +1149,8 @@ function Dashboard({ db, exRates, fxHistory }) {
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
           React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "그룹 비교" }),
           React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
-          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" })
+          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" }),
+          React.createElement(SubTab, { active: chartSub === "shift", onClick: () => setChartSub("shift"), label: "재배분" })
         ),
         chartSub === "group" && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
@@ -1119,6 +1190,19 @@ function Dashboard({ db, exRates, fxHistory }) {
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
             React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340, formatValue: chartFormatValue }),
             React.createElement(ChartLegend, { series: overlaySeries })
+          )
+        ),
+        chartSub === "shift" && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "비교 구간"),
+            ["3", "6", "12"].map((m) => React.createElement(ToggleBtn, { key: m, active: shiftMonths === m, onClick: () => setShiftMonths(m), label: `${m}개월` })),
+            React.createElement("button", { onClick: exportShiftXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+          ),
+          React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
+            `* 최근 ${shiftN}개월(${ymLabel(shiftRecentStart)}~${ymLabel(shiftRecentEnd)}) vs 직전 ${shiftN}개월(${ymLabel(shiftPrevStart)}~${ymLabel(shiftPrevEnd)}) 비교, 수입국 기준 변화량 절대값 순 상위 15개.`
+          ),
+          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+            shiftData.length ? React.createElement(ShiftRanking, { items: shiftData }) : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 20 } }, "비교할 데이터가 부족합니다.")
           )
         )
       ),
@@ -1208,6 +1292,34 @@ function movingAvg(arr, win) {
     out[i] = count ? sum / count : null;
   }
   return out;
+}
+function addYm(ym, delta) {
+  let y = Math.floor(ym / 100), m = ym % 100;
+  m += delta;
+  while (m > 12) { m -= 12; y++; }
+  while (m < 1) { m += 12; y--; }
+  return y * 100 + m;
+}
+function ShiftRanking({ items }) {
+  const maxAbs = Math.max(1, ...items.map((i) => Math.abs(i.delta)));
+  return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 9 } },
+    items.map((it) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
+      React.createElement("div", { style: { width: 100, fontSize: 13, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+      React.createElement("div", { style: { flex: 1, position: "relative", height: 22, background: "#e5e7e2", borderRadius: 5 } },
+        React.createElement("div", { style: {
+          position: "absolute", top: 0, bottom: 0,
+          left: it.delta >= 0 ? "50%" : `${50 - Math.abs(it.delta) / maxAbs * 50}%`,
+          width: `${Math.abs(it.delta) / maxAbs * 50}%`,
+          background: it.delta >= 0 ? COLORS.sage : COLORS.rust, borderRadius: 4
+        } }),
+        React.createElement("div", { style: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#b9bdb4" } })
+      ),
+      React.createElement("div", { style: { width: 165, fontSize: 13, textAlign: "right", flexShrink: 0, fontFamily: "ui-monospace,monospace" } },
+        React.createElement("span", { style: { color: it.delta >= 0 ? COLORS.sage : COLORS.rust, fontWeight: 700 } }, (it.delta >= 0 ? "+" : "") + n(it.delta)),
+        " ", React.createElement("span", { style: { color: COLORS.mute, fontSize: 11.5 } }, it.pct != null ? `(${it.pct >= 0 ? "+" : ""}${it.pct.toFixed(1)}%)` : "(신규)")
+      )
+    ))
+  );
 }
 const COUNTRY_LIST = ["KR", "CN", "GB", "JP", "PH", "MX", "CA", "TW", "VN"];
 const COUNTRY_LABEL = { KR: "한국", CN: "중국", GB: "영국", JP: "일본", PH: "필리핀", MX: "멕시코", CA: "캐나다", TW: "대만", VN: "베트남" };
@@ -1393,7 +1505,8 @@ function Dashboard({ db }) {
   const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
 
   const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
-  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay"]));
+  const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay", "shift"]));
+  const [shiftMonths, setShiftMonths] = useState(() => pOneOf("shm", "3", ["3", "6", "12"]));
   const [valueKey, setValueKey] = useState(() => pOneOf("vk", "weeklyExports", ["weeklyExports", "outstandingSales", "accumulatedExports"]));
   const [countryFilter, setCountryFilter] = useState(() => pList("c"));
   const [yearFilter, setYearFilter] = useState(() => pList("yr").filter((v) => YEARS_ALL.includes(v)));
@@ -1564,6 +1677,35 @@ function Dashboard({ db }) {
     const body = overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : 0)]);
     downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_연도별겹쳐보기_${unitLabel}.xlsx`, "겹쳐보기");
   }
+
+  /* ── 재배분: 최근 N개월 vs 직전 N개월 수입국별 물량 이동 비교 ── */
+  const shiftN = Number(shiftMonths);
+  const shiftRecentEnd = ymEnd;
+  const shiftRecentStart = addYm(ymEnd, -(shiftN - 1));
+  const shiftPrevEnd = addYm(shiftRecentStart, -1);
+  const shiftPrevStart = addYm(shiftPrevEnd, -(shiftN - 1));
+  const shiftData = useMemo(() => {
+    const recentLists = {}, prevLists = {};
+    commodityRows.forEach((r) => {
+      if (countryFilter.length && !countryFilter.includes(COUNTRY_LABEL[r.countryAlpha])) return;
+      const ym = r.year * 100 + r.month;
+      const key = COUNTRY_LABEL[r.countryAlpha] || r.countryAlpha;
+      if (ym >= shiftRecentStart && ym <= shiftRecentEnd) { if (!recentLists[key]) recentLists[key] = []; recentLists[key].push(r); }
+      else if (ym >= shiftPrevStart && ym <= shiftPrevEnd) { if (!prevLists[key]) prevLists[key] = []; prevLists[key].push(r); }
+    });
+    const keys = new Set([...Object.keys(recentLists), ...Object.keys(prevLists)]);
+    let arr = [...keys].map((k) => {
+      const r0 = aggBy(recentLists[k] || []), p0 = aggBy(prevLists[k] || []);
+      return { key: k, recent: r0, prev: p0, delta: Math.round((r0 - p0) * 10) / 10, pct: p0 !== 0 ? (r0 - p0) / p0 * 100 : null };
+    });
+    arr.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    return arr.slice(0, 15);
+  }, [commodityRows, countryFilter, shiftRecentStart, shiftRecentEnd, shiftPrevStart, shiftPrevEnd, valueKey]);
+  function exportShiftXlsx() {
+    const header = ["수입국", `최근 ${shiftN}개월`, `직전 ${shiftN}개월`, "증감", "증감률(%)"];
+    const body = shiftData.map((it) => [it.key, it.recent, it.prev, it.delta, it.pct != null ? Math.round(it.pct * 10) / 10 : "신규"]);
+    downloadXlsx([header, ...body], `USDA_${COMMODITY_LABEL[commodity]}_재배분_${shiftN}개월.xlsx`, "재배분");
+  }
   useEffect(() => {
     const sp = new URLSearchParams();
     sp.set("cm", commodity);
@@ -1583,10 +1725,11 @@ function Dashboard({ db }) {
       sp.set("csub", chartSub);
       if (chartSub === "group") sp.set("gb", groupBy);
       if (chartSub === "trend" && smoothed) sp.set("sm", "1");
+      if (chartSub === "shift") sp.set("shm", shiftMonths);
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [commodity, countryFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed]);
+  }, [commodity, countryFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed, shiftMonths]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1611,13 +1754,23 @@ function Dashboard({ db }) {
             color: c === commodity ? COLORS.amber : COLORS.mute }
         }, COMMODITY_LABEL[c]))
       ),
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } },
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
         React.createElement(HoverMultiPicker, { label: "수입국", options: countryOptions, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...countryOptions]), onClear: () => setCountryFilter([]) }),
         React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
-        React.createElement(HoverAxisPicker, { label: "지표", value: valueKey, onChange: setValueKey, options: Object.entries(VALUE_LABEL) })
+        React.createElement(HoverAxisPicker, { label: "지표", value: valueKey, onChange: setValueKey, options: Object.entries(VALUE_LABEL) }),
+        (countryFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+          onClick: () => { setCountryFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+          style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
+        }, "필터 초기화")
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
         React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
+        [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
+          key: m,
+          active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
+          onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); },
+          label: lbl
+        })),
         ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
         React.createElement("span", { style: { color: COLORS.mute } }, "–"),
         ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
@@ -1686,7 +1839,8 @@ function Dashboard({ db }) {
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
           React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "그룹 비교" }),
           React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
-          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" })
+          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" }),
+          React.createElement(SubTab, { active: chartSub === "shift", onClick: () => setChartSub("shift"), label: "재배분" })
         ),
         chartSub === "group" && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
@@ -1725,6 +1879,19 @@ function Dashboard({ db }) {
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
             React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }),
             React.createElement(ChartLegend, { series: overlaySeries })
+          )
+        ),
+        chartSub === "shift" && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "비교 구간"),
+            ["3", "6", "12"].map((m) => React.createElement(ToggleBtn, { key: m, active: shiftMonths === m, onClick: () => setShiftMonths(m), label: `${m}개월` })),
+            React.createElement("button", { onClick: exportShiftXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+          ),
+          React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
+            `* 최근 ${shiftN}개월(${ymLabel(shiftRecentStart)}~${ymLabel(shiftRecentEnd)}) vs 직전 ${shiftN}개월(${ymLabel(shiftPrevStart)}~${ymLabel(shiftPrevEnd)}) 비교, 수입국 기준 변화량 절대값 순 상위 15개.`
+          ),
+          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+            shiftData.length ? React.createElement(ShiftRanking, { items: shiftData }) : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 20 } }, "비교할 데이터가 부족합니다.")
           )
         )
       ),
