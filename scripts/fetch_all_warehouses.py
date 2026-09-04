@@ -213,6 +213,13 @@ WAREHOUSE_CONFIGS = [
         "계정용도": "전체",
     },
     {
+        "창고명": "강동2냉장",
+        "base_url": "http://211.239.173.90/kd2dst",
+        "id_env": "NWILL_GANGDONG2_ID",
+        "pw_env": "NWILL_GANGDONG2_PW",
+        "계정용도": "전체",
+    },
+    {
         "창고명": "에이스냉장(처인)",
         "system": "acecs",
         "base_url": "https://cs.acecs.co.kr/il6",
