@@ -352,9 +352,9 @@ window.AusTradeApp = (function () {
     const onRowDimChange = (v) => { if (v === colDim) setColDim(rowDim); setRowDim(v); };
     const onColDimChange = (v) => { if (v === rowDim) setRowDim(colDim); setColDim(v); };
     function exportTableXlsx() {
-      const header = [DIM_LABEL[rowDim], ...colLabels, "총합계"];
-      const body = rowLabels.map((rl) => [rl, ...colLabels.map((cl) => Math.round(((matrix[rl] && matrix[rl][cl]) || 0) * 10) / 10), Math.round(rowTotals[rl] * 10) / 10]);
-      const footer = ["총합계", ...colLabels.map((cl) => Math.round((colTotals[cl] || 0) * 10) / 10), Math.round(grandTotal * 10) / 10];
+      const header = [DIM_LABEL[rowDim], ...colLabels, "총합계", "평균"];
+      const body = rowLabels.map((rl) => [rl, ...colLabels.map((cl) => Math.round(((matrix[rl] && matrix[rl][cl]) || 0) * 10) / 10), Math.round(rowTotals[rl] * 10) / 10, Math.round((colLabels.length ? rowTotals[rl] / colLabels.length : 0) * 10) / 10]);
+      const footer = ["총합계", ...colLabels.map((cl) => Math.round((colTotals[cl] || 0) * 10) / 10), Math.round(grandTotal * 10) / 10, Math.round((colLabels.length ? grandTotal / colLabels.length : 0) * 10) / 10];
       downloadXlsx([header, ...body, footer], `호주축산물_${SPECIES_LABEL_KO[species]}_${FORM_LABEL[form]}_${DIM_LABEL[rowDim]}x${DIM_LABEL[colDim]}.xlsx`, "피벗표");
     }
 
@@ -581,7 +581,8 @@ window.AusTradeApp = (function () {
                 React.createElement("thead", null, React.createElement("tr", null,
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]),
                   colLabels.map((cl) => React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)),
-                  React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
+                  React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계"),
+                  React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "평균")
                 )),
                 React.createElement("tbody", null, rowLabels.map((rl) => React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
                   React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl),
@@ -590,12 +591,14 @@ window.AusTradeApp = (function () {
                     const color = displayMode === "yoy" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
                     return React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
                   }),
-                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(rowTotals[rl]))
+                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, background: "#ede4d8" } }, n(rowTotals[rl])),
+                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(colLabels.length ? rowTotals[rl] / colLabels.length : 0))
                 ))),
                 React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
                   React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "총합계"),
                   colLabels.map((cl) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))),
-                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(grandTotal))
+                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, background: "#ede4d8" } }, n(grandTotal)),
+                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(colLabels.length ? grandTotal / colLabels.length : 0))
                 ))
               )
             )
