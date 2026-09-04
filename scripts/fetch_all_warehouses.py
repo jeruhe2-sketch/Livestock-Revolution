@@ -85,17 +85,23 @@ def _looks_like_code(text: str) -> bool:
     return len(text) >= 8 and digits >= len(text) * 0.8
 
 
-def extract_supplier(품목명: str, raw_brand: str) -> str:
+def extract_supplier(품목명: str, raw_brand: str, spec: str = "") -> str:
     """
     품목명에서 알려진 공급사명을 우선 찾고, 못 찾으면 브랜드 컬럼값도 같은
     방식으로 검색한다 (예: "IOWA/EST 8", "DUMECO(61)" 처럼 브랜드 컬럼에만
     적혀있고 품목명엔 없는 경우 대응). 그래도 없으면 브랜드 컬럼값을
     괄호 등 잡다한 텍스트만 정리해서 그대로 쓰고, 코드성 문자열이면 버린다.
+
+    창고에 따라 브랜드 컬럼이 비어있고 대신 규격(spec) 컬럼에 공급사명이
+    들어있는 경우가 있음(예: 강동2냉장 - "AGROSUPER"가 규격 칸에 찍힘).
+    규격은 알려진 공급사 키워드로 정확히 매칭될 때만 사용하고(그 외엔
+    무시), 사이즈/포장단위 같은 진짜 규격값을 공급사로 오인하지 않게 함.
     """
     품목명 = 품목명 or ""
     raw_brand = (raw_brand or "").strip()
+    spec = (spec or "").strip()
 
-    for text in (품목명, raw_brand):
+    for text in (품목명, raw_brand, spec):
         match = _SUPPLIER_PATTERN.search(text)
         if match:
             canonical = match.group(1).upper()
@@ -291,7 +297,7 @@ def parse_stock_table(html: str, 창고명: str) -> list:
         record["창고명"] = 창고명
         record["품목명"] = record.pop("수탁품", "")
         raw_brand = record.pop("브랜드", "")
-        record["공급사"] = extract_supplier(record["품목명"], raw_brand)
+        record["공급사"] = extract_supplier(record["품목명"], raw_brand, record.get("규격", ""))
         record["저장위치"] = record.pop("저장구역", "")
         record["중량_kg"] = record.pop("중량", "")
         # 유통기한 컬럼명이 창고마다 다름 (유통기한 / 소비기한)
