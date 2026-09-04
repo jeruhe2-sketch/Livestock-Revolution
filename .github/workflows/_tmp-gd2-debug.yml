@@ -22,27 +22,26 @@ jobs:
         run: pip install playwright beautifulsoup4
       - name: Chromium 설치
         run: python -m playwright install --with-deps chromium
-      - name: 강동2 로그인 진단 실행
+      - name: 강동2 로그인 진단 실행 + 결과 커밋
         env:
           NWILL_GANGDONG2_ID: ${{ secrets.NWILL_GANGDONG2_ID }}
           NWILL_GANGDONG2_PW: ${{ secrets.NWILL_GANGDONG2_PW }}
         run: |
           mkdir -p debug
-          cd scripts
-          python _tmp_debug_gd2.py > ../debug/gd2_diagnosis.log 2>&1 || true
-          cd ..
+          (cd scripts && python _tmp_debug_gd2.py) > debug/gd2_diagnosis.log 2>&1 || true
+          echo "=== debug 폴더 내용 ===" >> debug/gd2_diagnosis.log
+          ls -la debug/ >> debug/gd2_diagnosis.log
           cat debug/gd2_diagnosis.log
-      - name: 결과 커밋
-        if: always()
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png 2>/dev/null || true
-          git diff --cached --quiet && exit 0
+          for f in debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png; do
+            if [ -f "$f" ]; then git add -f "$f"; echo "added: $f"; else echo "missing: $f"; fi
+          done
+          git diff --cached --quiet && { echo "커밋할 변경사항 없음"; exit 0; }
           git commit -m "debug: 강동2 로그인 진단 결과"
           for i in 1 2 3; do
             git push && exit 0
             git fetch origin main
-            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; git add -f debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png 2>/dev/null || true; git commit -m "debug: 강동2 로그인 진단 결과(재시도)" || true; }
+            git rebase origin/main || { git rebase --abort; git reset --mixed origin/main; for f in debug/gd2_diagnosis.log debug/gd2_step1.html debug/gd2_step2.html debug/gd2_step1_loaded.png debug/gd2_step2_after_login.png debug/gd2_error.html debug/gd2_error.png; do [ -f "$f" ] && git add -f "$f"; done; git commit -m "debug: 강동2 로그인 진단 결과(재시도)" || true; }
             sleep 3
           done
