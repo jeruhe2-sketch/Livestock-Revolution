@@ -76,6 +76,26 @@ with sync_playwright() as p:
                             f.write(page.content())
                         has_table = page.locator(".dataTables-example").count() > 0
                         print(f"   dataTables-example 테이블 존재: {has_table}")
+                        if has_table:
+                            page.evaluate(
+                                """
+                                () => {
+                                    const $ = window.jQuery;
+                                    if ($ && $.fn && $.fn.dataTable) {
+                                        const table = $('.dataTables-example').DataTable();
+                                        table.page.len(-1).draw();
+                                    }
+                                }
+                                """
+                            )
+                            page.wait_for_timeout(1500)
+                            row_count = page.locator(".dataTables-example tbody tr").count()
+                            print(f"   실제 데이터 행 개수: {row_count}")
+                            info_text = page.locator("div.dataTables_info").inner_text() if page.locator("div.dataTables_info").count() > 0 else "(없음)"
+                            print(f"   DataTables info 텍스트: {info_text}")
+                            page.screenshot(path="debug/gd2_step5_full_rows.png")
+                            with open("debug/gd2_step5.html", "w", encoding="utf-8") as f:
+                                f.write(page.content())
                 except Exception as e:
                     print(f"   재고조회 화면 이동 중 오류: {type(e).__name__}: {e}")
                     page.screenshot(path="debug/gd2_step3_error.png")
