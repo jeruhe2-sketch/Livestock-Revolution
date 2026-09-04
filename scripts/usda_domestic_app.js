@@ -8,14 +8,14 @@ window.UsdaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
 
   const COLORS = {
-    bg: "#151312", panel: "#1d1a19", panelBorder: "#2b2624", panelBorder2: "#332c29",
-    amber: "#d98b3f", amberSoft: "#e8b877", cream: "#f2ead9", mute: "#8f857a",
-    sage: "#6f9482", rust: "#c2695f", head: "#141211"
+    bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
+    amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
+    sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
   };
   const ITEMS = [
     { key: "Bnls CC Strap-off", label: "등심", color: COLORS.amber },
     { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
-    { key: "1/4 Trim Butt VAC", label: "목전지", color: "#4f8fb8" }
+    { key: "1/4 Trim Butt VAC", label: "목전지", color: "#2f6f96" }
   ];
   const KG_PER_LB = 0.45359237;
   const lbToKg = (v) => v == null || !isFinite(v) ? null : v / KG_PER_LB;
@@ -94,7 +94,7 @@ window.UsdaDomesticApp = (function () {
       ),
       hoverIdx !== null && React.createElement("div", { style: {
         position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-        background: "#0f0d0c", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
+        background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
         fontSize: 11, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
       } },
         React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
@@ -132,7 +132,7 @@ window.UsdaDomesticApp = (function () {
         React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, found ? found[1] : value),
         React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
       ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 110, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 110, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
           style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
       )
@@ -313,7 +313,7 @@ window.UsdaDomesticApp = (function () {
     /* ── 차트: 연도별 겹쳐보기(계절성) ── 선택한 품목 하나를 연도별 월평균으로 겹쳐서 계절 패턴/연도비교 ── */
     const overlayYears = useMemo(() => [...new Set(periodRows.map((r) => r.date.slice(0, 4)))].sort(), [periodRows]);
     const overlaySeries = useMemo(() => {
-      const palette = ["#d98b3f", "#6f9482", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f"];
+      const palette = ["#b96a2e", "#2e7d4f", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f"];
       return overlayYears.map((y, idx) => {
         const monthSums = Array(12).fill(0), monthCounts = Array(12).fill(0);
         periodRows.forEach((r) => {
@@ -463,7 +463,7 @@ window.UsdaDomesticApp = (function () {
                     onMouseEnter: (e) => { e.currentTarget.style.background = "rgba(217,139,63,0.07)"; },
                     onMouseLeave: (e) => { e.currentTarget.style.background = rowPos % 2 ? "rgba(255,255,255,0.015)" : "transparent"; }
                   },
-                    React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: rowPos === 0 ? "#211c17" : COLORS.panel, fontWeight: rowPos === 0 ? 800 : 700, zIndex: 1, color: rowPos === 0 ? COLORS.amberSoft : COLORS.cream } }, r.label, rowPos === 0 ? " ·최신" : ""),
+                    React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: rowPos === 0 ? "#f7f8f5" : COLORS.panel, fontWeight: rowPos === 0 ? 800 : 700, zIndex: 1, color: rowPos === 0 ? COLORS.amberSoft : COLORS.cream } }, r.label, rowPos === 0 ? " ·최신" : ""),
                     visibleItems.flatMap((i) => {
                       const { text, raw } = cellDisplay(idx, i.key);
                       const color = displayMode === "chg" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
@@ -477,7 +477,7 @@ window.UsdaDomesticApp = (function () {
                   );
                 })),
                 React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
-                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "기간평균"),
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "기간평균"),
                   visibleItems.flatMap((i) => [
                     React.createElement("td", { key: i.key + "-lb", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, money(tableAvg[i.key])),
                     React.createElement("td", { key: i.key + "-kg", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.mute } }, money(lbToKg(tableAvg[i.key])))

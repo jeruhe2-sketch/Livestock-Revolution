@@ -7,11 +7,11 @@ window.AusTradeApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
 
   const COLORS = {
-    bg: "#151312", panel: "#1d1a19", panelBorder: "#2b2624", panelBorder2: "#332c29",
-    amber: "#d98b3f", amberSoft: "#e8b877", cream: "#f2ead9", mute: "#8f857a",
-    sage: "#6f9482", rust: "#c2695f", head: "#141211"
+    bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
+    amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
+    sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
   };
-  const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f", "#8b7bb0", "#5fa88a", "#e0985a", "#7ea0c4"];
+  const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 
   const DEST_LABEL_KO = {
     CN: "중국", US_EAST: "미국 동부", JP: "일본", KR: "한국", ID: "인도네시아",
@@ -106,7 +106,7 @@ window.AusTradeApp = (function () {
       ),
       hoverIdx !== null && React.createElement("div", { style: {
         position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-        background: "#0f0d0c", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
+        background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
         fontSize: 11, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
       } },
         React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
@@ -133,7 +133,7 @@ window.AusTradeApp = (function () {
       React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
         capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
           React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-          React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
+          React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
             React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
           ),
           React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
@@ -161,7 +161,7 @@ window.AusTradeApp = (function () {
         React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
         React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
       ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
           style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
       )
@@ -171,7 +171,7 @@ window.AusTradeApp = (function () {
     return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
       React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
         label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 10 } }, "▾")),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
           React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
           React.createElement("div", { style: { display: "flex", gap: 8 } },
@@ -186,8 +186,8 @@ window.AusTradeApp = (function () {
       )
     );
   }
-  const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#8f857a", fontWeight: 700, borderBottom: "1px solid #2b2624", whiteSpace: "nowrap" };
-  const tdStyle = { padding: "6px 8px", color: "#f2ead9" };
+  const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
+  const tdStyle = { padding: "6px 8px", color: "#1f2420" };
 
   /* ---- 메인 앱 ---- */
   function AusTradeApp() {
@@ -510,7 +510,7 @@ window.AusTradeApp = (function () {
                 React.createElement("thead", null, React.createElement("tr", null,
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]),
                   colLabels.map((cl) => React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)),
-                  React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
+                  React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
                 )),
                 React.createElement("tbody", null, rowLabels.map((rl) => React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
                   React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl),
@@ -519,12 +519,12 @@ window.AusTradeApp = (function () {
                     const color = displayMode === "yoy" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
                     return React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
                   }),
-                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#1a1613" } }, n(rowTotals[rl]))
+                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(rowTotals[rl]))
                 ))),
                 React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
-                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "총합계"),
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "총합계"),
                   colLabels.map((cl) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))),
-                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#1a1613" } }, n(grandTotal))
+                  React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(grandTotal))
                 ))
               )
             )

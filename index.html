@@ -21,12 +21,12 @@
 <meta name="twitter:description" content="수입검역 현황과 창고 재고 현황을 한 화면에서 확인, 매일 자동 갱신" />
 
 <!-- 홈 화면에 앱으로 추가했을 때 쓰이는 아이콘/매니페스트 -->
-<link rel="manifest" href="./manifest.json?v=2" />
+<link rel="manifest" href="./manifest.json?v=3" />
 <link rel="icon" href="./favicon.ico?v=2" sizes="any" />
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=2" />
 <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png?v=2" />
 <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2" />
-<meta name="theme-color" content="#d98b3f" />
+<meta name="theme-color" content="#b96a2e" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="축산레이더" />
@@ -46,16 +46,16 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./scripts/usda_domestic_app.js?v=20"></script>
-<script src="./scripts/cepea_domestic_app.js?v=20"></script>
-<script src="./scripts/aus_trade_app.js?v=12"></script>
+<script src="./scripts/usda_domestic_app.js?v=21"></script>
+<script src="./scripts/cepea_domestic_app.js?v=21"></script>
+<script src="./scripts/aus_trade_app.js?v=13"></script>
 <style>
-  html, body { margin: 0; padding: 0; background: #151312; }
+  html, body { margin: 0; padding: 0; background: #f4f5f2; }
   * { box-sizing: border-box; }
   body { font-family: 'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif; }
   ::-webkit-scrollbar { height: 8px; width: 8px; }
-  ::-webkit-scrollbar-thumb { background: #332c29; border-radius: 4px; }
-  input::placeholder { color: #8f857a; }
+  ::-webkit-scrollbar-thumb { background: #b9bdb4; border-radius: 4px; }
+  input::placeholder { color: #5b615c; }
 
   /* 모바일: 왼쪽 세로 배너 -> 상단 가로 얇은 바 */
   @media (max-width: 640px) {
@@ -63,7 +63,7 @@
     .app-sidebar {
       width: 100% !important; height: auto !important; position: static !important;
       padding: 10px 12px !important; border-right: none !important;
-      border-bottom: 1px solid #2b2624 !important; overflow-y: visible !important;
+      border-bottom: 1px solid #d7dad4 !important; overflow-y: visible !important;
     }
     .app-sidebar-title { display: none !important; }
     .app-sidebar-subtitle { display: none !important; }
@@ -79,19 +79,19 @@
 window.QuarantineApp = (function() {
 const { useState, useEffect, useMemo, useRef } = React;
 const COLORS = {
-  bg: "#151312",
-  panel: "#1d1a19",
-  panelBorder: "#2b2624",
-  panelBorder2: "#332c29",
-  amber: "#d98b3f",
-  amberSoft: "#e8b877",
-  cream: "#f2ead9",
-  mute: "#8f857a",
-  sage: "#6f9482",
-  rust: "#c2695f",
-  head: "#141211"
+  bg: "#f4f5f2",
+  panel: "#ffffff",
+  panelBorder: "#d7dad4",
+  panelBorder2: "#b9bdb4",
+  amber: "#b96a2e",
+  amberSoft: "#8a5a30",
+  cream: "#1f2420",
+  mute: "#5b615c",
+  sage: "#2e7d4f",
+  rust: "#a34a3f",
+  head: "#eef0ec"
 };
-const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f", "#8b7bb0", "#5fa88a", "#e0985a", "#7ea0c4"];
+const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 const TREND_DIM_OPTIONS = [["\uCC3D\uACE0\uBA85", "\uCC3D\uACE0"], ["\uCD95\uC885", "\uCD95\uC885"]];
 function n(v) {
   return Math.round(v).toLocaleString();
@@ -148,7 +148,7 @@ function SvgLineChart({ categories, series, height = 260 }) {
     left: `${tooltipLeftPct}%`,
     top: 6,
     transform: "translateX(-50%)",
-    background: "#0f0d0c",
+    background: "#e5e7e2",
     border: `1px solid ${COLORS.panelBorder2}`,
     borderRadius: 8,
     padding: "7px 10px",
@@ -165,7 +165,7 @@ function ChartLegend({ series }) {
 }
 function BarRanking({ items }) {
   const maxVal = Math.max(1, ...items.map((i) => i.v));
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, items.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 76, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })), /* @__PURE__ */ React.createElement("div", { style: { width: 74, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v)))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, items.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 76, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })), /* @__PURE__ */ React.createElement("div", { style: { width: 74, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v)))));
 }
 function readParams() {
   return new URLSearchParams(window.location.search);
@@ -480,11 +480,11 @@ function Dashboard({ db }) {
       style: { fontSize: 11, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" }
     },
     linkCopied ? "\u2713 \uBCF5\uC0AC\uB428" : "\u{1F517} \uC774 \uD654\uBA74 \uB9C1\uD06C \uBCF5\uC0AC"
-  ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "\uD569\uACC4 ", n(grandTotalAll), " \uD1A4"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginBottom: 14, textAlign: "right" } }, db.updatedAt ? `\uCD5C\uADFC \uB370\uC774\uD130 \uAC31\uC2E0: ${fmtUpdatedAt(db.updatedAt)}` : "\uB370\uC774\uD130 \uAC31\uC2E0 \uC815\uBCF4 \uC5C6\uC74C (\uCCAB \uC790\uB3D9 \uAC31\uC2E0 \uC774\uD6C4 \uD45C\uC2DC\uB429\uB2C8\uB2E4)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "\uD45C" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "\uCC28\uD2B8" })), mainTab === "table" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } }, /* @__PURE__ */ React.createElement(ToggleBtn, { active: displayMode === "abs", onClick: () => setDisplayMode("abs"), label: "\uC2E4\uC218\uCE58(\uD1A4)" }), /* @__PURE__ */ React.createElement(ToggleBtn, { active: displayMode === "yoy", onClick: () => setDisplayMode("yoy"), label: "\uC804 \uC5F4 \uB300\uBE44 \uC99D\uAC10\uB960" }), /* @__PURE__ */ React.createElement("button", { onClick: exportTableXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC"))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", maxHeight: 560, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]), colLabels.map((cl) => /* @__PURE__ */ React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)), /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "\uCD1D\uD569\uACC4"))), /* @__PURE__ */ React.createElement("tbody", null, rowLabels.map((rl) => /* @__PURE__ */ React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl), colLabels.map((cl, ci) => {
+  ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "\uD569\uACC4 ", n(grandTotalAll), " \uD1A4"))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginBottom: 14, textAlign: "right" } }, db.updatedAt ? `\uCD5C\uADFC \uB370\uC774\uD130 \uAC31\uC2E0: ${fmtUpdatedAt(db.updatedAt)}` : "\uB370\uC774\uD130 \uAC31\uC2E0 \uC815\uBCF4 \uC5C6\uC74C (\uCCAB \uC790\uB3D9 \uAC31\uC2E0 \uC774\uD6C4 \uD45C\uC2DC\uB429\uB2C8\uB2E4)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "\uD45C" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "\uCC28\uD2B8" })), mainTab === "table" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } }, /* @__PURE__ */ React.createElement(ToggleBtn, { active: displayMode === "abs", onClick: () => setDisplayMode("abs"), label: "\uC2E4\uC218\uCE58(\uD1A4)" }), /* @__PURE__ */ React.createElement(ToggleBtn, { active: displayMode === "yoy", onClick: () => setDisplayMode("yoy"), label: "\uC804 \uC5F4 \uB300\uBE44 \uC99D\uAC10\uB960" }), /* @__PURE__ */ React.createElement("button", { onClick: exportTableXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC"))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", maxHeight: 560, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]), colLabels.map((cl) => /* @__PURE__ */ React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)), /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "\uCD1D\uD569\uACC4"))), /* @__PURE__ */ React.createElement("tbody", null, rowLabels.map((rl) => /* @__PURE__ */ React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl), colLabels.map((cl, ci) => {
     const { text, raw } = cellDisplay(rl, cl, ci);
     const color = displayMode === "yoy" ? raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute : COLORS.cream;
     return /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
-  }), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#1a1613" } }, n(rowTotals[rl]))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#1a1613" } }, n(grandTotal)))))))), mainTab === "chart" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } }, /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "\uADF8\uB8F9 \uBE44\uAD50" }), /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "\uACB9\uCCD0\uBCF4\uAE30" })), chartSub === "group" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uAE30\uC900", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, !isTimeGroup && /* @__PURE__ */ React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "\u21C5 ", sortDesc ? "\uB0B4\uB9BC\uCC28\uC21C" : "\uC624\uB984\uCC28\uC21C"), /* @__PURE__ */ React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC"))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, isTimeGroup ? /* @__PURE__ */ React.createElement(SvgLineChart, { categories: grouped.map((g) => g.key), series: groupSeries, height: 280 }) : /* @__PURE__ */ React.createElement(BarRanking, { items: grouped }))), chartSub === "overlay" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uBE44\uAD50\uAE30\uC900", value: overlayDim, onChange: (v) => {
+  }), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(rowTotals[rl]))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(grandTotal)))))))), mainTab === "chart" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } }, /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "\uADF8\uB8F9 \uBE44\uAD50" }), /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "\uACB9\uCCD0\uBCF4\uAE30" })), chartSub === "group" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uAE30\uC900", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, !isTimeGroup && /* @__PURE__ */ React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "\u21C5 ", sortDesc ? "\uB0B4\uB9BC\uCC28\uC21C" : "\uC624\uB984\uCC28\uC21C"), /* @__PURE__ */ React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC"))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, isTimeGroup ? /* @__PURE__ */ React.createElement(SvgLineChart, { categories: grouped.map((g) => g.key), series: groupSeries, height: 280 }) : /* @__PURE__ */ React.createElement(BarRanking, { items: grouped }))), chartSub === "overlay" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uBE44\uAD50\uAE30\uC900", value: overlayDim, onChange: (v) => {
     setOverlayDim(v);
     setOverlaySel({ dim: v, list: [] });
   }, options: [["year", "\uC5F0\uB3C4"], ["country", "\uAD6D\uAC00"], ["part", "\uBD80\uC704"]] }), overlayDim !== "year" && /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "X\uCD95", value: overlayXAxis, onChange: setOverlayXAxis, options: [["month", "\uC6D4\uBCC4"], ["year", "\uC5F0\uB3C4\uBCC4"]] }), overlayDim !== "year" && effectiveXAxis === "month" && /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uAE30\uC900\uC5F0\uB3C4", value: overlayYearCtx, onChange: setOverlayYearCtx, options: [...years].reverse().map((y) => [y, `${y}\uB144`]) }), /* @__PURE__ */ React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "\uACB9\uCCD0\uBCFC ", DIM_LABEL[overlayDim], " \uC120\uD0DD:"), /* @__PURE__ */ React.createElement("button", { onClick: selectAllOverlay, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.panelBorder2 } }, "|"), /* @__PURE__ */ React.createElement("button", { onClick: clearOverlay, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uD574\uC81C")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } }, overlayCandidates.map((v) => /* @__PURE__ */ React.createElement(
@@ -506,8 +506,8 @@ function Dashboard({ db }) {
     v
   ))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, /* @__PURE__ */ React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 300 }), /* @__PURE__ */ React.createElement(ChartLegend, { series: overlaySeries })))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "\uC790\uB8CC: \uC2DD\uC57D\uCC98 \uC218\uC785\uC2DD\uD488\uC815\uBCF4\uB9C8\uB8E8 \uD788\uC2A4\uD1A0\uB9AC + \uACF5\uACF5\uB370\uC774\uD130\uD3EC\uD138 \uC2E4\uC2DC\uAC04 API \uBCD1\uD569. \uB2E8\uC704 kg \u2192 \uD1A4. \uB9E4\uC77C \uC790\uB3D9 \uAC31\uC2E0\uB429\uB2C8\uB2E4.")));
 }
-const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#8f857a", fontWeight: 700, borderBottom: "1px solid #2b2624", whiteSpace: "nowrap" };
-const tdStyle = { padding: "6px 8px", color: "#f2ead9" };
+const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
+const tdStyle = { padding: "6px 8px", color: "#1f2420" };
 function SheetTab({ active, onClick, label }) {
   return /* @__PURE__ */ React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
 }
@@ -518,7 +518,7 @@ function ToggleBtn({ active, onClick, label }) {
   return /* @__PURE__ */ React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
 }
 function ChipGroup({ label, options, value, onChange }) {
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 8px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, paddingLeft: 4 } }, label), options.map((o) => /* @__PURE__ */ React.createElement("button", { key: o, onClick: () => onChange(o), style: { padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: o === value ? COLORS.amber : "transparent", color: o === value ? "#1a1512" : COLORS.mute } }, o)));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 8px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, paddingLeft: 4 } }, label), options.map((o) => /* @__PURE__ */ React.createElement("button", { key: o, onClick: () => onChange(o), style: { padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: o === value ? COLORS.amber : "transparent", color: o === value ? "#f7f8f5" : COLORS.mute } }, o)));
 }
 function HoverAxisPicker({ label, value, onChange, options }) {
   const [open, setOpen] = useState(false);
@@ -532,7 +532,7 @@ function HoverAxisPicker({ label, value, onChange, options }) {
   };
   const found = options.find(([v]) => v === value);
   const currentLabel = found ? found[1] : value;
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => {
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => {
     onChange(v);
     setOpen(false);
   }, style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))));
@@ -547,7 +547,7 @@ function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onC
   const leave = () => {
     timer.current = setTimeout(() => setOpen(false), 150);
   };
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600 } }, label, " ", selected.length ? `(${selected.length})` : "\uC804\uCCB4", " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uCD08\uAE30\uD654"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map((o) => /* @__PURE__ */ React.createElement("button", { key: o, onClick: () => onToggle(o), style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o)))));
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600 } }, label, " ", selected.length ? `(${selected.length})` : "\uC804\uCCB4", " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uCD08\uAE30\uD654"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map((o) => /* @__PURE__ */ React.createElement("button", { key: o, onClick: () => onToggle(o), style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o)))));
 }
   return QuarantineApp;
 })();
@@ -556,11 +556,11 @@ function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onC
 window.EuTradeApp = (function() {
 const { useState, useEffect, useMemo, useRef } = React;
 const COLORS = {
-  bg: "#151312", panel: "#1d1a19", panelBorder: "#2b2624", panelBorder2: "#332c29",
-  amber: "#d98b3f", amberSoft: "#e8b877", cream: "#f2ead9", mute: "#8f857a",
-  sage: "#6f9482", rust: "#c2695f", head: "#141211"
+  bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
+  amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
+  sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
 };
-const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f", "#8b7bb0", "#5fa88a", "#e0985a", "#7ea0c4"];
+const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 function n(v) { return Math.round(v).toLocaleString(); }
 function fmtShort(v) {
   return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "만" : Math.round(v).toLocaleString();
@@ -653,7 +653,7 @@ function SvgLineChart({ categories, series, height = 260, formatValue }) {
     ),
     hoverIdx !== null && React.createElement("div", { style: {
       position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-      background: "#0f0d0c", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
+      background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
       fontSize: 11, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
     } },
       React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
@@ -681,7 +681,7 @@ function BarRanking({ items, formatValue }) {
   React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
     capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
       React.createElement("div", { style: { width: 76, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-      React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
+      React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
         React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
       ),
       React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmt(it.v))
@@ -1055,7 +1055,7 @@ function Dashboard({ db, exRates, fxHistory }) {
               React.createElement("thead", null, React.createElement("tr", null,
                 React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]),
                 colLabels.map((cl) => React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)),
-                React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
+                React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
               )),
               React.createElement("tbody", null, rowLabels.map((rl) => React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
                 React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl),
@@ -1064,12 +1064,12 @@ function Dashboard({ db, exRates, fxHistory }) {
                   const color = displayMode === "yoy" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
                   return React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
                 }),
-                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#1a1613" } }, n(rowTotals[rl]))
+                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(rowTotals[rl]))
               ))),
               React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
-                React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "총합계"),
+                React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "총합계"),
                 colLabels.map((cl) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))),
-                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#1a1613" } }, n(grandTotal))
+                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(grandTotal))
               ))
             )
           )
@@ -1126,8 +1126,8 @@ function Dashboard({ db, exRates, fxHistory }) {
     )
   );
 }
-const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#8f857a", fontWeight: 700, borderBottom: "1px solid #2b2624", whiteSpace: "nowrap" };
-const tdStyle = { padding: "6px 8px", color: "#f2ead9" };
+const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
+const tdStyle = { padding: "6px 8px", color: "#1f2420" };
 function SheetTab({ active, onClick, label }) {
   return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
 }
@@ -1150,7 +1150,7 @@ function HoverAxisPicker({ label, value, onChange, options }) {
       React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
       React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
     ),
-    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
       options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
         style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
     )
@@ -1161,7 +1161,7 @@ function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onC
   return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
     React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
       label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 10 } }, "▾")),
-    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
         React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
         React.createElement("div", { style: { display: "flex", gap: 8 } },
@@ -1183,11 +1183,11 @@ return EuTradeApp;
 window.UsdaTradeApp = (function() {
 const { useState, useEffect, useMemo, useRef } = React;
 const COLORS = {
-  bg: "#151312", panel: "#1d1a19", panelBorder: "#2b2624", panelBorder2: "#332c29",
-  amber: "#d98b3f", amberSoft: "#e8b877", cream: "#f2ead9", mute: "#8f857a",
-  sage: "#6f9482", rust: "#c2695f", head: "#141211"
+  bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
+  amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
+  sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
 };
-const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f", "#8b7bb0", "#5fa88a", "#e0985a", "#7ea0c4"];
+const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 function n(v) { return Math.round(v).toLocaleString(); }
 function fmtShort(v) {
   return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "만" : Math.round(v).toLocaleString();
@@ -1268,7 +1268,7 @@ function SvgLineChart({ categories, series, height = 260 }) {
     ),
     hoverIdx !== null && React.createElement("div", { style: {
       position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-      background: "#0f0d0c", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
+      background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
       fontSize: 11, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
     } },
       React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
@@ -1295,7 +1295,7 @@ function BarRanking({ items }) {
   React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
     capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
       React.createElement("div", { style: { width: 76, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-      React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
+      React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
         React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
       ),
       React.createElement("div", { style: { width: 74, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
@@ -1662,7 +1662,7 @@ function Dashboard({ db }) {
               React.createElement("thead", null, React.createElement("tr", null,
                 React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]),
                 colLabels.map((cl) => React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)),
-                React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
+                React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "총합계")
               )),
               React.createElement("tbody", null, rowLabels.map((rl) => React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
                 React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl),
@@ -1671,12 +1671,12 @@ function Dashboard({ db }) {
                   const color = displayMode === "yoy" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
                   return React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
                 }),
-                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#1a1613" } }, n(rowTotals[rl]))
+                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(rowTotals[rl]))
               ))),
               React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
-                React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "총합계"),
+                React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "총합계"),
                 colLabels.map((cl) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))),
-                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#1a1613" } }, n(grandTotal))
+                React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(grandTotal))
               ))
             )
           )
@@ -1732,8 +1732,8 @@ function Dashboard({ db }) {
     )
   );
 }
-const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#8f857a", fontWeight: 700, borderBottom: "1px solid #2b2624", whiteSpace: "nowrap" };
-const tdStyle = { padding: "6px 8px", color: "#f2ead9" };
+const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
+const tdStyle = { padding: "6px 8px", color: "#1f2420" };
 function SheetTab({ active, onClick, label }) {
   return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
 }
@@ -1756,7 +1756,7 @@ function HoverAxisPicker({ label, value, onChange, options }) {
       React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
       React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
     ),
-    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
       options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
         style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
     )
@@ -1767,7 +1767,7 @@ function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onC
   return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
     React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
       label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 10 } }, "▾")),
-    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+    React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
         React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
         React.createElement("div", { style: { display: "flex", gap: 8 } },
@@ -1818,19 +1818,19 @@ async function fetchAndDecryptWarehouseJson(password, url) {
 window.WarehouseDashboardApp = (function() {
 const { useState, useMemo, useRef } = React;
 const COLORS = {
-  bg: "#151312",
-  panel: "#1d1a19",
-  panelBorder: "#2b2624",
-  panelBorder2: "#332c29",
-  amber: "#d98b3f",
-  amberSoft: "#e8b877",
-  cream: "#f2ead9",
-  mute: "#8f857a",
-  sage: "#6f9482",
-  rust: "#c2695f",
-  head: "#141211"
+  bg: "#f4f5f2",
+  panel: "#ffffff",
+  panelBorder: "#d7dad4",
+  panelBorder2: "#b9bdb4",
+  amber: "#b96a2e",
+  amberSoft: "#8a5a30",
+  cream: "#1f2420",
+  mute: "#5b615c",
+  sage: "#2e7d4f",
+  rust: "#a34a3f",
+  head: "#eef0ec"
 };
-const SERIES_PALETTE = ["#d98b3f", "#5c8f7a", "#4f8fb8", "#b0a25c", "#a06a9c", "#c2695f", "#8b7bb0", "#5fa88a"];
+const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768"];
 const TREND_DIM_OPTIONS = [["\uCC3D\uACE0\uBA85", "\uCC3D\uACE0"], ["\uCD95\uC885", "\uCD95\uC885"]];
 function n(v) {
   return Math.round(v).toLocaleString();
@@ -1887,7 +1887,7 @@ function SvgLineChart({ categories, series, height = 260 }) {
     left: `${tooltipLeftPct}%`,
     top: 6,
     transform: "translateX(-50%)",
-    background: "#0f0d0c",
+    background: "#e5e7e2",
     border: `1px solid ${COLORS.panelBorder2}`,
     borderRadius: 8,
     padding: "7px 10px",
@@ -1904,7 +1904,7 @@ function ChartLegend({ series }) {
 }
 function BarRanking({ items }) {
   const maxVal = Math.max(1, ...items.map((i) => i.v));
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, items.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 76, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, background: "#0f0d0c", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })), /* @__PURE__ */ React.createElement("div", { style: { width: 74, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v)))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, items.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 76, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })), /* @__PURE__ */ React.createElement("div", { style: { width: 74, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v)))));
 }
 function daysUntil(dateStr) {
   if (!dateStr) return null;
@@ -1928,7 +1928,7 @@ function isWithinNineMonths(dateStr) {
 function expiryColor(days) {
   if (days === null) return COLORS.mute;
   if (days < 0) return COLORS.rust;
-  if (isWithinNineMonthsDays(days)) return "#e0985a";
+  if (isWithinNineMonthsDays(days)) return "#b8763e";
   return COLORS.cream;
 }
 function isWithinNineMonthsDays(days) {
@@ -2333,10 +2333,10 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
     const body = detailSorted.map((r) => [r.\uCC3D\uACE0\uBA85, r.\uD488\uBAA9\uBA85, r.\uC7AC\uACE0\uC218\uB7C9, r.\uC911\uB7C9_kg, r["B/L NO"], r.\uC720\uD1B5\uAE30\uD55C || "", r.\uD1B5\uAD00\uC0C1\uD0DC]);
     downloadXlsx([header, ...body], "\uCC3D\uACE0\uC7AC\uACE0_\uC0C1\uC138.xlsx", "\uC0C1\uC138");
   }
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, copyToast && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", top: 16, right: 16, zIndex: 999, background: "#1d1a18", border: `1px solid ${COLORS.sage}`, color: COLORS.sage, padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, boxShadow: "0 6px 18px rgba(0,0,0,0.4)" } }, "\u2713 \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC\uB428"), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "\uCC3D\uACE0 \uD1B5\uD569 \uC7AC\uACE0 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC2E4\uC2DC\uAC04 \uC7AC\uACE0 \uD604\uD669"), fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01) && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft } }, "\uD83D\uDD52 ", fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCC3D\uACE0", options: warehouses, selected: warehouseFilter, onToggle: (v) => toggle(warehouseFilter, setWarehouseFilter, v), onSelectAll: () => setWarehouseFilter([...warehouses]), onClear: () => setWarehouseFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uACF5\uAE09\uC0AC", options: suppliers, selected: supplierFilter, onToggle: (v) => toggle(supplierFilter, setSupplierFilter, v), onSelectAll: () => setSupplierFilter([...suppliers]), onClear: () => setSupplierFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCD95\uC885", options: animalTypes, selected: animalFilter, onToggle: (v) => toggle(animalFilter, setAnimalFilter, v), onSelectAll: () => setAnimalFilter([...animalTypes]), onClear: () => setAnimalFilter([]) }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uD1B5\uAD00\uC0C1\uD0DC", options: ["\uC804\uCCB4", "\uD1B5\uAD00", "\uBBF8\uD1B5\uAD00"], value: customsFilter, onChange: setCustomsFilter }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uC720\uD1B5\uAE30\uD55C", options: ["\uC804\uCCB4", "9\uAC1C\uC6D4\uC774\uB0B4", "1\uB144\uC774\uB0B4"], value: expiryFilter, onChange: setExpiryFilter })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(KpiCard, { label: "\uAC80\uC0C9\uB41C SKU \uAC74\uC218", value: n(kpi.count), accent: COLORS.amber }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC7AC\uACE0\uC218\uB7C9", value: n(kpi.totalQty), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC911\uB7C9 (kg)", value: n(kpi.totalWeight), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uC720\uD1B5\uAE30\uD55C 9\uAC1C\uC6D4 \uC774\uB0B4", value: n(kpi.soon), accent: kpi.soon > 0 ? COLORS.rust : COLORS.sage, warn: kpi.soon > 0 })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "summary", onClick: () => changeMainTab("summary"), label: "\uC694\uC57D(\uD53C\uBC97)" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "detail", onClick: () => changeMainTab("detail"), label: "\uC0C1\uC138\uAC80\uC0C9" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "acc", onClick: () => changeMainTab("acc"), label: "ACC \uD1B5\uD569\uC870\uD68C" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => changeMainTab("chart"), label: "\uCC28\uD2B8" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "trend", onClick: () => changeMainTab("trend"), label: "\uCD94\uC774" })), mainTab === "summary" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAC12\uAE30\uC900", options: ["\uC7AC\uACE0\uC218\uB7C9", "\uC911\uB7C9_kg"], value: valueMode, onChange: setValueMode }), /* @__PURE__ */ React.createElement("button", { onClick: exportSummaryXlsx, style: { marginLeft: "auto", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", maxHeight: 520, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 110 } }, DIM_LABEL[rowDim]), colLabels.map((cl) => /* @__PURE__ */ React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 90 } }, cl)), /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#1a1613", textAlign: "right", minWidth: 100, color: COLORS.amberSoft } }, "\uCD1D\uD569\uACC4"))), /* @__PURE__ */ React.createElement("tbody", null, rowLabels.map((rl) => /* @__PURE__ */ React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, rl), colLabels.map((cl) => {
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, copyToast && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", top: 16, right: 16, zIndex: 999, background: "#ffffff", border: `1px solid ${COLORS.sage}`, color: COLORS.sage, padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, boxShadow: "0 6px 18px rgba(0,0,0,0.4)" } }, "\u2713 \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC\uB428"), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "\uCC3D\uACE0 \uD1B5\uD569 \uC7AC\uACE0 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px" } }, "\uC2E4\uC2DC\uAC04 \uC7AC\uACE0 \uD604\uD669"), fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01) && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: COLORS.amberSoft } }, "\uD83D\uDD52 ", fmtCollectedAt(db.\uC218\uC9D1\uC2DC\uAC01))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCC3D\uACE0", options: warehouses, selected: warehouseFilter, onToggle: (v) => toggle(warehouseFilter, setWarehouseFilter, v), onSelectAll: () => setWarehouseFilter([...warehouses]), onClear: () => setWarehouseFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uACF5\uAE09\uC0AC", options: suppliers, selected: supplierFilter, onToggle: (v) => toggle(supplierFilter, setSupplierFilter, v), onSelectAll: () => setSupplierFilter([...suppliers]), onClear: () => setSupplierFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uCD95\uC885", options: animalTypes, selected: animalFilter, onToggle: (v) => toggle(animalFilter, setAnimalFilter, v), onSelectAll: () => setAnimalFilter([...animalTypes]), onClear: () => setAnimalFilter([]) }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uD1B5\uAD00\uC0C1\uD0DC", options: ["\uC804\uCCB4", "\uD1B5\uAD00", "\uBBF8\uD1B5\uAD00"], value: customsFilter, onChange: setCustomsFilter }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uC720\uD1B5\uAE30\uD55C", options: ["\uC804\uCCB4", "9\uAC1C\uC6D4\uC774\uB0B4", "1\uB144\uC774\uB0B4"], value: expiryFilter, onChange: setExpiryFilter })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(KpiCard, { label: "\uAC80\uC0C9\uB41C SKU \uAC74\uC218", value: n(kpi.count), accent: COLORS.amber }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC7AC\uACE0\uC218\uB7C9", value: n(kpi.totalQty), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uCD1D \uC911\uB7C9 (kg)", value: n(kpi.totalWeight), accent: COLORS.cream }), /* @__PURE__ */ React.createElement(KpiCard, { label: "\uC720\uD1B5\uAE30\uD55C 9\uAC1C\uC6D4 \uC774\uB0B4", value: n(kpi.soon), accent: kpi.soon > 0 ? COLORS.rust : COLORS.sage, warn: kpi.soon > 0 })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "summary", onClick: () => changeMainTab("summary"), label: "\uC694\uC57D(\uD53C\uBC97)" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "detail", onClick: () => changeMainTab("detail"), label: "\uC0C1\uC138\uAC80\uC0C9" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "acc", onClick: () => changeMainTab("acc"), label: "ACC \uD1B5\uD569\uC870\uD68C" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => changeMainTab("chart"), label: "\uCC28\uD2B8" }), /* @__PURE__ */ React.createElement(SheetTab, { active: mainTab === "trend", onClick: () => changeMainTab("trend"), label: "\uCD94\uC774" })), mainTab === "summary" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAC12\uAE30\uC900", options: ["\uC7AC\uACE0\uC218\uB7C9", "\uC911\uB7C9_kg"], value: valueMode, onChange: setValueMode }), /* @__PURE__ */ React.createElement("button", { onClick: exportSummaryXlsx, style: { marginLeft: "auto", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", maxHeight: 520, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 110 } }, DIM_LABEL[rowDim]), colLabels.map((cl) => /* @__PURE__ */ React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 90 } }, cl)), /* @__PURE__ */ React.createElement("th", { style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 100, color: COLORS.amberSoft } }, "\uCD1D\uD569\uACC4"))), /* @__PURE__ */ React.createElement("tbody", null, rowLabels.map((rl) => /* @__PURE__ */ React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, rl), colLabels.map((cl) => {
     var _a;
     return /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n(((_a = matrix[rl]) == null ? void 0 : _a[cl]) || 0));
-  }), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#1a1613" } }, n(rowTotals[rl]))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#1a1613", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#1a1613" } }, n(grandTotal)))))))), mainTab === "detail" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(
+  }), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(rowTotals[rl]))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(grandTotal)))))))), mainTab === "detail" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(
     "input",
     {
       value: search,
@@ -2352,8 +2352,8 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
     return /* @__PURE__ */ React.createElement("tr", { key: i, onClick: () => copyRowToClipboard([["창고", r.창고명], ["품목명", r.품목명], ["재고수량", n(r.재고수량)], ["중량(kg)", nWeight(r.중량_kg)], ["BL번호", r["B/L NO"]], ["유통기한", r.유통기한 || "-"], ["통관상태", r.통관상태 || "미확인"]]), style: { borderTop: `1px solid ${COLORS.panelBorder}`, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("td", { style: tdStyle }, r.창고명), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.품목명), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace" } }, n(r.재고수량)), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace" } }, nWeight(r.중량_kg)), /* @__PURE__ */ React.createElement("td", { style: tdStyle }, r["B/L NO"]), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, color: expiryColor(d), fontWeight: d !== null && isWithinNineMonthsDays(d) ? 700 : 400 } }, (r.유통기한 || "-") + " " + (d !== null && isWithinNineMonthsDays(d) ? `(D${d >= 0 ? "-" + d : "+" + Math.abs(d)})` : "")), /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, color: r.통관상태 === "통관" ? COLORS.sage : r.통관상태 === "미통관" ? COLORS.rust : COLORS.mute } }, r.통관상태 || "미확인"));
   }))))), accFiltered.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: COLORS.mute, marginTop: 10 } }, "검색 결과가 없습니다. (ACC 브랜드 품목만 대상입니다)")), mainTab === "chart" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "비중 기준", value: chartDim, onChange: setChartDim, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "값기준", options: ["재고수량", "중량_kg"], value: chartValue, onChange: setChartValue })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "minmax(180px,240px) 1fr", gap: 20, marginBottom: 20, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 18, alignItems: "center" } }, /* @__PURE__ */ React.createElement(SvgDonut, { items: chartGrouped }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, chartGrouped.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: SERIES_PALETTE[idx % SERIES_PALETTE.length], display: "inline-block", flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.cream } }, it.key), /* @__PURE__ */ React.createElement("span", { style: { marginLeft: "auto", color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace" } }, n(it.v), chartValue === "중량_kg" ? " kg" : "", " (", Math.round(it.v / chartTotal * 100), "%)"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: COLORS.mute, marginBottom: 10 } }, "창고별 중량(kg)"), /* @__PURE__ */ React.createElement(BarRanking, { items: warehouseWeight })), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: COLORS.mute, marginBottom: 10 } }, "창고별 박스수(재고수량)"), /* @__PURE__ */ React.createElement(BarRanking, { items: warehouseBoxes })))), mainTab === "trend" && /* @__PURE__ */ React.createElement(React.Fragment, null, !history || !history.기록 || history.기록.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: COLORS.mute } }, "아직 쌍인 이력이 없습니다. 매일 자동 수집이 진행되면 여기에 추이가 표시됩니다.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "기준", value: trendDim, onChange: setTrendDim, options: TREND_DIM_OPTIONS }), /* @__PURE__ */ React.createElement(ChipGroup, { label: "값기준", options: ["재고수량", "중량_kg"], value: trendValue, onChange: setTrendValue })), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: COLORS.mute, marginBottom: 10 } }, "창고 / 축종 필터만 여기에 적용됩니다 (공급사·통관상태·유통기한은 일별 이력 데이터에 그 정보가 없어 적용이 안 됩니다)."), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } }, /* @__PURE__ */ React.createElement(SvgLineChart, { categories: trend.dates, series: trend.series }), /* @__PURE__ */ React.createElement(ChartLegend, { series: trend.series })), trend.dates.length <= 1 && /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 10 } }, "데이터가 하루치만 있어서 아직 선 그래프가 및및합니다. 매일 자동 수집이 쌍이면 추세가 보이기 시작해요."))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "\uACF5\uAE09\uC0AC/\uCD95\uC885\uC740 \uD488\uBAA9\uBA85\uC5D0\uC11C \uC790\uB3D9 \uCD94\uCD9C\uB41C \uCD94\uC815\uAC12\uC785\uB2C8\uB2E4 (\uC77C\uBD80 \uBD80\uC815\uD655\uD560 \uC218 \uC788\uC74C)."))));
 }
-const thStyle = { textAlign: "left", padding: "7px 9px", fontSize: 10.5, color: "#8f857a", fontWeight: 700, borderBottom: "1px solid #2b2624" };
-const tdStyle = { padding: "6px 9px", color: "#f2ead9" };
+const thStyle = { textAlign: "left", padding: "7px 9px", fontSize: 10.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4" };
+const tdStyle = { padding: "6px 9px", color: "#1f2420" };
 function SheetTab({ active, onClick, label }) {
   return /* @__PURE__ */ React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
 }
@@ -2382,7 +2382,7 @@ function ChipGroup({ label, options, value, onChange }) {
         cursor: "pointer",
         border: "none",
         background: o === value ? COLORS.amber : "transparent",
-        color: o === value ? "#1a1512" : COLORS.mute
+        color: o === value ? "#f7f8f5" : COLORS.mute
       }
     },
     o
@@ -2400,7 +2400,7 @@ function HoverAxisPicker({ label, value, onChange, options }) {
   };
   const found = options.find(([v]) => v === value);
   const currentLabel = found ? found[1] : value;
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 140, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => {
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 140, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => {
     onChange(v);
     setOpen(false);
   }, style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))));
@@ -2415,7 +2415,7 @@ function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onC
   const leave = () => {
     timer.current = setTimeout(() => setOpen(false), 150);
   };
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600 } }, label, " ", selected.length ? `(${selected.length})` : "\uC804\uCCB4", " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#141211", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uCD08\uAE30\uD654"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map((o) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600 } }, label, " ", selected.length ? `(${selected.length})` : "\uC804\uCCB4", " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uCD08\uAE30\uD654"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map((o) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: o,
@@ -2455,14 +2455,14 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return /* @__PURE__ */ React.createElement("div", {
         style: {
-          padding: 20, margin: "10px 0", color: "#e8b877",
-          background: "#1d1a19", border: "1px solid #c2695f",
+          padding: 20, margin: "10px 0", color: "#8a5a30",
+          background: "#ffffff", border: "1px solid #a34a3f",
           borderRadius: 10, fontSize: 13,
           fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif"
         }
-      }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, marginBottom: 6, color: "#c2695f" } }, "\u26A0\uFE0F \uC774 \uD654\uBA74\uC5D0\uC11C \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4."),
-      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#8f857a", marginBottom: 8 } }, this.props.label ? `(${this.props.label})` : "", " \uD654\uBA74\uC5D0\uC11C \uC624\uB958\uAC00 \ub09c\uc2b5\ub2c8\ub2e4. \uc0ac\uc774\ub4dc\ubc14\uc758 \ub2e4\ub978 \uba54\ub274\ub294 \uc815\uc0c1 \uc791\ub3d9\ud569\ub2c8\ub2e4. \uc0c8\ub85c\uACE0\uCE68\uD574\uB3C4 \uACC4\uc18d\uB418\uba74 \uc774 \ud654\uba74 \uc774\ub984\uacfc \uc5d0\ub7ec \ub0b4\uc6a9\uc744 \uc54c\ub824\uc8fc\uc138\uc694."),
-      /* @__PURE__ */ React.createElement("pre", { style: { fontSize: 10, color: "#8f857a", whiteSpace: "pre-wrap", wordBreak: "break-all" } }, String(this.state.error && this.state.error.message || this.state.error)));
+      }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, marginBottom: 6, color: "#a34a3f" } }, "\u26A0\uFE0F \uC774 \uD654\uBA74\uC5D0\uC11C \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4."),
+      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#5b615c", marginBottom: 8 } }, this.props.label ? `(${this.props.label})` : "", " \uD654\uBA74\uC5D0\uC11C \uC624\uB958\uAC00 \ub09c\uc2b5\ub2c8\ub2e4. \uc0ac\uc774\ub4dc\ubc14\uc758 \ub2e4\ub978 \uba54\ub274\ub294 \uc815\uc0c1 \uc791\ub3d9\ud569\ub2c8\ub2e4. \uc0c8\ub85c\uACE0\uCE68\uD574\uB3C4 \uACC4\uc18d\uB418\uba74 \uc774 \ud654\uba74 \uc774\ub984\uacfc \uc5d0\ub7ec \ub0b4\uc6a9\uc744 \uc54c\ub824\uc8fc\uc138\uc694."),
+      /* @__PURE__ */ React.createElement("pre", { style: { fontSize: 10, color: "#5b615c", whiteSpace: "pre-wrap", wordBreak: "break-all" } }, String(this.state.error && this.state.error.message || this.state.error)));
     }
     return this.props.children;
   }
@@ -2490,17 +2490,17 @@ function ShellApp() {
     // 함 (페이지 새로고침 없이 - replaceState만 사용).
     window.history.replaceState(null, "", window.location.pathname + "#" + v);
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "app-shell", style: { display: "flex", minHeight: "100vh", background: "#151312" } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar", style: {
+  return /* @__PURE__ */ React.createElement("div", { className: "app-shell", style: { display: "flex", minHeight: "100vh", background: "#f4f5f2" } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar", style: {
     width: 210,
     flexShrink: 0,
-    background: "#141110",
-    borderRight: "1px solid #2b2624",
+    background: "#ffffff",
+    borderRight: "1px solid #d7dad4",
     padding: "20px 14px",
     position: "sticky",
     top: 0,
     height: "100vh",
     overflowY: "auto"
-  } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-title", style: { fontSize: 13, fontWeight: 800, color: "#f2ead9", marginBottom: 2, letterSpacing: "-0.01em" } }, "\u{1F3E2} \uD1B5\uD569 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-subtitle", style: { fontSize: 10, color: "#8f857a", marginBottom: 20 } }, "\uD68C\uC0AC \uB0B4\uBD80 \uD1B5\uD569 \uC870\uD68C"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-nav" }, /* @__PURE__ */ React.createElement(
+  } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-title", style: { fontSize: 13, fontWeight: 800, color: "#1f2420", marginBottom: 2, letterSpacing: "-0.01em" } }, "\u{1F3E2} \uD1B5\uD569 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-subtitle", style: { fontSize: 10, color: "#5b615c", marginBottom: 20 } }, "\uD68C\uC0AC \uB0B4\uBD80 \uD1B5\uD569 \uC870\uD68C"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-nav" }, /* @__PURE__ */ React.createElement(
     NavItem,
     {
       active: view === "warehouse",
@@ -2594,7 +2594,7 @@ function WarehousePasswordGate({ children }) {
   }, []);
 
   if (phase === "checking") {
-    return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#8f857a", fontSize: 14 } }, "\uD655\uC778\uD558\uB294 \uC911...");
+    return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f5f2", color: "#5b615c", fontSize: 14 } }, "\uD655\uC778\uD558\uB294 \uC911...");
   }
   if (phase === "unlocked") return children;
 
@@ -2602,10 +2602,10 @@ function WarehousePasswordGate({ children }) {
     e.preventDefault();
     tryPassword(input.trim(), false);
   };
-  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#151312", color: "#f2ead9", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 260 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, disabled: busy, onChange: (e) => {
+  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f5f2", color: "#1f2420", fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } }, /* @__PURE__ */ React.createElement("form", { onSubmit: submit, style: { display: "flex", flexDirection: "column", gap: 10, width: 260 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 6 } }, "\u{1F512} \uCC3D\uACE0\uD604\uD669 \uBE44\uBC00\uBC88\uD638"), /* @__PURE__ */ React.createElement("input", { type: "password", value: input, disabled: busy, onChange: (e) => {
     setInput(e.target.value);
     setError(false);
-  }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #3a332e", background: "#1d1a18", color: "#f2ead9", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#c0533a", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", disabled: busy, style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#d98b3f", color: "#1a1512", fontWeight: 700, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 } }, busy ? "\uD655\uC778\uD558\uB294 \uC911..." : "\uD655\uC778")));
+  }, autoFocus: true, style: { padding: "8px 10px", borderRadius: 8, border: "1px solid #d7dad4", background: "#ffffff", color: "#1f2420", fontSize: 14 } }), error && /* @__PURE__ */ React.createElement("div", { style: { color: "#a34a3f", fontSize: 12 } }, "\uBE44\uBC00\uBC88\uD638\uAC00 \uD2C0\uB838\uC2B5\uB2C8\uB2E4."), /* @__PURE__ */ React.createElement("button", { type: "submit", disabled: busy, style: { padding: "8px 10px", borderRadius: 8, border: "none", background: "#b96a2e", color: "#f7f8f5", fontWeight: 700, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 } }, busy ? "\uD655\uC778\uD558\uB294 \uC911..." : "\uD655\uC778")));
 }
 function NavItem({ active, onClick, icon, iconImg, label }) {
   return /* @__PURE__ */ React.createElement("button", { className: "app-nav-item", onClick, style: {
@@ -2623,7 +2623,7 @@ function NavItem({ active, onClick, icon, iconImg, label }) {
     fontWeight: 700,
     whiteSpace: "nowrap",
     background: active ? "rgba(217,139,63,0.16)" : "transparent",
-    color: active ? "#d98b3f" : "#8f857a"
+    color: active ? "#b96a2e" : "#5b615c"
   } }, iconImg
     ? /* @__PURE__ */ React.createElement("img", { src: iconImg, alt: "", style: { width: 18, height: 13, borderRadius: 2, objectFit: "cover", flexShrink: 0 } })
     : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, icon), " ", label);
