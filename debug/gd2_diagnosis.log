@@ -6,14 +6,20 @@ ID 설정됨: True, PW 설정됨: True
 2) 로그인 폼 제출 시도
    로그인 후 URL: http://211.239.173.90/kd2dst/login.do
    로그인 성공 여부(logout.do 존재): True
+3) 재고조회 화면 이동 시도
+   재고조회 화면 URL: http://211.239.173.90/kd2dst/rtv_stock02.do?nav_num=0107
+   pass_fg select 존재: True, dt input 존재: True
+4) 전체조회 버튼 클릭 시도
+   조회 후 URL: http://211.239.173.90/kd2dst/rtv_stock02.do
+   dataTables-example 테이블 존재: True
 === debug 폴더 내용 ===
 total 40
-drwxr-xr-x 2 runner runner 4096 Sep  4 13:28 .
-drwxr-xr-x 9 runner runner 4096 Sep  4 13:28 ..
--rw-r--r-- 1 runner runner 1240 Sep  4 13:28 cepea_domestic_last.log
--rw-r--r-- 1 runner runner 1295 Sep  4 13:28 daily_update_last.log
--rw-r--r-- 1 runner runner  382 Sep  4 13:28 gd2_diagnosis.log
--rw-r--r-- 1 runner runner  260 Sep  4 13:28 git_push_debug.log
--rw-r--r-- 1 runner runner  923 Sep  4 13:28 last_run.log
--rw-r--r-- 1 runner runner 3468 Sep  4 13:28 telegram_bot_last.log
--rw-r--r-- 1 runner runner 4700 Sep  4 13:28 usda_domestic_last.log
+drwxr-xr-x 2 runner runner 4096 Sep  4 14:03 .
+drwxr-xr-x 9 runner runner 4096 Sep  4 14:03 ..
+-rw-r--r-- 1 runner runner 1240 Sep  4 14:03 cepea_domestic_last.log
+-rw-r--r-- 1 runner runner 1295 Sep  4 14:03 daily_update_last.log
+-rw-r--r-- 1 runner runner  703 Sep  4 14:03 gd2_diagnosis.log
+-rw-r--r-- 1 runner runner  260 Sep  4 14:03 git_push_debug.log
+-rw-r--r-- 1 runner runner  923 Sep  4 14:03 last_run.log
+-rw-r--r-- 1 runner runner 3468 Sep  4 14:03 telegram_bot_last.log
+-rw-r--r-- 1 runner runner 4700 Sep  4 14:03 usda_domestic_last.log
