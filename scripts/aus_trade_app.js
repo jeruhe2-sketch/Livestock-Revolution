@@ -265,6 +265,7 @@ window.AusTradeApp = (function () {
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay", "shift"]));
     const [shiftMonths, setShiftMonths] = useState(() => pOneOf("shm", "3", ["3", "6", "12"]));
+    const [shiftCompare, setShiftCompare] = useState(() => pOneOf("shc", "prev", ["prev", "yoy"]));
     const [species, setSpecies] = useState(() => pOneOf("sp", "beef", SPECIES_ORDER));
     const [form, setForm] = useState(() => pOneOf("fm", "total", ["total", "chilled", "frozen"]));
 
@@ -427,12 +428,12 @@ window.AusTradeApp = (function () {
       downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_연도별겹쳐보기.xlsx`, "겹쳐보기");
     }
 
-    /* ── 재배분: 최근 N개월 vs 직전 N개월 목적지별 물량 이동 비교 ── */
+    /* ── 재배분: 최근 N개월 vs 직전 N개월(또는 전년 동기) 목적지별 물량 이동 비교 ── */
     const shiftN = Number(shiftMonths);
     const shiftRecentEnd = ymEnd;
     const shiftRecentStart = addYm(ymEnd, -(shiftN - 1));
-    const shiftPrevEnd = addYm(shiftRecentStart, -1);
-    const shiftPrevStart = addYm(shiftPrevEnd, -(shiftN - 1));
+    const shiftPrevEnd = shiftCompare === "yoy" ? addYm(shiftRecentEnd, -12) : addYm(shiftRecentStart, -1);
+    const shiftPrevStart = shiftCompare === "yoy" ? addYm(shiftRecentStart, -12) : addYm(shiftPrevEnd, -(shiftN - 1));
     const shiftData = useMemo(() => {
       const recent = {}, prev = {};
       speciesRows.forEach((r) => {
@@ -451,7 +452,7 @@ window.AusTradeApp = (function () {
       return arr.slice(0, 15);
     }, [speciesRows, destFilter, shiftRecentStart, shiftRecentEnd, shiftPrevStart, shiftPrevEnd, form]);
     function exportShiftXlsx() {
-      const header = ["목적지", `최근 ${shiftN}개월`, `직전 ${shiftN}개월`, "증감", "증감률(%)"];
+      const header = ["목적지", `최근 ${shiftN}개월`, shiftCompare === "yoy" ? `전년 동기 ${shiftN}개월` : `직전 ${shiftN}개월`, "증감", "증감률(%)"];
       const body = shiftData.map((it) => [it.key, it.recent, it.prev, it.delta, it.pct != null ? Math.round(it.pct * 10) / 10 : "신규"]);
       downloadXlsx([header, ...body], `호주축산물_${SPECIES_LABEL_KO[species]}_재배분_${shiftN}개월.xlsx`, "재배분");
     }
@@ -474,11 +475,11 @@ window.AusTradeApp = (function () {
         sp.set("csub", chartSub);
         if (chartSub === "group") sp.set("gb", groupBy);
         if (chartSub === "trend" && smoothed) sp.set("sm", "1");
-        if (chartSub === "shift") sp.set("shm", shiftMonths);
+        if (chartSub === "shift") { sp.set("shm", shiftMonths); sp.set("shc", shiftCompare); }
       }
       const newSearch = "?" + sp.toString();
       if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
-    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed, shiftMonths]);
+    }, [destFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, species, form, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, smoothed, shiftMonths, shiftCompare]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     function copyShareLink() {
@@ -651,10 +652,13 @@ window.AusTradeApp = (function () {
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "비교 구간"),
               ["3", "6", "12"].map((m) => React.createElement(ToggleBtn, { key: m, active: shiftMonths === m, onClick: () => setShiftMonths(m), label: `${m}개월` })),
+              React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "비교 대상"),
+              React.createElement(ToggleBtn, { active: shiftCompare === "prev", onClick: () => setShiftCompare("prev"), label: "직전 기간" }),
+              React.createElement(ToggleBtn, { active: shiftCompare === "yoy", onClick: () => setShiftCompare("yoy"), label: "전년 동기" }),
               React.createElement("button", { onClick: exportShiftXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
-              `* 최근 ${shiftN}개월(${ymLabel(shiftRecentStart)}~${ymLabel(shiftRecentEnd)}) vs 직전 ${shiftN}개월(${ymLabel(shiftPrevStart)}~${ymLabel(shiftPrevEnd)}) 비교, 변화량 절대값 순 상위 15개 목적지.`
+              `* 최근 ${shiftN}개월(${ymLabel(shiftRecentStart)}~${ymLabel(shiftRecentEnd)}) vs ${shiftCompare === "yoy" ? "전년 동기" : "직전"} ${shiftN}개월(${ymLabel(shiftPrevStart)}~${ymLabel(shiftPrevEnd)}) 비교, 변화량 절대값 순 상위 15개 목적지.`
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
               shiftData.length ? React.createElement(ShiftRanking, { items: shiftData }) : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 20 } }, "비교할 데이터가 부족합니다.")
