@@ -1106,7 +1106,7 @@ function Dashboard({ db, exRates, fxHistory }) {
           style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
         }, "필터 초기화")
       ),
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+      valueKey !== "kg" && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
         React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "원자료 이상치"),
         React.createElement(ToggleBtn, { active: outlierMode === "exclude", onClick: () => setOutlierMode("exclude"), label: "제외" }),
         React.createElement(ToggleBtn, { active: outlierMode === "include", onClick: () => setOutlierMode("include"), label: "포함" }),
