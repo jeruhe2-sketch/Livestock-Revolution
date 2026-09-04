@@ -9,6 +9,8 @@ ID 설정됨: True, PW 설정됨: True
 3) 재고조회 화면 이동 시도
    재고조회 화면 URL: http://211.239.173.90/kd2dst/rtv_stock02.do?nav_num=0107
    pass_fg select 존재: True, dt input 존재: True
+   dt readonly 여부: False
+   dt 필드 값 변경: '20260904' -> '20260904' (실제스크립트와 동일하게 재입력)
 4) 전체조회 버튼 클릭 시도
    조회 후 URL: http://211.239.173.90/kd2dst/rtv_stock02.do
    dataTables-example 테이블 존재: True
@@ -16,36 +18,36 @@ ID 설정됨: True, PW 설정됨: True
    DataTables info 텍스트: Showing 1 to 1 of 1 entries
 === scripts/debug 안에 잘못 들어간 파일 있는지 확인 (경로버그 방지) ===
 total 704
-drwxr-xr-x 2 runner runner   4096 Sep  4 14:08 .
-drwxr-xr-x 3 runner runner   4096 Sep  4 14:08 ..
--rw-r--r-- 1 runner runner  24601 Sep  4 14:08 gd2_step1.html
--rw-r--r-- 1 runner runner  42887 Sep  4 14:08 gd2_step1_loaded.png
--rw-r--r-- 1 runner runner  33589 Sep  4 14:08 gd2_step2.html
--rw-r--r-- 1 runner runner  95282 Sep  4 14:08 gd2_step2_after_login.png
--rw-r--r-- 1 runner runner  38484 Sep  4 14:08 gd2_step3.html
--rw-r--r-- 1 runner runner 119324 Sep  4 14:08 gd2_step3_stock_page.png
--rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step4.html
--rw-r--r-- 1 runner runner 121458 Sep  4 14:08 gd2_step4_after_query.png
--rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step5.html
--rw-r--r-- 1 runner runner 117004 Sep  4 14:08 gd2_step5_full_rows.png
+drwxr-xr-x 2 runner runner   4096 Sep  4 14:18 .
+drwxr-xr-x 3 runner runner   4096 Sep  4 14:17 ..
+-rw-r--r-- 1 runner runner  24601 Sep  4 14:17 gd2_step1.html
+-rw-r--r-- 1 runner runner  42939 Sep  4 14:17 gd2_step1_loaded.png
+-rw-r--r-- 1 runner runner  33589 Sep  4 14:17 gd2_step2.html
+-rw-r--r-- 1 runner runner  95261 Sep  4 14:17 gd2_step2_after_login.png
+-rw-r--r-- 1 runner runner  38484 Sep  4 14:17 gd2_step3.html
+-rw-r--r-- 1 runner runner 121666 Sep  4 14:17 gd2_step3_stock_page.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:18 gd2_step4.html
+-rw-r--r-- 1 runner runner 121502 Sep  4 14:18 gd2_step4_after_query.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:18 gd2_step5.html
+-rw-r--r-- 1 runner runner 117004 Sep  4 14:18 gd2_step5_full_rows.png
 === debug 폴더 내용 ===
 total 736
-drwxr-xr-x 2 runner runner   4096 Sep  4 14:08 .
-drwxr-xr-x 9 runner runner   4096 Sep  4 14:07 ..
--rw-r--r-- 1 runner runner   1240 Sep  4 14:07 cepea_domestic_last.log
--rw-r--r-- 1 runner runner   1295 Sep  4 14:07 daily_update_last.log
--rw-r--r-- 1 runner runner   1663 Sep  4 14:08 gd2_diagnosis.log
--rw-r--r-- 1 runner runner  24601 Sep  4 14:08 gd2_step1.html
--rw-r--r-- 1 runner runner  42887 Sep  4 14:08 gd2_step1_loaded.png
--rw-r--r-- 1 runner runner  33589 Sep  4 14:08 gd2_step2.html
--rw-r--r-- 1 runner runner  95282 Sep  4 14:08 gd2_step2_after_login.png
--rw-r--r-- 1 runner runner  38484 Sep  4 14:08 gd2_step3.html
--rw-r--r-- 1 runner runner 119324 Sep  4 14:08 gd2_step3_stock_page.png
--rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step4.html
--rw-r--r-- 1 runner runner 121458 Sep  4 14:08 gd2_step4_after_query.png
--rw-r--r-- 1 runner runner  47091 Sep  4 14:08 gd2_step5.html
--rw-r--r-- 1 runner runner 117004 Sep  4 14:08 gd2_step5_full_rows.png
--rw-r--r-- 1 runner runner    260 Sep  4 14:07 git_push_debug.log
--rw-r--r-- 1 runner runner    923 Sep  4 14:07 last_run.log
--rw-r--r-- 1 runner runner   3468 Sep  4 14:07 telegram_bot_last.log
--rw-r--r-- 1 runner runner   4700 Sep  4 14:07 usda_domestic_last.log
+drwxr-xr-x 2 runner runner   4096 Sep  4 14:18 .
+drwxr-xr-x 9 runner runner   4096 Sep  4 14:17 ..
+-rw-r--r-- 1 runner runner   1240 Sep  4 14:17 cepea_domestic_last.log
+-rw-r--r-- 1 runner runner   1295 Sep  4 14:17 daily_update_last.log
+-rw-r--r-- 1 runner runner   1789 Sep  4 14:18 gd2_diagnosis.log
+-rw-r--r-- 1 runner runner  24601 Sep  4 14:17 gd2_step1.html
+-rw-r--r-- 1 runner runner  42939 Sep  4 14:17 gd2_step1_loaded.png
+-rw-r--r-- 1 runner runner  33589 Sep  4 14:17 gd2_step2.html
+-rw-r--r-- 1 runner runner  95261 Sep  4 14:17 gd2_step2_after_login.png
+-rw-r--r-- 1 runner runner  38484 Sep  4 14:17 gd2_step3.html
+-rw-r--r-- 1 runner runner 121666 Sep  4 14:17 gd2_step3_stock_page.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:18 gd2_step4.html
+-rw-r--r-- 1 runner runner 121502 Sep  4 14:18 gd2_step4_after_query.png
+-rw-r--r-- 1 runner runner  47091 Sep  4 14:18 gd2_step5.html
+-rw-r--r-- 1 runner runner 117004 Sep  4 14:18 gd2_step5_full_rows.png
+-rw-r--r-- 1 runner runner    260 Sep  4 14:17 git_push_debug.log
+-rw-r--r-- 1 runner runner    923 Sep  4 14:17 last_run.log
+-rw-r--r-- 1 runner runner   3468 Sep  4 14:17 telegram_bot_last.log
+-rw-r--r-- 1 runner runner   4700 Sep  4 14:17 usda_domestic_last.log
