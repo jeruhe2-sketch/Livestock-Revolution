@@ -64,6 +64,19 @@ with sync_playwright() as p:
 
                     if has_pass_fg:
                         page.select_option("select[name='pass_fg']", "*")
+
+                        date_input = page.locator("input[name='dt']")
+                        is_readonly = date_input.get_attribute("readonly") is not None
+                        print(f"   dt readonly 여부: {is_readonly}")
+                        if not is_readonly:
+                            import datetime
+                            today = datetime.datetime.now().strftime("%Y%m%d")
+                            before_val = date_input.input_value()
+                            date_input.fill("")
+                            date_input.fill(today)
+                            after_val = date_input.input_value()
+                            print(f"   dt 필드 값 변경: '{before_val}' -> '{after_val}' (실제스크립트와 동일하게 재입력)")
+
                         print("4) 전체조회 버튼 클릭 시도")
                         try:
                             with page.expect_navigation(wait_until="networkidle", timeout=60000):
