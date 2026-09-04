@@ -29,6 +29,9 @@ jobs:
         run: |
           mkdir -p debug
           (cd scripts && python _tmp_debug_gd2.py) > debug/gd2_diagnosis.log 2>&1 || true
+          echo "=== scripts/debug 안에 잘못 들어간 파일 있는지 확인 (경로버그 방지) ===" >> debug/gd2_diagnosis.log
+          ls -la scripts/debug/ >> debug/gd2_diagnosis.log 2>&1 || echo "scripts/debug 없음(정상)" >> debug/gd2_diagnosis.log
+          if [ -d scripts/debug ]; then mv scripts/debug/* debug/ 2>/dev/null || true; fi
           echo "=== debug 폴더 내용 ===" >> debug/gd2_diagnosis.log
           ls -la debug/ >> debug/gd2_diagnosis.log
           cat debug/gd2_diagnosis.log
