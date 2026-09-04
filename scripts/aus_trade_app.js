@@ -107,7 +107,7 @@ window.AusTradeApp = (function () {
       hoverIdx !== null && React.createElement("div", { style: {
         position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
         background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
-        fontSize: 11, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
+        fontSize: 13, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
       } },
         React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
         series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 6 } },
@@ -121,7 +121,7 @@ window.AusTradeApp = (function () {
   function ChartLegend({ series }) {
     if (series.length < 2) return null;
     return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 10 } },
-      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: COLORS.cream } },
+      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: COLORS.cream } },
         React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" } }), s.name
       ))
     );
@@ -132,24 +132,24 @@ window.AusTradeApp = (function () {
     return React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
         capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
-          React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+          React.createElement("div", { style: { width: 90, fontSize: 13.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
           React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
             React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
           ),
-          React.createElement("div", { style: { width: 90, fontSize: 11.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
+          React.createElement("div", { style: { width: 90, fontSize: 13.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
         ))
       ),
-      items.length > 40 && React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 10, textAlign: "center" } }, `상위 40개만 표시 중 (전체 ${items.length}개)`)
+      items.length > 40 && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 10, textAlign: "center" } }, `상위 40개만 표시 중 (전체 ${items.length}개)`)
     );
   }
   function SheetTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
+    return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
   }
   function SubTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
+    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
   }
   function ToggleBtn({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
+    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
   }
   function HoverAxisPicker({ label, value, onChange, options }) {
     const detailsRef = useRef(null);
@@ -157,37 +157,37 @@ window.AusTradeApp = (function () {
     const currentLabel = found ? found[1] : value;
     return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
       React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
-        React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, label),
-        React.createElement("span", { style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
-        React.createElement("span", { style: { fontSize: 10, color: COLORS.mute } }, "▾")
+        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
+        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
+        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "▾")
       ),
       React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 12.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
+          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
       )
     );
   }
   function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
     return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 12.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
-        label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 10 } }, "▾")),
+      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
+        label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "▾")),
       React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, options.length, "개 옵션"),
+          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
           React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 11, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("button", { onClick: onClear, style: { fontSize: 11, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
+            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 13, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
+            React.createElement("button", { onClick: onClear, style: { fontSize: 13, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
           )
         ),
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
           options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
-            style: { padding: "4px 9px", borderRadius: 6, fontSize: 11.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
+            style: { padding: "4px 9px", borderRadius: 6, fontSize: 13.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
         )
       )
     );
   }
-  const thStyle = { textAlign: "left", padding: "8px 8px", fontSize: 10.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
-  const tdStyle = { padding: "6px 8px", color: "#1f2420" };
+  const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
+  const tdStyle = { padding: "9px 10px", color: "#1f2420" };
 
   /* ---- 메인 앱 ---- */
   function AusTradeApp() {
@@ -199,8 +199,8 @@ window.AusTradeApp = (function () {
         return r.json();
       }).then(setDb).catch((e) => setErr(e.message));
     }, []);
-    if (err) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, padding: 20, textAlign: "center" } }, err);
-    if (!db) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.mute, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, "데이터를 불러오는 중...");
+    if (err) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, padding: 20, textAlign: "center" } }, err);
+    if (!db) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.mute, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 } }, "데이터를 불러오는 중...");
     return React.createElement(Dashboard, { db });
   }
 
@@ -430,14 +430,14 @@ window.AusTradeApp = (function () {
 
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
-        React.createElement("div", { style: { fontSize: 11.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 16개국"),
+        React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 16개국"),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "호주 축산물 수출 현황"),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 10, alignItems: "center" } },
           React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
             SPECIES_ORDER.map((sp) => React.createElement("button", {
               key: sp, onClick: () => setSpecies(sp),
-              style: { padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
                 border: `1px solid ${sp === species ? COLORS.amber : COLORS.panelBorder}`,
                 background: sp === species ? "rgba(217,139,63,0.14)" : COLORS.panel,
                 color: sp === species ? COLORS.amber : COLORS.mute }
@@ -446,34 +446,34 @@ window.AusTradeApp = (function () {
           React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
             ["total", "chilled", "frozen"].map((k) => React.createElement("button", {
               key: k, onClick: () => setForm(k),
-              style: { padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
                 border: `1px solid ${k === form ? COLORS.sage : COLORS.panelBorder}`,
                 background: k === form ? "rgba(111,148,130,0.16)" : COLORS.panel,
                 color: k === form ? COLORS.sage : COLORS.mute }
             }, FORM_LABEL[k]))
           )
         ),
-        porkNoBreakdown && React.createElement("div", { style: { fontSize: 10.5, color: COLORS.rust, marginBottom: 10 } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
+        porkNoBreakdown && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.rust, marginBottom: 10 } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } },
           React.createElement(HoverMultiPicker, { label: "목적지", options: destOptions, selected: destFilter, onToggle: (v) => toggleFilter(destFilter, setDestFilter, v), onSelectAll: () => setDestFilter([...destOptions]), onClear: () => setDestFilter([]) }),
           React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) })
         ),
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute } }, "기간"),
+          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
           ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, marginLeft: 10 } }, "월별"),
+          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "월별"),
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
-            style: { fontSize: 11, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+            style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
         ),
 
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
-          React.createElement("div", { style: { fontSize: 11, color: COLORS.mute } },
+          React.createElement("div", { style: { fontSize: 13, color: COLORS.mute } },
             `호주 ${SPECIES_LABEL_KO[species]}(${FORM_LABEL[form]})`,
             destFilter.length ? ` · 목적지 ${destFilter.length}개` : "",
             yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "",
@@ -481,11 +481,11 @@ window.AusTradeApp = (function () {
             (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
           ),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-            React.createElement("button", { onClick: copyShareLink, style: { fontSize: 11, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사"),
-            React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "합계 ", n(grandTotalAll), " ", unitLabel)
+            React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사"),
+            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "합계 ", n(grandTotalAll), " ", unitLabel)
           )
         ),
-        React.createElement("div", { style: { fontSize: 10, color: COLORS.mute, marginBottom: 14, textAlign: "right" } },
+        React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 14, textAlign: "right" } },
           "호주 DAFF Red meat export statistics · 사용자 수동 업로드 · ", db.collectedAt ? fmtUpdatedAt(db.collectedAt) + " 반영" : ""
         ),
 
@@ -501,12 +501,12 @@ window.AusTradeApp = (function () {
             React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } },
               React.createElement(ToggleBtn, { active: displayMode === "abs", onClick: () => setDisplayMode("abs"), label: `실수치(${unitLabel})` }),
               React.createElement(ToggleBtn, { active: displayMode === "yoy", onClick: () => setDisplayMode("yoy"), label: "전 열 대비 증감률" }),
-              React.createElement("button", { onClick: exportTableXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
+              React.createElement("button", { onClick: exportTableXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
             )
           ),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } },
             React.createElement("div", { style: { overflowX: "auto", maxHeight: 560, overflowY: "auto" } },
-              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12.5, width: "100%" } },
+              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 14.5, width: "100%" } },
                 React.createElement("thead", null, React.createElement("tr", null,
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]),
                   colLabels.map((cl) => React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)),
@@ -541,11 +541,11 @@ window.AusTradeApp = (function () {
             React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
               React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: GROUP_DIM_OPTIONS }),
               React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
-                !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 11.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "⇅ ", sortDesc ? "내림차순" : "오름차순"),
-                React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
+                !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 13.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "⇅ ", sortDesc ? "내림차순" : "오름차순"),
+                React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
               )
             ),
-            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } }, "각 ", DIM_LABEL[groupBy], "의 총합을 비교합니다."),
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "각 ", DIM_LABEL[groupBy], "의 총합을 비교합니다."),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
               React.createElement(BarRanking, { items: grouped })
             )
@@ -554,30 +554,30 @@ window.AusTradeApp = (function () {
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "월별 원자료" }),
               React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" }),
-              React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+              React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
             ),
-            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
               "* 전체 기간을 하나로 이어붙인 시계열입니다. 위쪽 목적지 필터에서 고른 항목이 그대로 표시됩니다", trendCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${trendCandidates.length}개)` : "", "."
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 300 }),
+              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 340 }),
               React.createElement(ChartLegend, { series: trendSeries })
             )
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
-              React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
+              React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
             ),
-            React.createElement("div", { style: { fontSize: 10.5, color: COLORS.mute, marginBottom: 10 } },
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
               "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다", years.length > 10 ? ` (최근 연도 순 상위 10개 표시)` : "", "."
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 300 }),
+              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }),
               React.createElement(ChartLegend, { series: overlaySeries })
             )
           )
         ),
-        React.createElement("p", { style: { fontSize: 10.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report. 사용자 수동 업로드로 갱신됩니다.")
+        React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report. 사용자 수동 업로드로 갱신됩니다.")
       )
     );
   }
