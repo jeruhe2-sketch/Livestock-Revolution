@@ -830,6 +830,7 @@ function Dashboard({ db, exRates, fxHistory }) {
   const [sortDesc, setSortDesc] = useState(true);
   const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
   const [trendDim, setTrendDim] = useState(() => pOneOf("td", "partner", ["ms", "partner"]));
+  const [outlierMode, setOutlierMode] = useState(() => pOneOf("om", "exclude", ["include", "exclude"]));
 
   const val = (r) => (valueKey === "kg" ? r.kg / 1000 : valueKey === "euro" ? r.euro : (r.kg !== 0 ? r.euro / (r.kg / 1000) : 0));
   const unitLabel = valueKey === "kg" ? "톤" : valueKey === "euro" ? "유로(€)" : "유로/톤(€/t)";
@@ -847,6 +848,22 @@ function Dashboard({ db, exRates, fxHistory }) {
     return s;
   }
 
+  // 단가(euro/kg)가 전체 중앙값 대비 비정상적으로 벗어난 행을 이상치로 표시.
+  // 실제 사례: EU 원본(TAXUD) 데이터 자체에 자릿수가 잘못 찍힌 행이 종종
+  // 섞여 있음(예: 2026년 34주차 NL->대만 건이 정상 대비 100배 이상 튐).
+  // 저희 쪽 집계 버그가 아니라 원본 데이터 오류라, 걸러내는 옵션을 둠.
+  const OUTLIER_FACTOR = 5;
+  const medianUnitPrice = useMemo(() => {
+    const prices = ROWS.filter((r) => r.kg > 0).map((r) => r.euro / r.kg).sort((a, b) => a - b);
+    if (!prices.length) return null;
+    const mid = Math.floor(prices.length / 2);
+    return prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
+  }, [ROWS]);
+  const isOutlierRow = (r) => {
+    if (!medianUnitPrice || r.kg <= 0) return false;
+    const up = r.euro / r.kg;
+    return up > medianUnitPrice * OUTLIER_FACTOR || up < medianUnitPrice / OUTLIER_FACTOR;
+  };
   const baseFilteredRows = useMemo(() => {
     return ROWS.filter((r) => {
       if (msFilter.length && !msFilter.includes(msNames[r.msCode])) return false;
@@ -856,9 +873,10 @@ function Dashboard({ db, exRates, fxHistory }) {
       if (ymStart != null && ym < ymStart) return false;
       if (ymEnd != null && ym > ymEnd) return false;
       if (r.month < monthFrom || r.month > monthTo) return false;
+      if (outlierMode === "exclude" && isOutlierRow(r)) return false;
       return true;
     });
-  }, [ROWS, msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, msNames]);
+  }, [ROWS, msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, msNames, outlierMode, medianUnitPrice]);
   const periodKrwRate = useMemo(() => {
     if (valueKey !== "euro") return null;
     const totalEuro = baseFilteredRows.reduce((s, r) => s + r.euro, 0);
@@ -1039,6 +1057,7 @@ function Dashboard({ db, exRates, fxHistory }) {
     if (monthFrom !== 1) sp.set("ms2", monthFrom);
     if (monthTo !== 12) sp.set("me", monthTo);
     if (valueKey !== "kg") sp.set("vk", valueKey);
+    if (outlierMode !== "exclude") sp.set("om", outlierMode);
     sp.set("tab", mainTab);
     if (mainTab === "table") {
       sp.set("rd", rowDim);
@@ -1052,7 +1071,7 @@ function Dashboard({ db, exRates, fxHistory }) {
     }
     const newSearch = "?" + sp.toString();
     if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
-  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed, shiftMonths, shiftCompare]);
+  }, [msFilter, partnerFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, valueKey, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed, shiftMonths, shiftCompare, outlierMode]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   function copyShareLink() {
@@ -1086,6 +1105,12 @@ function Dashboard({ db, exRates, fxHistory }) {
           onClick: () => { setMsFilter([]); setPartnerFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
           style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
         }, "필터 초기화")
+      ),
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "원자료 이상치"),
+        React.createElement(ToggleBtn, { active: outlierMode === "exclude", onClick: () => setOutlierMode("exclude"), label: "제외" }),
+        React.createElement(ToggleBtn, { active: outlierMode === "include", onClick: () => setOutlierMode("include"), label: "포함" }),
+        React.createElement("span", { style: { fontSize: 11.5, color: COLORS.mute } }, "단가가 중앙값 대비 5배 이상 벗어난 행(원본 데이터 오류 의심)을 걸러냅니다.")
       ),
       React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
         React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
