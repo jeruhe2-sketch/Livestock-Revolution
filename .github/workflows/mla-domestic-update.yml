@@ -9,6 +9,7 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   update:
@@ -64,6 +65,13 @@ jobs:
           path: debug/mla_domestic*.log
           retention-days: 14
           if-no-files-found: ignore
+      - name: 실패 시 로그를 이슈로도 남김
+        if: steps.run.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -c 60000 debug/mla_domestic_last.log > /tmp/tail.log
+          gh issue create --title "debug: mla-domestic-update 실패 로그 $(date -u +%Y-%m-%dT%H:%M:%SZ)" --body-file /tmp/tail.log --repo "${{ github.repository }}"
       - name: 실패 시 워크플로우도 실패로 표시
         if: steps.run.outcome == 'failure' || steps.commit.outcome == 'failure'
         run: |
