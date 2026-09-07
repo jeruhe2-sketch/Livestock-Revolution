@@ -4,13 +4,13 @@ import requests
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 urls = [
-    "https://app.nlrsreports.mla.com.au/static/openapi.yaml",
+    "https://api-mlastatistics.mla.com.au/indicator",
 ]
 
 for url in urls:
     print("=== GET", url)
     try:
-        r = requests.get(url, headers={"User-Agent": UA, "Accept": "text/html"}, timeout=30)
+        r = requests.get(url, headers={"User-Agent": UA, "Accept": "application/json"}, timeout=30)
         print("status", r.status_code, "len", len(r.text))
         html = r.text
         if len(html) < 200000:
