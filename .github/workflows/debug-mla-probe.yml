@@ -12,4 +12,14 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests
-      - run: python scripts/_debug_mla_probe.py
+      - run: |
+          mkdir -p debug
+          python scripts/_debug_mla_probe.py > debug/mla_probe_last.log 2>&1 || true
+          cat debug/mla_probe_last.log
+      - name: commit log
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+          git add debug/mla_probe_last.log
+          git diff --cached --quiet || git commit -m "debug: MLA API 탐색 로그"
+          git push || true
