@@ -1,8 +1,18 @@
-/* 축산레이더 · EU 돈가(도체) 현황 (v2)
-   집행위 Agri-food Data Portal 공개 API(pigmeat/prices, 인증 불필요)로 GitHub Actions가
-   매주 자동 수집한 data/eu_pigmeat_price.json을 그린다. LLM/수동작업 없이 완전 자동 갱신.
-   기존 EU 수출현황·미국 내수현황·CEPEA 탭과 동일한 디자인 시스템(팔레트, 호버 라인차트,
-   URL 상태동기화, 엑셀 다운로드, 링크복사)을 재사용함. */
+/* 축산레이더 · EU 돈가(도체) 현황 (v3)
+   기존 "유럽산 돈육 수출 현황"(EuTradeApp/Dashboard, index.html 560~1322행)과
+   완전히 동일한 컴포넌트/구조를 그대로 이식함:
+     - SheetTab(표/차트) · SubTab(그룹비교/추이/겹쳐보기)
+     - HoverAxisPicker(단일선택 드롭다운) · HoverMultiPicker(다중선택 드롭다운)
+     - 호버 툴팁 SvgLineChart · BarRanking · ChartLegend
+     - 피벗표(행×열 차원 선택, 실수치/증감률 토글, 엑셀 다운로드)
+     - URL 상태동기화 + 링크복사
+   차이점(가격 데이터라 구조상 안 맞는 부분만 뺌):
+     - kg/유로/단가 3종 값 대신 "가격(€/100kg)" 단일값 (모든 집계는 합계가 아니라 평균)
+     - 수입국(partner) 없음 → "재배분" 탭 없음, "수출국" 자리는 EU 27개국+EU평균("국가")
+     - 등급(S/E) 선택이 새로 추가됨
+
+   데이터: data/eu_pigmeat_price.json (매주 GitHub Actions가 집행위 공개 API로 자동 수집,
+   LLM/수동작업 없음. scripts/fetch_eu_pigmeat_price.py 참고) */
 window.EuPigmeatPriceApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
 
@@ -11,23 +21,49 @@ window.EuPigmeatPriceApp = (function () {
     amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
     sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
   };
-  const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#c98a1a", "#4a8f8f", "#a55a9e", "#7a8a3a", "#c25b5b", "#356b8c"];
-  const DEFAULT_COUNTRIES = ["EU", "DE", "ES", "DK", "NL", "FR", "PL"];
-  const GRANULARITY_OPTIONS = [["week", "주별"], ["month", "월별"], ["year", "연도별"]];
+  const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
+  const DIM_LABEL = { ms: "국가", cls: "등급", year: "연도", month: "월", yearMonth: "연월", week: "주차" };
+  const DIM_OPTIONS = [["ms", "국가"], ["cls", "등급"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"], ["week", "주차"]];
+  const GROUP_DIM_OPTIONS = [["ms", "국가"], ["year", "연도"], ["month", "월"]]; // 연월/주차/등급은 막대비교엔 항목이 안 맞아서 제외
 
-  function fmtPrice(v) { return v == null || !isFinite(v) ? "—" : `€${Number(v).toFixed(2)}`; }
-  function pctFmt(v) { if (v === null || v === undefined || !isFinite(v)) return "—"; const s = v > 0 ? "+" : ""; return `${s}${v.toFixed(1)}%`; }
-  function fmtUpdatedAt(iso) {
-    if (!iso) return null;
-    try { return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return null; }
+  function n2(v) { return v == null || !isFinite(v) ? "—" : Math.round(v * 100) / 100; }
+  function fmtEur(v) { return v == null || !isFinite(v) ? "—" : `€${Number(v).toFixed(2)}`; }
+  function fmtShort(v) { return v == null || !isFinite(v) ? "—" : `€${Math.round(v)}`; }
+  function pct(v) {
+    if (v === null || v === undefined || !isFinite(v)) return "—";
+    const s = v > 0 ? "+" : "";
+    return `${s}${v.toFixed(1)}%`;
   }
-  function readParams() { return new URLSearchParams(window.location.search); }
+  function movingAvg(arr, win) {
+    const out = new Array(arr.length).fill(null);
+    let sum = 0, count = 0, buf = [];
+    for (let i = 0; i < arr.length; i++) {
+      const v = arr[i];
+      buf.push(v);
+      if (v != null && isFinite(v)) { sum += v; count++; }
+      if (buf.length > win) { const removed = buf.shift(); if (removed != null && isFinite(removed)) { sum -= removed; count--; } }
+      out[i] = count ? sum / count : null;
+    }
+    return out;
+  }
+  function addYm(ym, delta) {
+    let y = Math.floor(ym / 100), m = ym % 100;
+    m += delta;
+    while (m > 12) { m -= 12; y++; }
+    while (m < 1) { m += 12; y--; }
+    return y * 100 + m;
+  }
   function downloadXlsx(aoa, filename, sheetName) {
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
     XLSX.writeFile(wb, filename);
+  }
+  function readParams() { return new URLSearchParams(window.location.search); }
+  function fmtUpdatedAt(iso) {
+    if (!iso) return null;
+    try { return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+    catch (e) { return null; }
   }
   function isoWeek1Monday(year) {
     const jan4 = new Date(Date.UTC(year, 0, 4));
@@ -35,38 +71,36 @@ window.EuPigmeatPriceApp = (function () {
     jan4.setUTCDate(jan4.getUTCDate() - (dow - 1));
     return jan4;
   }
-  function weekLabel(year, week) {
-    const monday = new Date(isoWeek1Monday(year).getTime() + (week - 1) * 7 * 86400000);
-    return `${monday.getUTCFullYear()}.${String(monday.getUTCMonth() + 1).padStart(2, "0")}.${String(monday.getUTCDate()).padStart(2, "0")}`;
-  }
-  function weekToMonthKey(year, week) {
-    const monday = new Date(isoWeek1Monday(year).getTime() + (week - 1) * 7 * 86400000);
+  function weekMonday(year, week) { return new Date(isoWeek1Monday(year).getTime() + (week - 1) * 7 * 86400000); }
+  function weekToMonth(year, week) {
+    const monday = weekMonday(year, week);
     const counts = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday.getTime() + i * 86400000);
-      const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      const k = d.getUTCMonth() + 1;
       counts[k] = (counts[k] || 0) + 1;
     }
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    return +Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
   }
 
-  /* ── 호버 툴팁 라인차트 (EU/USDA/CEPEA 탭과 동일 패턴) ── */
-  function SvgLineChart({ categories, series, height = 280, formatValue }) {
-    const fmt = formatValue || ((v) => v == null ? "—" : `€${v.toFixed(2)}`);
-    const width = 900;
+  /* ── EU 수출현황과 동일한 호버 툴팁 라인차트 ── */
+  function SvgLineChart({ categories, series, height = 260, formatValue }) {
+    const fmtAxis = formatValue || fmtShort;
+    const fmtTip = formatValue || fmtEur;
+    const width = 760;
     const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 46 : 26, left: 56 };
+    const padding = { top: 16, right: 16, bottom: manyLabels ? 46 : 26, left: 50 };
     const innerW = width - padding.left - padding.right;
     const innerH = height - padding.top - padding.bottom;
     const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
     const maxVal = allVals.length ? Math.max(...allVals) : 1;
     const minVal = allVals.length ? Math.min(...allVals) * 0.97 : 0;
-    const span = Math.max(0.01, maxVal * 1.05 - minVal);
+    const span = Math.max(0.01, maxVal * 1.03 - minVal);
     const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
     const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
     const xFor = (i) => padding.left + i * stepX;
     const gridLines = 4;
-    const labelEvery = manyLabels ? Math.ceil(categories.length / 10) : 1;
+    const labelEvery = manyLabels ? Math.ceil(categories.length / 14) : 1;
     const containerRef = useRef(null);
     const [hoverIdx, setHoverIdx] = useState(null);
     const handleMove = (e) => {
@@ -80,225 +114,487 @@ window.EuPigmeatPriceApp = (function () {
       React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
         Array.from({ length: gridLines + 1 }).map((_, i) => {
           const y = padding.top + innerH / gridLines * i;
-          const val = maxVal * 1.05 - (maxVal * 1.05 - minVal) / gridLines * i;
+          const val = maxVal * 1.03 - (maxVal * 1.03 - minVal) / gridLines * i;
           return React.createElement("g", { key: i },
             React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, `€${val.toFixed(0)}`)
+            React.createElement("text", { x: padding.left - 6, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, fmtAxis(val))
           );
         }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - (manyLabels ? 30 : 8), textAnchor: "middle", fontSize: "9", fill: COLORS.mute, transform: manyLabels ? `rotate(-35 ${xFor(i)} ${height - 30})` : undefined }, c)),
+        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
         hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
         series.map((s) => {
-          const segs = [];
-          let cur = [];
+          const segs = []; let cur = [];
           s.data.forEach((v, i) => {
             if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
             cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
           });
           if (cur.length) segs.push(cur);
           return React.createElement("g", { key: s.name },
-            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: s.name === "EU" ? 3 : 2 })),
-            categories.length <= 80 && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 1.6, fill: s.color }))
+            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: "2.2" })),
+            categories.length <= 40 && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 2.4, fill: s.color }))
           );
         })
       ),
-      hoverIdx !== null && React.createElement("div", {
-        style: {
-          position: "absolute", top: 4, left: `${tooltipLeftPct}%`,
-          transform: `translateX(${tooltipLeftPct > 70 ? "-100%" : tooltipLeftPct < 5 ? "0%" : "-50%"})`,
-          background: COLORS.cream, color: "#f7f8f5", borderRadius: 8, padding: "8px 10px",
-          fontSize: 12, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 10px rgba(0,0,0,.18)", zIndex: 5
-        }
-      },
-        React.createElement("div", { style: { fontWeight: 700, marginBottom: 4 } }, categories[hoverIdx]),
-        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", justifyContent: "space-between", gap: 10 } },
-          React.createElement("span", { style: { color: s.color } }, "\u25CF " + s.name),
-          React.createElement("span", null, fmt(s.data[hoverIdx]))
+      hoverIdx !== null && React.createElement("div", { style: {
+        position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
+        background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
+        fontSize: 13, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
+      } },
+        React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
+        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 6 } },
+          React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: s.color, display: "inline-block", flexShrink: 0 } }),
+          series.length > 1 && React.createElement("span", { style: { color: COLORS.cream } }, s.name),
+          React.createElement("span", { style: { fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft, marginLeft: "auto" } }, fmtTip(s.data[hoverIdx]))
         ))
       )
     );
   }
-
-  function Tile({ label, value, sub, color }) {
-    return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 128, flex: "1 1 128px" } },
-      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, label),
-      React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, value),
-      sub && React.createElement("div", { style: { fontSize: 12, color, marginTop: 4 } }, sub)
+  function ChartLegend({ series }) {
+    if (series.length < 2) return null;
+    return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 10 } },
+      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: COLORS.cream } },
+        React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" } }), s.name
+      ))
+    );
+  }
+  function BarRanking({ items, formatValue }) {
+    const fmt = formatValue || fmtShort;
+    const capped = items.length > 40 ? items.slice(0, 40) : items;
+    const maxVal = Math.max(0.01, ...capped.map((i) => i.v));
+    return React.createElement(React.Fragment, null,
+      React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
+        capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
+          React.createElement("div", { style: { width: 90, fontSize: 13.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+          React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
+            React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
+          ),
+          React.createElement("div", { style: { width: 80, fontSize: 13.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmt(it.v))
+        ))
+      ),
+      items.length > 40 && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 10, textAlign: "center" } }, `상위 40개만 표시 중 (전체 ${items.length}개)`)
+    );
+  }
+  function SheetTab({ active, onClick, label }) {
+    return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
+  }
+  function SubTab({ active, onClick, label }) {
+    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
+  }
+  function ToggleBtn({ active, onClick, label }) {
+    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
+  }
+  function HoverAxisPicker({ label, value, onChange, options }) {
+    const detailsRef = useRef(null);
+    const found = options.find(([v]) => v === value);
+    const currentLabel = found ? found[1] : value;
+    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
+      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
+        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
+        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
+        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
+      ),
+      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+        options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
+          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
+      )
+    );
+  }
+  function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
+    return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
+      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
+        label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "\u25BE")),
+      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
+          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
+          React.createElement("div", { style: { display: "flex", gap: 8 } },
+            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 13, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
+            React.createElement("button", { onClick: onClear, style: { fontSize: 13, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
+          )
+        ),
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
+          options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
+            style: { padding: "4px 9px", borderRadius: 6, fontSize: 13.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
+        )
+      )
     );
   }
 
-  function Toggle({ active, onClick, children, color }) {
-    return React.createElement("button", {
-      onClick, style: {
-        padding: "5px 12px", borderRadius: 999, fontSize: 12, cursor: "pointer",
-        border: `1px solid ${active ? (color || COLORS.amber) : COLORS.panelBorder}`,
-        background: active ? (color || COLORS.amber) : COLORS.panel,
-        color: active ? "#ffffff" : COLORS.mute, fontWeight: 700, whiteSpace: "nowrap"
-      }
-    }, children);
+  const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
+  const tdStyle = { padding: "9px 10px", color: "#1f2420" };
+
+  function Dashboard({ raw }) {
+    useEffect(() => {
+      const onDocClick = (e) => {
+        document.querySelectorAll("details[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+      };
+      document.addEventListener("click", onDocClick);
+      return () => document.removeEventListener("click", onDocClick);
+    }, []);
+
+    const msNames = raw.msNames || {};
+    const MS_LIST = useMemo(() => Object.keys(msNames).sort((a, b) => (a === "EU" ? -1 : b === "EU" ? 1 : msNames[a].localeCompare(msNames[b]))), [msNames]);
+
+    const ROWS = useMemo(() => raw.data.map(([year, week, cls, msCode, price]) => ({
+      year, week, month: weekToMonth(year, week), cls, msCode, price
+    })), [raw]);
+
+    function dimValue(r, dimKey) {
+      if (dimKey === "ms") return msNames[r.msCode] || r.msCode;
+      if (dimKey === "cls") return r.cls === "S" ? "S(최상급)" : "E(우수)";
+      if (dimKey === "year") return String(r.year);
+      if (dimKey === "yearMonth") return `${r.year}-${String(r.month).padStart(2, "0")}`;
+      if (dimKey === "week") return `${r.year}-W${String(r.week).padStart(2, "0")}(${r.month}월)`;
+      return `${r.month}월`;
+    }
+    function monthNum(label) { return parseInt(label, 10); }
+    function aggregateGroup(rows) {
+      // 가격 데이터는 항상 평균 (물량처럼 합산하면 의미가 없음)
+      if (!rows.length) return 0;
+      return rows.reduce((s, r) => s + r.price, 0) / rows.length;
+    }
+
+    const initParams = useMemo(() => readParams(), []);
+    const p = (key, fallback) => { const v = initParams.get(key); return v != null ? v : fallback; };
+    const pOneOf = (key, fallback, validValues) => { const v = p(key, fallback); return validValues.includes(v) ? v : fallback; };
+    const pList = (key) => { const v = initParams.get(key); return v ? v.split(",").filter(Boolean) : []; };
+    const pInt = (key, fallback) => { const v = initParams.get(key); const n3 = parseInt(v, 10); return Number.isFinite(n3) ? n3 : fallback; };
+
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay"]));
+    const [msFilter, setMsFilter] = useState(() => pList("ms"));
+    const [clsFilter, setClsFilter] = useState(() => pOneOf("cls", "ALL", ["ALL", "S", "E"]));
+    const [yearFilter, setYearFilter] = useState(() => pList("yr"));
+
+    const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
+      const set = new Set();
+      ROWS.forEach((r) => set.add(r.year * 100 + r.month));
+      const all = [...set].sort((a, b) => a - b);
+      return { ALL_YM: all, YM_MIN: all[0], YM_MAX: all[all.length - 1] };
+    }, [ROWS]);
+    const ymLabel = (ym) => `${Math.floor(ym / 100)}년 ${ym % 100}월`;
+    const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
+    const onYmStart = (v) => { const val = +v; setYmStart(val); if (val > ymEnd) setYmEnd(val); };
+    const onYmEnd = (v) => { const val = +v; setYmEnd(val); if (val < ymStart) setYmStart(val); };
+    const [monthFrom, setMonthFrom] = useState(() => pInt("mf", 1));
+    const [monthTo, setMonthTo] = useState(() => pInt("mt", 12));
+    const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
+    const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
+
+    const [rowDim, setRowDim] = useState(() => pOneOf("rd", "ms", ["ms", "cls", "year", "month", "yearMonth", "week"]));
+    const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["ms", "cls", "year", "month", "yearMonth", "week"]));
+    const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "yoy"]));
+    const [groupBy, setGroupBy] = useState(() => pOneOf("gb", "ms", ["ms", "year", "month"]));
+    const [sortDesc, setSortDesc] = useState(true);
+    const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
+
+    const baseFilteredRows = useMemo(() => ROWS.filter((r) => {
+      if (msFilter.length && !msFilter.includes(msNames[r.msCode])) return false;
+      if (clsFilter !== "ALL" && r.cls !== clsFilter) return false;
+      if (yearFilter.length && !yearFilter.includes(String(r.year))) return false;
+      const ym = r.year * 100 + r.month;
+      if (ymStart != null && ym < ymStart) return false;
+      if (ymEnd != null && ym > ymEnd) return false;
+      if (r.month < monthFrom || r.month > monthTo) return false;
+      return true;
+    }), [ROWS, msFilter, clsFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, msNames]);
+
+    const years = useMemo(() => [...new Set(baseFilteredRows.map((r) => r.year))].sort((a, b) => a - b), [baseFilteredRows]);
+    const grandAvgAll = useMemo(() => aggregateGroup(baseFilteredRows), [baseFilteredRows]);
+    const toggleFilter = (list, setList, value) => setList(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
+
+    function sortLabels(dimKey, labels, totalsMap) {
+      if (dimKey === "year") return [...labels].sort((a, b) => +a - +b);
+      if (dimKey === "month") return [...labels].sort((a, b) => monthNum(a) - monthNum(b));
+      if (dimKey === "yearMonth" || dimKey === "week") return [...labels].sort((a, b) => a.localeCompare(b));
+      if (dimKey === "cls") return [...labels].sort((a, b) => a.localeCompare(b));
+      return [...labels].sort((a, b) => (totalsMap[b] || 0) - (totalsMap[a] || 0));
+    }
+    const { rowLabels, colLabels, matrix, rowTotals, colTotals, grandTotal } = useMemo(() => {
+      const rowBuckets = {}, colBuckets = {}, cellBuckets = {};
+      baseFilteredRows.forEach((r) => {
+        const rl = dimValue(r, rowDim), cl = dimValue(r, colDim);
+        (rowBuckets[rl] || (rowBuckets[rl] = [])).push(r);
+        (colBuckets[cl] || (colBuckets[cl] = [])).push(r);
+        if (!cellBuckets[rl]) cellBuckets[rl] = {};
+        (cellBuckets[rl][cl] || (cellBuckets[rl][cl] = [])).push(r);
+      });
+      const rowTotalsRaw = {}, colTotalsRaw = {}, matrix2 = {};
+      Object.keys(rowBuckets).forEach((rl) => { rowTotalsRaw[rl] = aggregateGroup(rowBuckets[rl]); });
+      Object.keys(colBuckets).forEach((cl) => { colTotalsRaw[cl] = aggregateGroup(colBuckets[cl]); });
+      Object.keys(cellBuckets).forEach((rl) => {
+        matrix2[rl] = {};
+        Object.keys(cellBuckets[rl]).forEach((cl) => { matrix2[rl][cl] = aggregateGroup(cellBuckets[rl][cl]); });
+      });
+      const grandTotal2 = aggregateGroup(baseFilteredRows);
+      return {
+        rowLabels: sortLabels(rowDim, Object.keys(rowTotalsRaw), rowTotalsRaw),
+        colLabels: sortLabels(colDim, Object.keys(colTotalsRaw), colTotalsRaw),
+        matrix: matrix2, rowTotals: rowTotalsRaw, colTotals: colTotalsRaw, grandTotal: grandTotal2
+      };
+    }, [baseFilteredRows, rowDim, colDim]);
+
+    function cellDisplay(rowLabel, colLabel, colIdx) {
+      const val2 = (matrix[rowLabel] && matrix[rowLabel][colLabel]) || 0;
+      if (displayMode === "abs") return { text: val2 ? fmtEur(val2) : "—", raw: val2 };
+      const prevCol = colLabels[colIdx - 1];
+      if (!prevCol) return { text: "—", raw: null };
+      const prevVal = (matrix[rowLabel] && matrix[rowLabel][prevCol]) || 0;
+      if (prevVal === 0) return { text: val2 > 0 ? "신규" : "—", raw: null };
+      return { text: pct((val2 - prevVal) / prevVal * 100), raw: (val2 - prevVal) / prevVal * 100 };
+    }
+    const onRowDimChange = (v) => { if (v === colDim) setColDim(rowDim); setRowDim(v); };
+    const onColDimChange = (v) => { if (v === rowDim) setRowDim(colDim); setColDim(v); };
+    function exportTableXlsx() {
+      const header = [DIM_LABEL[rowDim], ...colLabels, "평균"];
+      const body = rowLabels.map((rl) => [rl, ...colLabels.map((cl) => n2((matrix[rl] && matrix[rl][cl]) || 0)), n2(rowTotals[rl])]);
+      const footer = ["전체 평균", ...colLabels.map((cl) => n2(colTotals[cl] || 0)), n2(grandTotal)];
+      downloadXlsx([header, ...body, footer], `EU돈가_${DIM_LABEL[rowDim]}x${DIM_LABEL[colDim]}.xlsx`, "피벗표");
+    }
+
+    const grouped = useMemo(() => {
+      const map = new Map();
+      baseFilteredRows.forEach((r) => {
+        const key = dimValue(r, groupBy);
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(r);
+      });
+      let arr = [...map.entries()].map(([key, rows]) => ({ key, v: aggregateGroup(rows) }));
+      if (groupBy === "year") arr.sort((a, b) => +a.key - +b.key);
+      else if (groupBy === "month") arr.sort((a, b) => monthNum(a.key) - monthNum(b.key));
+      else arr.sort((a, b) => sortDesc ? b.v - a.v : a.v - b.v);
+      return arr;
+    }, [baseFilteredRows, groupBy, sortDesc]);
+    const isTimeGroup = groupBy === "year" || groupBy === "month";
+    function exportGroupXlsx() {
+      const header = [DIM_LABEL[groupBy], "평균가격(€/100kg)"];
+      downloadXlsx([header, ...grouped.map((g) => [g.key, n2(g.v)])], `EU돈가_${DIM_LABEL[groupBy]}별.xlsx`, "그룹비교");
+    }
+
+    /* ── 추이 ── */
+    const [trendDim, setTrendDim] = useState(() => pOneOf("td", "ms", ["ms", "cls"]));
+    const trendCandidates = useMemo(() => {
+      const totals = {};
+      baseFilteredRows.forEach((r) => { const k = dimValue(r, trendDim); (totals[k] = totals[k] || []).push(r.price); });
+      return Object.keys(totals).sort((a, b) => {
+        const avgB = totals[b].reduce((s, v) => s + v, 0) / totals[b].length;
+        const avgA = totals[a].reduce((s, v) => s + v, 0) / totals[a].length;
+        return avgB - avgA;
+      });
+    }, [trendDim, baseFilteredRows]);
+    const currentTrendList = trendCandidates.slice(0, 10);
+    const trendXLabels = useMemo(() => {
+      const labels = [];
+      years.forEach((y) => { for (let m = monthFrom; m <= monthTo; m++) { const ym = y * 100 + m; if (ymStart != null && ym < ymStart) continue; if (ymEnd != null && ym > ymEnd) continue; labels.push(`${y}.${String(m).padStart(2, "0")}`); } });
+      return labels;
+    }, [years, monthFrom, monthTo, ymStart, ymEnd]);
+    const trendSeries = useMemo(() => currentTrendList.map((v0, idx) => {
+      const bucket = {};
+      baseFilteredRows.forEach((r) => {
+        if (dimValue(r, trendDim) !== v0) return;
+        const xVal = `${r.year}.${String(r.month).padStart(2, "0")}`;
+        (bucket[xVal] || (bucket[xVal] = [])).push(r);
+      });
+      const rawArr = trendXLabels.map((x) => bucket[x] ? Math.round(aggregateGroup(bucket[x]) * 100) / 100 : null);
+      return { name: v0 + (smoothed ? " (3개월 이동평균)" : ""), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: smoothed ? movingAvg(rawArr, 3) : rawArr };
+    }), [baseFilteredRows, trendDim, currentTrendList, trendXLabels, smoothed]);
+    function exportTrendXlsx() {
+      const header = ["연월", ...currentTrendList];
+      downloadXlsx([header, ...trendXLabels.map((x, i) => [x, ...trendSeries.map((s) => s.data[i] != null ? s.data[i] : "")])], `EU돈가_${DIM_LABEL[trendDim]}별_추이${smoothed ? "_3개월이동평균" : ""}.xlsx`, "추이");
+    }
+
+    /* ── 겹쳐보기 ── */
+    const overlayXLabels = useMemo(() => Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`), [monthFrom, monthTo]);
+    const overlaySeries = useMemo(() => years.map((y, idx) => {
+      const bucket = {};
+      baseFilteredRows.forEach((r) => { if (r.year !== y) return; const xVal = `${r.month}월`; (bucket[xVal] || (bucket[xVal] = [])).push(r); });
+      return { name: String(y), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => bucket[x] ? Math.round(aggregateGroup(bucket[x]) * 100) / 100 : null) };
+    }), [baseFilteredRows, years, overlayXLabels]);
+    function exportOverlayXlsx() {
+      const header = ["월", ...years.map(String)];
+      downloadXlsx([header, ...overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : "")])], `EU돈가_연도별겹쳐보기.xlsx`, "겹쳐보기");
+    }
+
+    useEffect(() => {
+      const sp = new URLSearchParams();
+      if (msFilter.length) sp.set("ms", msFilter.join(","));
+      if (clsFilter !== "ALL") sp.set("cls", clsFilter);
+      if (yearFilter.length) sp.set("yr", yearFilter.join(","));
+      if (ymStart != null) sp.set("ys", ymStart);
+      if (ymEnd != null) sp.set("ye", ymEnd);
+      if (monthFrom !== 1) sp.set("mf", monthFrom);
+      if (monthTo !== 12) sp.set("mt", monthTo);
+      sp.set("tab", mainTab);
+      if (mainTab === "table") { sp.set("rd", rowDim); sp.set("cd", colDim); if (displayMode !== "abs") sp.set("dm", displayMode); }
+      else { sp.set("csub", chartSub); if (chartSub === "group") sp.set("gb", groupBy); if (chartSub === "trend") { sp.set("td", trendDim); if (smoothed) sp.set("sm", "1"); } }
+      const newSearch = "?" + sp.toString();
+      if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
+    }, [msFilter, clsFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed]);
+
+    const [linkCopied, setLinkCopied] = useState(false);
+    function copyShareLink() {
+      navigator.clipboard?.writeText(window.location.href).then(() => { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1600); }).catch(() => {});
+    }
+
+    const msOptions = MS_LIST.map((c) => msNames[c]);
+
+    return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
+      React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
+        React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU 27개 회원국 + EU 평균"),
+        React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 돈가(도체) 현황"),
+
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
+          ["ALL", "S", "E"].map((k) => React.createElement("button", {
+            key: k, onClick: () => setClsFilter(k),
+            style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
+              border: `1px solid ${k === clsFilter ? COLORS.amber : COLORS.panelBorder}`,
+              background: k === clsFilter ? "rgba(217,139,63,0.14)" : COLORS.panel,
+              color: k === clsFilter ? COLORS.amber : COLORS.mute }
+          }, k === "ALL" ? "전체 등급" : k === "S" ? "S(최상급)" : "E(우수)"))
+        ),
+
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
+          React.createElement(HoverMultiPicker, { label: "국가", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
+          React.createElement(HoverMultiPicker, { label: "연도", options: [...new Set(ROWS.map((r) => String(r.year)))].sort().reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...new Set(ROWS.map((r) => String(r.year)))]), onClear: () => setYearFilter([]) }),
+          (msFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
+            onClick: () => { setMsFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+            style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
+          }, "필터 초기화")
+        ),
+
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
+          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
+          [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
+            key: m, active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
+            onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); }, label: lbl
+          })),
+          ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+          ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "월별"),
+          React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+          React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+          (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+            style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+        ),
+
+        React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
+          React.createElement("div", { style: { fontSize: 13, color: COLORS.mute } },
+            "EU 돈가", msFilter.length ? ` · 국가 ${msFilter.length}개` : "", clsFilter !== "ALL" ? ` · ${clsFilter}등급` : "",
+            yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "", ymStart != null ? ` · ${ymLabel(ymStart)}~${ymLabel(ymEnd)}` : "",
+            (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
+          ),
+          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+            React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "\u2713 복사됨" : "\u{1F517} 이 화면 링크 복사"),
+            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "평균 ", fmtEur(grandAvgAll))
+          )
+        ),
+        React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 14, textAlign: "right" } }, raw.sourceMostRecentData ? `집행위 Agri-food Data Portal 주간 자료 · ${raw.sourceMostRecentData} 기준` : ""),
+
+        React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
+          React.createElement(SheetTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "표" }),
+          React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "차트" })
+        ),
+
+        mainTab === "table" && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+            React.createElement(HoverAxisPicker, { label: "행", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }),
+            React.createElement(HoverAxisPicker, { label: "열", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }),
+            React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } },
+              React.createElement(ToggleBtn, { active: displayMode === "abs", onClick: () => setDisplayMode("abs"), label: "실수치(€/100kg)" }),
+              React.createElement(ToggleBtn, { active: displayMode === "yoy", onClick: () => setDisplayMode("yoy"), label: "전 열 대비 증감률" }),
+              React.createElement("button", { onClick: exportTableXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 엑셀 다운로드")
+            )
+          ),
+          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } },
+            React.createElement("div", { style: { overflowX: "auto", maxHeight: 560, overflowY: "auto" } },
+              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 14.5, width: "100%" } },
+                React.createElement("thead", null, React.createElement("tr", null,
+                  React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 108 } }, DIM_LABEL[rowDim]),
+                  colLabels.map((cl) => React.createElement("th", { key: cl, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 84 } }, cl)),
+                  React.createElement("th", { className: "stick-r", style: { ...thStyle, position: "sticky", top: 0, right: 0, zIndex: 3, background: "#ede4d8", textAlign: "right", minWidth: 96, color: COLORS.amberSoft } }, "평균")
+                )),
+                React.createElement("tbody", null, rowLabels.map((rl) => React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700, zIndex: 1 } }, rl),
+                  colLabels.map((cl, ci) => {
+                    const { text, raw: rawV } = cellDisplay(rl, cl, ci);
+                    const color = displayMode === "yoy" ? (rawV === null ? COLORS.mute : rawV > 0 ? COLORS.rust : rawV < 0 ? "#3a6ea5" : COLORS.mute) : COLORS.cream;
+                    return React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
+                  }),
+                  React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, fmtEur(rowTotals[rl]))
+                ))),
+                React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "전체 평균"),
+                  colLabels.map((cl) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, fmtEur(colTotals[cl] || 0))),
+                  React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, fmtEur(grandTotal))
+                ))
+              )
+            )
+          )
+        ),
+
+        mainTab === "chart" && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
+            React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "그룹 비교" }),
+            React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
+            React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "겹쳐보기" })
+          ),
+          chartSub === "group" && React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } },
+              React.createElement(HoverAxisPicker, { label: "기준", value: groupBy, onChange: setGroupBy, options: GROUP_DIM_OPTIONS }),
+              React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
+                !isTimeGroup && React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 13.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "\u21C5 ", sortDesc ? "내림차순" : "오름차순"),
+                React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 엑셀 다운로드")
+              )
+            ),
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "각 ", DIM_LABEL[groupBy], "의 평균가격을 비교합니다."),
+            React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+              React.createElement(BarRanking, { items: grouped, formatValue: fmtEur })
+            )
+          ),
+          chartSub === "trend" && React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+              React.createElement(HoverAxisPicker, { label: "기준", value: trendDim, onChange: setTrendDim, options: [["ms", "국가"], ["cls", "등급"]] }),
+              React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "원자료" }),
+              React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" }),
+              React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "\u2B07 엑셀 다운로드")
+            ),
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
+              "* 전체 기간을 하나로 이어붙인 시계열입니다. 위쪽 ", DIM_LABEL[trendDim], " 필터에서 고른 항목이 그대로 표시됩니다", trendCandidates.length > 10 ? ` (평균가 상위 10개만 표시 중, 전체 ${trendCandidates.length}개)` : "", "."
+            ),
+            React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 340 }),
+              React.createElement(ChartLegend, { series: trendSeries })
+            )
+          ),
+          chartSub === "overlay" && React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
+              React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 엑셀 다운로드")
+            ),
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다 (현재 필터된 국가/등급 평균)."),
+            React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
+              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }),
+              React.createElement(ChartLegend, { series: overlaySeries })
+            )
+          )
+        ),
+        React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: European Commission Agri-food Data Portal (pigmeat/prices) 공식 API. 매주 자동 갱신됩니다.")
+      )
+    );
   }
 
   return function EuPigmeatPriceApp() {
     const [raw, setRaw] = useState(null);
-    const [error, setError] = useState(null);
-    const initial = readParams();
-    const [pigClass, setPigClass] = useState(initial.get("cls") || "S");
-    const [granularity, setGranularity] = useState(initial.get("g") || "week");
-    const [selected, setSelected] = useState(() => {
-      const q = initial.get("c");
-      return q ? q.split(",") : DEFAULT_COUNTRIES;
-    });
-    const [showAllCountries, setShowAllCountries] = useState(false);
-    const [copied, setCopied] = useState(false);
-
+    const [err, setErr] = useState(null);
     useEffect(() => {
-      fetch("./data/eu_pigmeat_price.json", { cache: "no-store" })
-        .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
-        .then(setRaw)
-        .catch((e) => setError(String(e)));
+      fetch("./data/eu_pigmeat_price.json", { cache: "no-store" }).then((r) => {
+        if (!r.ok) throw new Error("데이터 파일을 불러오지 못했습니다 (" + r.status + ")");
+        return r.json();
+      }).then(setRaw).catch((e) => setErr(e.message));
     }, []);
-
-    useEffect(() => {
-      const p = new URLSearchParams(window.location.search);
-      p.set("cls", pigClass); p.set("g", granularity); p.set("c", selected.join(","));
-      window.history.replaceState(null, "", window.location.pathname + "?" + p.toString() + window.location.hash);
-    }, [pigClass, granularity, selected]);
-
-    // 클래스 필터 + 국가별 시계열
-    const byCountry = useMemo(() => {
-      if (!raw) return {};
-      const filtered = raw.data.filter((r) => r[2] === pigClass);
-      const out = {};
-      for (const [year, week, cls, msCode, price] of filtered) {
-        (out[msCode] = out[msCode] || []).push({ year, week, price });
-      }
-      Object.values(out).forEach((arr) => arr.sort((a, b) => a.year - b.year || a.week - b.week));
-      return out;
-    }, [raw, pigClass]);
-
-    // 주간 -> 월/연 집계 (평균)
-    const aggregated = useMemo(() => {
-      const out = {};
-      for (const [code, arr] of Object.entries(byCountry)) {
-        if (granularity === "week") { out[code] = arr; continue; }
-        const buckets = {};
-        for (const r of arr) {
-          const key = granularity === "year" ? String(r.year) : weekToMonthKey(r.year, r.week);
-          (buckets[key] = buckets[key] || []).push(r.price);
-        }
-        out[code] = Object.entries(buckets).sort((a, b) => a[0] < b[0] ? -1 : 1)
-          .map(([key, vals]) => ({ key, price: vals.reduce((a, b) => a + b, 0) / vals.length }));
-      }
-      return out;
-    }, [byCountry, granularity]);
-
-    if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
-    if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
-
-    const allCountries = Object.keys(raw.msNames || {}).sort((a, b) => (a === "EU" ? -1 : b === "EU" ? 1 : raw.msNames[a].localeCompare(raw.msNames[b])));
-    const shownList = showAllCountries ? allCountries : allCountries.slice(0, 14);
-
-    const euSeries = byCountry.EU || [];
-    const latest = euSeries[euSeries.length - 1];
-    const prev = euSeries[euSeries.length - 2];
-    const wowPct = latest && prev ? (latest.price - prev.price) / prev.price * 100 : null;
-    const yearAgo = euSeries.find((r) => latest && r.year === latest.year - 1 && r.week === latest.week);
-    const yoyPct = latest && yearAgo ? (latest.price - yearAgo.price) / yearAgo.price * 100 : null;
-
-    const activeCountries = selected.filter((c) => allCountries.includes(c));
-    const N = granularity === "week" ? 26 : granularity === "month" ? 24 : 100;
-    const refSeries = granularity === "week" ? euSeries : (aggregated.EU || []);
-    const categories = refSeries.slice(-N).map((r) => granularity === "week" ? weekLabel(r.year, r.week) : r.key);
-    const chartSeries = activeCountries.map((c, i) => ({
-      name: c, color: c === "EU" ? COLORS.amber : PALETTE[i % PALETTE.length],
-      data: (aggregated[c] || []).slice(-N).map((r) => r.price)
-    }));
-
-    const toggleCountry = (c) => setSelected((s) => s.includes(c) ? s.filter((x) => x !== c) : [...s, c]);
-
-    const copyLink = () => {
-      navigator.clipboard?.writeText(window.location.href).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
-    };
-
-    const exportXlsx = () => {
-      const header = ["구분", ...categories];
-      const rows = activeCountries.map((c) => [raw.msNames[c] || c, ...(aggregated[c] || []).slice(-N).map((r) => r.price)]);
-      downloadXlsx([header, ...rows], `EU_돈가_${pigClass}등급_${granularity}.xlsx`, "EU돈가");
-    };
-
-    return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1040 } },
-      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "EU 돈가(도체) 현황"),
-      React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 16 } },
-        `EU 27개 회원국 + EU 평균 \u00B7 S/E 등급 \u00B7 2015년~현재 주간 데이터 \u00B7 매주 자동 갱신 (집행위 공개 API, 수동작업 없음)`
-      ),
-
-      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
-        React.createElement(Tile, {
-          label: `EU 평균 (${pigClass}등급, ${latest ? latest.year + "-W" + latest.week : "—"})`,
-          value: fmtPrice(latest?.price),
-          sub: wowPct != null ? `전주대비 ${pctFmt(wowPct)}` : null,
-          color: wowPct > 0 ? COLORS.rust : "#3a6ea5"
-        }),
-        React.createElement(Tile, {
-          label: "전년 동주대비",
-          value: pctFmt(yoyPct),
-          color: yoyPct > 0 ? COLORS.rust : "#3a6ea5"
-        }),
-        ...["DE", "ES", "FR", "DK", "NL", "PL"].filter((c) => byCountry[c]).map((c) => {
-          const arr = byCountry[c] || []; const l = arr[arr.length - 1];
-          return React.createElement(Tile, { key: c, label: raw.msNames[c] || c, value: fmtPrice(l?.price) });
-        })
-      ),
-
-      React.createElement("div", { style: { display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", marginBottom: 12 } },
-        React.createElement("div", { style: { display: "flex", gap: 6 } },
-          ["S", "E"].filter((c) => (raw.pigClasses || ["S", "E"]).includes(c)).map((c) =>
-            React.createElement(Toggle, { key: c, active: pigClass === c, onClick: () => setPigClass(c) }, `${c}등급`))
-        ),
-        React.createElement("div", { style: { display: "flex", gap: 6 } },
-          GRANULARITY_OPTIONS.map(([k, label]) => React.createElement(Toggle, { key: k, active: granularity === k, onClick: () => setGranularity(k), color: COLORS.sage }, label))
-        ),
-        React.createElement("div", { style: { flex: 1 } }),
-        React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀 다운로드"),
-        React.createElement("button", { onClick: copyLink, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, copied ? "복사됨!" : "\u{1F517} 현재 상태 링크 복사")
-      ),
-
-      React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 } },
-        shownList.map((c) => React.createElement(Toggle, { key: c, active: selected.includes(c), onClick: () => toggleCountry(c), color: c === "EU" ? COLORS.amber : COLORS.mute }, raw.msNames[c] || c))
-      ),
-      allCountries.length > 14 && React.createElement("button", {
-        onClick: () => setShowAllCountries((v) => !v),
-        style: { border: "none", background: "none", color: COLORS.amber, fontSize: 12, cursor: "pointer", padding: "2px 0 14px", fontWeight: 700 }
-      }, showAllCountries ? "국가 목록 접기 \u25B2" : `+${allCountries.length - 14}개 회원국 더 보기 \u25BC`),
-
-      React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
-        chartSeries.length ? React.createElement(SvgLineChart, { categories, series: chartSeries })
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 국가를 선택하세요.")
-      ),
-
-      React.createElement("div", { style: { overflowX: "auto", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, marginBottom: 16 } },
-        React.createElement("table", { style: { borderCollapse: "collapse", width: "100%", fontSize: 12.5 } },
-          React.createElement("thead", null,
-            React.createElement("tr", null,
-              React.createElement("th", { style: { position: "sticky", left: 0, background: COLORS.head, padding: "8px 12px", textAlign: "left", borderBottom: `1px solid ${COLORS.panelBorder}`, whiteSpace: "nowrap" } }, "구분"),
-              categories.slice(-10).map((c, i) => React.createElement("th", { key: i, style: { padding: "8px 10px", textAlign: "right", background: COLORS.head, borderBottom: `1px solid ${COLORS.panelBorder}`, whiteSpace: "nowrap" } }, c))
-            )
-          ),
-          React.createElement("tbody", null,
-            activeCountries.map((c) => React.createElement("tr", { key: c },
-              React.createElement("td", { style: { position: "sticky", left: 0, background: COLORS.panel, padding: "6px 12px", borderBottom: `1px solid ${COLORS.panelBorder}`, fontWeight: c === "EU" ? 800 : 500, whiteSpace: "nowrap" } }, raw.msNames[c] || c),
-              (aggregated[c] || []).slice(-10).map((r, i) => React.createElement("td", { key: i, style: { padding: "6px 10px", textAlign: "right", borderBottom: `1px solid ${COLORS.panelBorder}` } }, fmtPrice(r.price)))
-            ))
-          )
-        )
-      ),
-
-      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute } },
-        `최근 데이터 기준: ${raw.sourceMostRecentData || "—"} \u00B7 수집: ${fmtUpdatedAt(raw.collectedAt) || "—"} \u00B7 총 ${raw.data.length.toLocaleString()}행`
-      ),
-      React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginTop: 4 } },
-        "출처: European Commission Agri-food Data Portal — api.tech.ec.europa.eu/agrifood/api/pigmeat/prices (인증 불필요 공개 API)"
-      )
-    );
+    if (err) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 } }, err);
+    if (!raw) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.mute, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 } }, "데이터를 불러오는 중...");
+    return React.createElement(Dashboard, { raw });
   };
 })();
