@@ -5,6 +5,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 
 urls = [
     "https://www.mla.com.au/prices-markets/statistics/api/",
+    "https://app.nlrsreports.mla.com.au/statistics/documentation",
 ]
 
 for url in urls:
@@ -25,11 +26,12 @@ for url in urls:
 
 # 흔한 후보 API 베이스들을 직접 두드려봄
 candidates = [
-    "https://statistics.mla.com.au/",
-    "https://statistics.mla.com.au/api/",
-    "https://api.mla.com.au/",
-    "https://mlastatisticsapi.azure-api.net/",
-    "https://www.mla.com.au/api/",
+    "https://app.nlrsreports.mla.com.au/",
+    "https://app.nlrsreports.mla.com.au/statistics/",
+    "https://app.nlrsreports.mla.com.au/statistics/swagger.json",
+    "https://app.nlrsreports.mla.com.au/swagger.json",
+    "https://app.nlrsreports.mla.com.au/statistics/documentation/swagger.json",
+    "https://app.nlrsreports.mla.com.au/statistics/v1/documentation",
 ]
 for c in candidates:
     print("=== PROBE", c)
