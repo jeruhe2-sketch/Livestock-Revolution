@@ -22,6 +22,13 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "github-actions"
-          git add debug/mla_probe_last.log
-          git diff --cached --quiet || git commit -m "debug: MLA API 탐색 로그"
-          git push || true
+          for i in 1 2 3 4 5; do
+            git add debug/mla_probe_last.log
+            if git diff --cached --quiet; then echo "no changes"; break; fi
+            git commit -m "debug: MLA API 탐색 로그" || true
+            if git push; then echo "push ok"; break; fi
+            echo "push conflict, retry $i"
+            git fetch origin main
+            git reset --mixed origin/main
+            sleep 3
+          done
