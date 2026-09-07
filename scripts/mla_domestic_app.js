@@ -122,8 +122,9 @@ window.MlaDomesticApp = (function () {
   return function MlaDomesticApp() {
     const [raw, setRaw] = useState(null);
     const [error, setError] = useState(null);
-    const [selected, setSelected] = useState(["0", "4", "13"]);
+    const [selected, setSelected] = useState(["0"]);
     const [days, setDays] = useState(180);
+    const [normalize, setNormalize] = useState(false);
 
     useEffect(() => {
       fetch("./data/mla_domestic.json", { cache: "no-store" })
@@ -136,7 +137,7 @@ window.MlaDomesticApp = (function () {
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
     const names = raw.indicatorNames || {};
-    const chartCategories = useMemoLite(raw, selected, days);
+    const chartCategories = useMemoLite(raw, selected, days, normalize);
 
     const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
 
@@ -182,13 +183,21 @@ window.MlaDomesticApp = (function () {
         })
       ),
 
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 4 } },
         IND_ORDER.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, IND_SHORT[id])),
         React.createElement("div", { style: { flex: 1 } }),
         [["90", "3개월"], ["180", "6개월"], ["365", "1년"], ["99999", "전체"]].map(([d, l]) =>
           React.createElement(Toggle, { key: d, active: days === +d, onClick: () => setDays(+d), color: COLORS.sage }, l)),
+        React.createElement(Toggle, { active: normalize, onClick: () => setNormalize((v) => !v), color: COLORS.amberSoft }, "지수화(기준일=100)"),
         React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀")
       ),
+      (() => {
+        const units = new Set(selected.map((id) => names[id]?.unit).filter(Boolean));
+        return selected.length > 1 && units.size > 1 && !normalize
+          ? React.createElement("div", { style: { fontSize: 12, color: COLORS.rust, marginBottom: 10 } },
+              `\u26A0 선택한 지표의 단위가 서로 달라요 (${[...units].join(", ")}) — 이대로 겹쳐보면 절대값 비교가 왜곡됩니다. "지수화" 켜는 걸 추천합니다.`)
+          : React.createElement("div", { style: { marginBottom: 10 } });
+      })(),
 
       React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
         chartCategories.series.length ? React.createElement(SvgLineChart, { categories: chartCategories.categories, series: chartCategories.series })
@@ -219,16 +228,21 @@ window.MlaDomesticApp = (function () {
     );
   };
 
-  function useMemoLite(raw, selected, days) {
+  function useMemoLite(raw, selected, days, normalize) {
     return useMemo(() => {
       const indicators = raw.indicators || {};
       const base = indicators[selected[0]] || Object.values(indicators)[0] || [];
       const dates = base.slice(days >= 99999 ? 0 : -days).map((r) => r.date);
-      const series = selected.filter((id) => indicators[id]).map((id, i) => {
+      const series = selected.filter((id) => indicators[id]).map((id) => {
         const byDate = Object.fromEntries(indicators[id].map((r) => [r.date, r.value]));
-        return { id, name: IND_SHORT[id] || id, color: PALETTE[IND_ORDER.indexOf(id) % PALETTE.length], data: dates.map((d) => byDate[d] ?? null) };
+        let data = dates.map((d) => byDate[d] ?? null);
+        if (normalize) {
+          const base0 = data.find((v) => v != null && isFinite(v) && v !== 0);
+          if (base0) data = data.map((v) => v == null ? null : v / base0 * 100);
+        }
+        return { id, name: IND_SHORT[id] || id, color: PALETTE[IND_ORDER.indexOf(id) % PALETTE.length], data };
       });
       return { categories: dates.map((d) => d.slice(5)), series };
-    }, [raw, selected, days]);
+    }, [raw, selected, days, normalize]);
   }
 })();
