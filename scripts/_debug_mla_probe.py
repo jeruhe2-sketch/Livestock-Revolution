@@ -6,6 +6,8 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 urls = [
     "https://www.mla.com.au/prices-markets/statistics/api/",
     "https://app.nlrsreports.mla.com.au/statistics/documentation",
+    "https://app.nlrsreports.mla.com.au/statistics/documentation/swagger-initializer.js",
+    "https://app.nlrsreports.mla.com.au/swagger-initializer.js",
 ]
 
 for url in urls:
@@ -14,6 +16,8 @@ for url in urls:
         r = requests.get(url, headers={"User-Agent": UA, "Accept": "text/html"}, timeout=30)
         print("status", r.status_code, "len", len(r.text))
         html = r.text
+        if len(html) < 3000:
+            print("  FULL BODY:", html)
         # swagger/openapi 스펙 URL, config.json 등 단서 찾기
         for pat in [r'https?://[^\s"\'<>]+\.json', r'https?://[a-zA-Z0-9\.\-]*mla[a-zA-Z0-9\.\-]*/[^\s"\'<>]+',
                     r'"url"\s*:\s*"[^"]+"', r'spec-url="[^"]+"', r'swagger[^"\']*', r'apim[^"\']*',
