@@ -108,7 +108,7 @@ window.EuPigmeatPriceApp = (function () {
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 980 } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "EU 돈가(도체) 현황"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 18 } },
-        `등급: ${raw.pigClass}(Superior) · 단위: ${raw.unit} · 매주 자동 갱신 (집행위 공개 API, 수동작업 없음)`
+        `등급: ${raw.pigClass}(Superior) · 단위: EUR/${raw.unit} · 매주 자동 갱신 (집행위 공개 API, 수동작업 없음)`
       ),
 
       React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 } },
