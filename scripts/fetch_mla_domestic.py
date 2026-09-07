@@ -50,9 +50,9 @@ STATES = ["NSW", "SA", "VIC", "QLD", "WA", "TAS"]
 SPECIES = ["Cattle", "Sheep"]
 
 START_DATE = "2015-01-01"
-MAX_RETRIES = 8
-RETRY_BACKOFF_SEC = 10
-RETRY_BACKOFF_CAP_SEC = 60
+MAX_RETRIES = 4
+RETRY_BACKOFF_SEC = 5
+RETRY_BACKOFF_CAP_SEC = 20
 PAGE_SIZE_ASSUMED = 100  # API 문서 명시: 100행 초과 시 page 파라미터로 페이지네이션
 
 
@@ -127,7 +127,10 @@ def fetch_indicator_series(indicator_id, from_date, to_date):
 
 
 def fetch_slaughter(from_date, to_date):
-    """국가 합계 = 6개 주 응답 head_count를 (날짜, 축종)별로 합산."""
+    """국가 합계 = 6개 주 응답 head_count를 (날짜, 축종)별로 합산.
+    API 제약: toDate는 반드시 "오늘로부터 7일 이전"이어야 함 (그 이내로 요청하면
+    500 "Please provide date range 7 days before today!" 응답). 호출부에서
+    to_date를 이미 안전하게 깎아서 넘겨준다."""
     result = {}
     for sp in SPECIES:
         rows = _get_all_pages("/report/10", {
@@ -146,18 +149,22 @@ def fetch_slaughter(from_date, to_date):
 
 
 def main():
-    today = date.today().isoformat()
+    today = date.today()
+    today_iso = today.isoformat()
+    # report/10은 "오늘로부터 7일 이전"까지만 허용 -> 여유있게 10일 전으로 자름
+    slaughter_to = (today - timedelta(days=10)).isoformat()
+
     names = fetch_indicator_names()
     print("지표 레퍼런스 수집 완료:", {k: v["desc"] for k, v in names.items() if int(k) in INDICATOR_IDS})
 
     indicators = {}
     for iid in INDICATOR_IDS:
-        series = fetch_indicator_series(iid, START_DATE, today)
+        series = fetch_indicator_series(iid, START_DATE, today_iso)
         indicators[str(iid)] = series
         print(f"  indicator {iid} ({names.get(str(iid), {}).get('desc')}): {len(series)}건")
         time.sleep(1)
 
-    slaughter = fetch_slaughter(START_DATE, today)
+    slaughter = fetch_slaughter(START_DATE, slaughter_to)
     for sp, series in slaughter.items():
         print(f"  slaughter {sp}: {len(series)}주")
 
