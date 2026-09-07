@@ -1,0 +1,88 @@
+name: eu-pigmeat-price-update
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: repo-main-git-write  # 저장소 전체 워크플로우가 공유하는 잠금 (git push 충돌 방지)
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: run
+        id: run
+        continue-on-error: true
+        run: |
+          mkdir -p debug
+          python scripts/fetch_eu_pigmeat_price.py > debug/eu_pigmeat_price_last.log 2>&1
+          code=$?
+          cat debug/eu_pigmeat_price_last.log
+          exit $code
+      - name: commit
+        id: commit
+        if: always()
+        continue-on-error: true
+        run: |
+          {
+            git config user.email "actions@github.com"
+            git config user.name "github-actions"
+            for i in 1 2 3 4 5 6 7 8; do
+              git add data/eu_pigmeat_price.json
+              if git diff --cached --quiet; then
+                echo "변경 없음"
+                break
+              fi
+              git commit -m "auto: EU 돈가(도체) 현황 갱신 ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+              if git push; then
+                echo "push 성공"
+                break
+              fi
+              echo "push 충돌, 재시도 $i"
+              git fetch origin main
+              git reset --mixed origin/main
+              sleep $((RANDOM % 10 + 3))
+            done
+          } > debug/eu_pigmeat_price_commit_last.log 2>&1
+          code=$?
+          cat debug/eu_pigmeat_price_commit_last.log
+          exit $code
+      - name: 커밋 로그를 아티팩트로 업로드 (git 커밋 안 함)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eu-pigmeat-price-commit-log
+          path: debug/eu_pigmeat_price_commit_last.log
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: 로그를 아티팩트로 업로드 (git 커밋 안 함)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eu-pigmeat-price-update-log
+          path: debug/eu_pigmeat_price_last.log
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: 수집 실패했으면 워크플로우도 실패로 표시
+        if: steps.run.outcome == 'failure' || steps.commit.outcome == 'failure'
+        run: |
+          echo "::error::EU 돈가 API 수집 또는 커밋이 실패했습니다. debug/ 로그 확인 필요"
+          exit 1
+
+      - name: 실패 시 텔레그램 알림
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            --data-urlencode text="⚠️ <b>[축산레이더] EU 돈가(도체) 자동 갱신 실패</b>
+            로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
