@@ -3,9 +3,26 @@ import requests
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
-urls = [
-    "https://api-mlastatistics.mla.com.au/indicator",
-]
+urls = []
+candidates = []
+
+import time as _t
+
+def probe(path, params, label):
+    url = f"https://api-mlastatistics.mla.com.au{path}"
+    print(f"=== {label}: GET {url} params={params}")
+    t0 = _t.time()
+    try:
+        r = requests.get(url, params=params, headers={"Accept": "application/json"}, timeout=30)
+        print(f"  status={r.status_code} elapsed={_t.time()-t0:.1f}s body[:500]={r.text[:500]}")
+    except Exception as e:
+        print(f"  ERROR {e!r} elapsed={_t.time()-t0:.1f}s")
+
+probe("/report/5", {"fromDate": "2026-08-01", "toDate": "2026-09-07", "indicatorID": "0"}, "report5 EYCI small range")
+probe("/report/10", {"fromDate": "2026-08-01", "toDate": "2026-09-07", "stateID": ["NSW", "SA", "VIC", "QLD", "WA", "TAS"], "species": ["Cattle"]}, "report10 list-style params")
+probe("/report/10", {"fromDate": "2026-08-01", "toDate": "2026-09-07", "stateID": "NSW,SA,VIC,QLD,WA,TAS", "species": "Cattle"}, "report10 comma-joined params")
+probe("/report/5", {"fromDate": "2015-01-01", "toDate": "2026-09-07", "indicatorID": "0", "page": 1}, "report5 EYCI full range page1")
+
 
 for url in urls:
     print("=== GET", url)
