@@ -1,9 +1,10 @@
 /* 축산레이더 · 주요지표
-   이미 사이트에 있는 데이터 파일들(EU돈가/환율/호주EYCI·90CL/미국돈육)을 한 화면에
-   요약 카드로 모아 보여주는 대시보드. 차트 없음, 숫자 위주.
-   일별로 발표되는 지표(EYCI, 미국 돈육)는 전일/전주/전년대비를 모두 보여주고,
-   주별로만 발표되는 지표(EU 돈가, 90CL, 환율)는 전주/전년대비만 보여줌
-   (일별 데이터가 없어서 "전일"이 의미가 없기 때문).
+   이미 사이트에 있는 데이터 파일들(EU돈가/환율(USD·EUR·AUD·BRL)/호주EYCI·90CL/
+   미국돈육)을 한 화면에 요약 카드로 모아 보여주는 대시보드. 차트 없음, 숫자 위주.
+   일별로 발표되는 지표(EYCI, 미국 돈육)는 전일/전주/전월/전년대비를 모두 보여주고,
+   주별로만 발표되는 지표(EU 돈가, 90CL)는 전주/전월/전년대비만 보여줌
+   (일별 데이터가 없어서 "전일"이 의미가 없기 때문). 환율은 자체적으로 1년치
+   일별 이력을 받아오는 방식이라(fetch_exchange_rates.py) 전일도 포함됨.
    새로운 원자료 수집은 없고, 각자 탭이 이미 자동 갱신한 JSON을 프론트에서
    한 번 더 읽어 요약만 함 (LLM/수동작업 없음). */
 window.KeyIndicatorsApp = (function () {
@@ -87,6 +88,11 @@ window.KeyIndicatorsApp = (function () {
     const wowV = at(-2), momV = at(-5) /* ~4.3주 전 ≈ 1개월 */, yoyV = at(-53);
     const pct = (ref) => (latest && ref ? (latest.value - ref.value) / ref.value * 100 : null);
     return { latest: latest ? latest.value : null, latestWeek: lastWeek, wow: pct(wowV), mom: pct(momV), yoy: pct(yoyV) };
+  }
+  // 환율(usd/eur/aud/brl) 카드용: 수집 스크립트가 이미 전일/전주/전월/전년을 계산해서 넣어줌
+  function fxStat(fx, prefix) {
+    if (!fx) return { latest: null };
+    return { latest: fx[`${prefix}Krw`], dod: fx[`${prefix}KrwDod`], wow: fx[`${prefix}KrwWow`], mom: fx[`${prefix}KrwMom`], yoy: fx[`${prefix}KrwYoy`] };
   }
   // CME 선물 카드용 통계: 수집 스크립트가 이미 전일/전주/전월/전년을 계산해서 넣어줌
   function cmeStat(entry) {
@@ -224,7 +230,6 @@ window.KeyIndicatorsApp = (function () {
     const [mobileSection, setMobileSection] = useState("fx");
     const [eu, setEu] = useState(null);
     const [fx, setFx] = useState(null);
-    const [fxHist, setFxHist] = useState(null);
     const [mla, setMla] = useState(null);
     const [usda, setUsda] = useState(null);
     const [usdaCutout, setUsdaCutout] = useState(null);
@@ -235,27 +240,20 @@ window.KeyIndicatorsApp = (function () {
       Promise.all([
         fetchJson("./data/eu_pigmeat_price.json"),
         fetchJson("./data/exchange_rates.json"),
-        fetchJson("./data/fx_history.json"),
         fetchJson("./data/mla_domestic.json"),
         fetchJson("./data/usda_pork_domestic.json"),
         fetchJson("./data/usda_cutout.json"),
         fetchJson("./data/cme_futures.json"),
-      ]).then(([euD, fxD, fxHistD, mlaD, usdaD, usdaCutoutD, cmeD]) => {
-        setEu(euD); setFx(fxD); setFxHist(fxHistD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setCme(cmeD); setLoaded(true);
+      ]).then(([euD, fxD, mlaD, usdaD, usdaCutoutD, cmeD]) => {
+        setEu(euD); setFx(fxD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setCme(cmeD); setLoaded(true);
       });
     }, []);
 
-    // 주별 소스(EU돈가/90CL/환율)는 주차맵으로, 일별 소스(EYCI/미국돈육)는 원본 그대로 사용
+    // 주별 소스(EU돈가/90CL)는 주차맵으로, 일별 소스(EYCI/미국돈육)는 원본 그대로 사용.
+    // 환율(usd/eur/aud/brl)은 exchange_rates.json 자체에 전일/전주/전월/전년이 이미
+    // 계산돼 들어있어서(fetch_exchange_rates.py v3) 더 이상 fx_history.json이 필요 없음.
     const weekly = useMemo(() => {
-      const out = { fx: {}, eurKrw: {}, eu: {}, cl90: {} };
-      if (fxHist?.weekly) {
-        for (const [wk, r] of Object.entries(fxHist.weekly)) {
-          if (r.usd && r.krw) {
-            out.fx[wk] = { date: r.date, value: r.krw / r.usd }; // EUR/KRW ÷ EUR/USD = USD/KRW
-            out.eurKrw[wk] = { date: r.date, value: r.krw }; // r.krw는 이미 EUR/KRW
-          }
-        }
-      }
+      const out = { eu: {}, cl90: {} };
       if (eu?.data) {
         const byWeek = {};
         for (const [year, week, cls, msCode, price] of eu.data) {
@@ -271,24 +269,16 @@ window.KeyIndicatorsApp = (function () {
         out.cl90 = resampleWeekly(mla.usImported90cl, "date", "value");
       }
       return out;
-    }, [eu, fxHist, mla]);
+    }, [eu, mla]);
 
     const cardStats = useMemo(() => {
       const eyciRows = mla?.indicators?.["0"] || [];
       const usdaRows = usda?.data ? usda.data.map((r) => ({ date: r.date, value: r["1/4 Trim Butt VAC"]?.usdPerLb })) : [];
-      const fxStats = weeklyStats(weekly.fx);
-      // 환율은 이제 실시간 시세라 야후가 주는 전일종가(prevClose)로 진짜 전일대비를 계산.
-      // (ECB 폴백이 걸린 경우 prevClose가 없어서 dod는 자동으로 빠짐)
-      if (fx?.usdKrw != null && fx?.usdKrwPrevClose) {
-        fxStats.dod = (fx.usdKrw - fx.usdKrwPrevClose) / fx.usdKrwPrevClose * 100;
-      }
-      const eurStats = weeklyStats(weekly.eurKrw);
-      if (fx?.eurKrw != null && fx?.eurKrwPrevClose) {
-        eurStats.dod = (fx.eurKrw - fx.eurKrwPrevClose) / fx.eurKrwPrevClose * 100;
-      }
       return {
-        fx: fxStats,
-        eurFx: eurStats,
+        usdFx: fxStat(fx, "usd"),
+        eurFx: fxStat(fx, "eur"),
+        audFx: fxStat(fx, "aud"),
+        brlFx: fxStat(fx, "brl"),
         eu: weeklyStats(weekly.eu),
         eyci: dailyStats(eyciRows, "date", "value"),
         usda: dailyStats(usdaRows, "date", "value"),
@@ -310,8 +300,10 @@ window.KeyIndicatorsApp = (function () {
 
     // 데스크톱 카드그리드/모바일 리스트가 같은 데이터를 쓰게 항목을 배열로 뽑아둠
     const entries = [
-      { section: "fx", label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원", stats: cardStats.fx, accent: ACCENT.fx },
+      { section: "fx", label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원", stats: cardStats.usdFx, accent: ACCENT.fx },
       { section: "fx", label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원", stats: cardStats.eurFx, accent: ACCENT.fx },
+      { section: "fx", label: "AUD/KRW", value: fx?.audKrw != null ? fx.audKrw.toLocaleString() : "—", unit: "원", stats: cardStats.audFx, accent: ACCENT.fx },
+      { section: "fx", label: "BRL/KRW", value: fx?.brlKrw != null ? fx.brlKrw.toLocaleString() : "—", unit: "원", stats: cardStats.brlFx, accent: ACCENT.fx },
       { section: "meat", label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg", stats: cardStats.eu, accent: ACCENT.meat, onClick: () => goto("#eupigmeatprice") },
       { section: "meat", label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt", stats: cardStats.eyci, accent: ACCENT.meat, onClick: () => goto("#mladomestic") },
       { section: "meat", label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb", stats: cardStats.usda, accent: ACCENT.meat, onClick: () => goto("#usdedomestic") },
