@@ -137,6 +137,7 @@ window.KeyIndicatorsApp = (function () {
     const [fxHist, setFxHist] = useState(null);
     const [mla, setMla] = useState(null);
     const [usda, setUsda] = useState(null);
+    const [usdaCutout, setUsdaCutout] = useState(null);
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
@@ -146,8 +147,9 @@ window.KeyIndicatorsApp = (function () {
         fetchJson("./data/fx_history.json"),
         fetchJson("./data/mla_domestic.json"),
         fetchJson("./data/usda_pork_domestic.json"),
-      ]).then(([euD, fxD, fxHistD, mlaD, usdaD]) => {
-        setEu(euD); setFx(fxD); setFxHist(fxHistD); setMla(mlaD); setUsda(usdaD); setLoaded(true);
+        fetchJson("./data/usda_cutout.json"),
+      ]).then(([euD, fxD, fxHistD, mlaD, usdaD, usdaCutoutD]) => {
+        setEu(euD); setFx(fxD); setFxHist(fxHistD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setLoaded(true);
       });
     }, []);
 
@@ -199,8 +201,10 @@ window.KeyIndicatorsApp = (function () {
         eyci: dailyStats(eyciRows, "date", "value"),
         usda: dailyStats(usdaRows, "date", "value"),
         cl90: weeklyStats(weekly.cl90),
+        porkCutout: dailyStats(usdaCutout?.pork?.data || [], "date", "value"),
+        beefCutout: dailyStats(usdaCutout?.beef?.data || [], "date", "choice"),
       };
-    }, [weekly, mla, usda, fx]);
+    }, [weekly, mla, usda, fx, usdaCutout]);
 
     const goto = (hash) => { window.location.hash = hash; };
 
@@ -241,6 +245,18 @@ window.KeyIndicatorsApp = (function () {
             label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb",
             sub: subText(cardStats.usda), subColor: subColorOf(cardStats.usda),
             asOf: `USDA LMR \u00B7 ${cardStats.usda.latestDate || "—"}`
+          }),
+          React.createElement(Card, {
+            onClick: () => goto("#usdedomestic"),
+            label: "미국 돈육 컷아웃", value: cardStats.porkCutout.latest != null ? cardStats.porkCutout.latest.toFixed(2) : "—", unit: "$/cwt",
+            sub: subText(cardStats.porkCutout), subColor: subColorOf(cardStats.porkCutout),
+            asOf: `USDA LM_PK602 \u00B7 ${cardStats.porkCutout.latestDate || "—"}`
+          }),
+          React.createElement(Card, {
+            onClick: () => goto("#usdedomestic"),
+            label: "미국 소고기 Choice 컷아웃", value: cardStats.beefCutout.latest != null ? cardStats.beefCutout.latest.toFixed(2) : "—", unit: "$/cwt",
+            sub: subText(cardStats.beefCutout), subColor: subColorOf(cardStats.beefCutout),
+            asOf: `USDA LM_XB459 \u00B7 ${cardStats.beefCutout.latestDate || "—"}`
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
