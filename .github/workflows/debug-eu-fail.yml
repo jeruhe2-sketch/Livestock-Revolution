@@ -1,0 +1,29 @@
+name: debug-eu-fail
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - run: |
+          python scripts/fetch_eu_taxud.py > /tmp/eu.log 2>&1
+          echo "EXIT=$?" >> /tmp/eu.log
+          cat /tmp/eu.log
+      - name: post result as issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -c 60000 /tmp/eu.log > /tmp/eu_tail.log
+          gh issue create --title "debug: EU 실패원인 $(date -u +%Y-%m-%dT%H:%M:%SZ)" --body-file /tmp/eu_tail.log --repo "${{ github.repository }}"
