@@ -118,6 +118,17 @@ window.MlaDomesticApp = (function () {
       }
     }, children);
   }
+  function SheetTab({ active, onClick, label }) {
+    return React.createElement("button", {
+      onClick, style: {
+        padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none",
+        borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent",
+        color: active ? COLORS.amber : COLORS.mute, marginBottom: -1
+      }
+    }, label);
+  }
+  const thStyle = { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, whiteSpace: "nowrap" };
+  const tdStyle = { padding: "8px 10px", color: COLORS.cream, fontFamily: "ui-monospace,monospace" };
 
   return function MlaDomesticApp() {
     const [raw, setRaw] = useState(null);
@@ -125,6 +136,7 @@ window.MlaDomesticApp = (function () {
     const [selected, setSelected] = useState(["0"]);
     const [days, setDays] = useState(180);
     const [normalize, setNormalize] = useState(false);
+    const [mainTab, setMainTab] = useState("chart");
 
     useEffect(() => {
       fetch("./data/mla_domestic.json", { cache: "no-store" })
@@ -205,8 +217,30 @@ window.MlaDomesticApp = (function () {
           : React.createElement("div", { style: { marginBottom: 10 } });
       })(),
 
-      React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+      React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
+        React.createElement(SheetTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "차트" }),
+        React.createElement(SheetTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "표" })
+      ),
+
+      mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
         chartCategories.series.length ? React.createElement(SvgLineChart, { categories: chartCategories.categories, series: chartCategories.series })
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
+      ),
+
+      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
+        chartCategories.series.length
+          ? React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
+              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
+                React.createElement("thead", null, React.createElement("tr", null,
+                  React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 90 } }, "날짜"),
+                  chartCategories.series.map((s) => React.createElement("th", { key: s.id, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 100 } }, s.name))
+                )),
+                React.createElement("tbody", null, chartCategories.categories.map((c, i) => React.createElement("tr", { key: c, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, c),
+                  chartCategories.series.map((s) => React.createElement("td", { key: s.id, style: { ...tdStyle, textAlign: "right" } }, s.data[i] != null ? s.data[i].toFixed(2) : "—"))
+                )))
+              )
+            )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
       ),
 
