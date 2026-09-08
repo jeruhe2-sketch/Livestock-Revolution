@@ -1,6 +1,9 @@
 {
-  "usdKrw": 1347.93,
-  "eurKrw": 1566.56,
-  "updatedAt": "2026-09-08T02:23:14.016112+00:00",
-  "source": "European Central Bank (via frankfurter.dev)"
+  "usdKrw": 1339.28,
+  "usdKrwPrevClose": 1344.99,
+  "eurKrw": 1556.3,
+  "eurKrwPrevClose": 1562.8,
+  "marketTime": "2026-09-08T03:22:31+00:00",
+  "updatedAt": "2026-09-08T03:22:34.518922+00:00",
+  "source": "Yahoo Finance (실시간 시장가, 비공식 API)"
 }
