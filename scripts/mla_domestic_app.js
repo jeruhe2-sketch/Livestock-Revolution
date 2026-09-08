@@ -14,11 +14,11 @@ window.MlaDomesticApp = (function () {
     amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
     sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
   };
-  const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30"];
-  const IND_ORDER = ["0", "4", "13", "7", "11"];
+  const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
+  const IND_ORDER = ["0", "4", "13", "7", "11", "90cl"];
   const IND_SHORT = {
     "0": "EYCI (동부 영계)", "4": "중량우 (Heavy Steer)", "13": "처리소 (Processor Cow)",
-    "7": "무역용 양 (Trade Lamb)", "11": "머튼 (Mutton)"
+    "7": "무역용 양 (Trade Lamb)", "11": "머튼 (Mutton)", "90cl": "90CL (미국 수입육지표)"
   };
 
   function fmtVal(v, unit) { return v == null || !isFinite(v) ? "—" : `${Number(v).toFixed(1)}${unit ? " " + unit : ""}`; }
@@ -163,7 +163,13 @@ window.MlaDomesticApp = (function () {
     useEffect(() => {
       fetch("./data/mla_domestic.json", { cache: "no-store" })
         .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
-        .then(setRaw)
+        .then((data) => {
+          // 90CL(usImported90cl)은 원본에서 별도 필드라, 나머지 지표들과 같은
+          // indicators/indicatorNames 구조로 합쳐서 아래 로직을 그대로 재사용함.
+          const indicators = { ...data.indicators, "90cl": (data.usImported90cl || []).map((r) => ({ date: r.date, value: r.value })) };
+          const indicatorNames = { ...data.indicatorNames, "90cl": { desc: "US Imported 90CL Beef Indicator", unit: "US c/lb", species: "Cattle" } };
+          setRaw({ ...data, indicators, indicatorNames });
+        })
         .catch((e) => setError(String(e)));
     }, []);
 
@@ -244,7 +250,8 @@ window.MlaDomesticApp = (function () {
           const meta = names[id];
           const series = raw.indicators?.[id] || [];
           const latest = series[series.length - 1];
-          const weekAgo = series[series.length - 8];
+          // 90CL은 주간 데이터라 "직전 1건"이 곧 전주, 나머지는 일간이라 7일 뒤로
+          const weekAgo = id === "90cl" ? series[series.length - 2] : series[series.length - 8];
           const wowPct = latest && weekAgo ? (latest.value - weekAgo.value) / weekAgo.value * 100 : null;
           return React.createElement(Tile, {
             key: id,
