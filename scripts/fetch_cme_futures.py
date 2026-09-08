@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-CME 축산 선물(Live Cattle, Feeder Cattle, Lean Hog) 최근월물 시세 + 1년치 일별 종가.
+CME 축산 선물(Live Cattle, Feeder Cattle, Lean Hog) 특정 계약월 시세 + 1년치 일별 종가.
 Yahoo Finance 비공식 chart API 사용 (query1.finance.yahoo.com, 인증키 불필요).
 환율(fetch_exchange_rates.py)과 같은 방식/같은 API.
 
-v1에서는 현재가 스냅샷만 받아서 전일대비만 됐는데, range=1y&interval=1d로
-1년치 일별 종가를 통째로 받아오면 전주/전년대비도 로컬에서 계산 가능해서 전환함.
+v1: 현재가 스냅샷만 받아서 전일대비만 됨.
+v2: range=1y&interval=1d로 1년치 일별 종가를 받아서 전주/전년대비 계산 가능해짐.
+v3: 연속선물 티커(LE=F 등)가 이 API에서 며칠씩 값이 안 갱신되는 걸 확인해서(isStale
+    문제 재발), 구체적 계약월 티커(예: LEV26.CME)로 전환. 실시간성은 좋아지지만
+    계약 만기가 다가오면(대략 분기마다) SYMBOLS 딕셔너리를 다음 근월물로 手동 갱신
+    해줘야 함 - 만약 안 바꾸면 다시 예전처럼 값이 멈추고 isStale=true로 뜸.
 
 산출: data/cme_futures.json
   {
-    liveCattle: {price, prevClose, contract, dod, wow, yoy, history: [{date, close}, ...]},
+    liveCattle: {price, contract, dod, wow, mom, yoy, latestHistoryDate, isStale},
     feederCattle: {...}, leanHog: {...},
     marketTime, updatedAt, source
   }
@@ -29,10 +33,14 @@ RETRY_BACKOFF_SEC = 8
 HOSTS = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]
 
 SYMBOLS = {
-    "liveCattle": "LE=F",
-    "feederCattle": "GF=F",
-    "leanHog": "HE=F",
+    "liveCattle": "LEV26.CME",
+    "feederCattle": "GFV26.CME",
+    "leanHog": "HEV26.CME",
 }
+# ↑ V26 = 2026년 10월물(Oct). CME 월물 코드: F1 G2 H3 J4 K5 M6 N7 Q8 U9 V10 X11 Z12.
+# 연속선물 티커(LE=F 등)는 이 무료 API에서 실시간 갱신이 안 되는 걸 여러 날에 걸쳐
+# 확인해서(며칠씩 값이 그대로 멈춰있음) 구체적 계약월 티커로 전환함 - 대신 만기가
+# 다가오면(대략 분기마다) 다음 근월물로 이 딕셔너리를 수동으로 바꿔줘야 함.
 
 
 def fetch_one(symbol: str):
