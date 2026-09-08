@@ -133,11 +133,17 @@ window.MlaDomesticApp = (function () {
         .catch((e) => setError(String(e)));
     }, []);
 
+    // Hooks 규칙: raw가 없을 때 일찍 return해버리면 이 아래 훅들이 아예 호출이
+    // 안 됐다가, 데이터가 로드된 다음 렌더에서 갑자기 훅 개수가 늘어나
+    // "Rendered more hooks than during the previous render"(#310) 에러가 남.
+    // 그래서 훅 호출은 항상 이 위치에서 raw 유무와 상관없이 실행하고,
+    // 화면을 안 그리는 것(early return)은 모든 훅 호출이 끝난 뒤에만 함.
+    const chartCategories = useMemoLite(raw, selected, days, normalize);
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
     const names = raw.indicatorNames || {};
-    const chartCategories = useMemoLite(raw, selected, days, normalize);
 
     const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
 
@@ -230,6 +236,7 @@ window.MlaDomesticApp = (function () {
 
   function useMemoLite(raw, selected, days, normalize) {
     return useMemo(() => {
+      if (!raw) return { categories: [], series: [] };
       const indicators = raw.indicators || {};
       const base = indicators[selected[0]] || Object.values(indicators)[0] || [];
       const dates = base.slice(days >= 99999 ? 0 : -days).map((r) => r.date);
