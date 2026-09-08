@@ -277,17 +277,17 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(Card, {
             label: "CME Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.liveCattle), subColor: subColorOf(cardStats.liveCattle),
-            asOf: cme?.liveCattle?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
+            asOf: "CME (야후)"
           }),
           React.createElement(Card, {
             label: "CME Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.feederCattle), subColor: subColorOf(cardStats.feederCattle),
-            asOf: cme?.feederCattle?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
+            asOf: "CME (야후)"
           }),
           React.createElement(Card, {
             label: "CME Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.leanHog), subColor: subColorOf(cardStats.leanHog),
-            asOf: cme?.leanHog?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
+            asOf: "CME (야후)"
           })
         )
       )
