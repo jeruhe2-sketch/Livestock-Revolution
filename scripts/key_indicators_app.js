@@ -13,12 +13,13 @@ window.KeyIndicatorsApp = (function () {
     amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
     sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
   };
-  const PALETTE = ["#3a6ea5", "#b96a2e", "#2e7d4f", "#a34a3f"];
+  const PALETTE = ["#3a6ea5", "#b96a2e", "#2e7d4f", "#a34a3f", "#6b5ca5"];
   const SERIES_DEFS = [
     { key: "fx", name: "USD/KRW", hash: null },
     { key: "eu", name: "EU 돈가(S+E)", hash: "#eupigmeatprice" },
     { key: "eyci", name: "EYCI(호주)", hash: "#mladomestic" },
     { key: "usda", name: "미국 돈육 목전지", hash: "#usdedomestic" },
+    { key: "cl90", name: "90CL 수입육", hash: "#mladomestic" },
   ];
 
   function fmtUpdatedAt(iso) {
@@ -199,7 +200,7 @@ window.KeyIndicatorsApp = (function () {
     const [usda, setUsda] = useState(null);
     const [loaded, setLoaded] = useState(false);
     const [periodWeeks, setPeriodWeeks] = useState(104);
-    const [visible, setVisible] = useState({ fx: true, eu: true, eyci: true, usda: true });
+    const [visible, setVisible] = useState({ fx: true, eu: true, eyci: true, usda: true, cl90: true });
 
     useEffect(() => {
       Promise.all([
@@ -216,7 +217,7 @@ window.KeyIndicatorsApp = (function () {
     // 4개 소스를 전부 "주차 -> 값" 맵으로 통일 (단위가 다르므로 절대값 비교엔 안 쓰고,
     // 카드의 WoW/YoY 계산과 아래 정규화 차트의 원자료로만 씀)
     const weekly = useMemo(() => {
-      const out = { fx: {}, eu: {}, eyci: {}, usda: {} };
+      const out = { fx: {}, eu: {}, eyci: {}, usda: {}, cl90: {} };
       if (fxHist?.weekly) {
         for (const [wk, r] of Object.entries(fxHist.weekly)) {
           if (r.usd && r.krw) out.fx[wk] = { date: r.date, value: r.krw / r.usd }; // EUR/KRW ÷ EUR/USD = USD/KRW
@@ -240,6 +241,9 @@ window.KeyIndicatorsApp = (function () {
         const rows = usda.data.map((r) => ({ date: r.date, value: r["1/4 Trim Butt VAC"]?.usdPerLb }));
         out.usda = resampleWeekly(rows, "date", "value");
       }
+      if (mla?.usImported90cl) {
+        out.cl90 = resampleWeekly(mla.usImported90cl, "date", "value");
+      }
       return out;
     }, [eu, fxHist, mla, usda]);
 
@@ -254,6 +258,7 @@ window.KeyIndicatorsApp = (function () {
       eu: wowYoy(weekly.eu),
       eyci: wowYoy(weekly.eyci),
       usda: wowYoy(weekly.usda),
+      cl90: wowYoy(weekly.cl90),
     }), [weekly]);
 
     const goto = (hash) => { window.location.hash = hash; };
@@ -316,6 +321,13 @@ window.KeyIndicatorsApp = (function () {
             sub: cardStats.usda.wow != null ? `1주 ${pctFmt(cardStats.usda.wow)} · 1년 ${pctFmt(cardStats.usda.yoy)}` : null,
             subColor: cardStats.usda.wow > 0 ? COLORS.rust : "#3a6ea5",
             asOf: `USDA LMR \u00B7 ${cardStats.usda.latestWeek || "—"}`
+          }),
+          React.createElement(Card, {
+            onClick: () => goto("#mladomestic"),
+            label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb",
+            sub: cardStats.cl90.wow != null ? `1주 ${pctFmt(cardStats.cl90.wow)} · 1년 ${pctFmt(cardStats.cl90.yoy)}` : null,
+            subColor: cardStats.cl90.wow > 0 ? COLORS.rust : "#3a6ea5",
+            asOf: `MLA(Steiner) \u00B7 ${cardStats.cl90.latestWeek || "—"}`
           })
         ),
 
@@ -341,7 +353,6 @@ window.KeyIndicatorsApp = (function () {
         React.createElement("h2", { style: { fontSize: 14, fontWeight: 800, color: COLORS.mute, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" } }, "자동화 안 되는 지표 (수동 확인 필요)"),
         React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
           React.createElement(PendingCard, { label: "CME Live Cattle 선물", note: "CME 실시간/지연 시세는 유료 라이선스 필요. 무료 API 없음." }),
-          React.createElement(PendingCard, { label: "미국 90CL 수입육 지표", note: "Steiner Consulting 구독 데이터. MLA API report/9에서 republish하지만 별도 검증 필요." }),
           React.createElement(PendingCard, { label: "미국 소 도축(주간)", note: "USDA 리포트 slug 확인 후 추가 예정." })
         )
       ),
