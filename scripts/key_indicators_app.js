@@ -93,10 +93,10 @@ window.KeyIndicatorsApp = (function () {
       yoy: latest && yoyV ? (latest.value - yoyV.value) / yoyV.value * 100 : null,
     };
   }
-  // CME 선물 카드용 통계: 현재가 + 전일종가 기준 전일대비 (선물이라 주/년 이력 없음)
+  // CME 선물 카드용 통계: 수집 스크립트가 이미 전일/전주/전년을 계산해서 넣어줌
   function cmeStat(entry) {
     if (!entry) return { latest: null };
-    return { latest: entry.price, dod: entry.prevClose ? (entry.price - entry.prevClose) / entry.prevClose * 100 : null };
+    return { latest: entry.price, dod: entry.dod, wow: entry.wow, yoy: entry.yoy };
   }
   // 카드 sub 텍스트: 일별 소스는 전일/전주/전년 3개, 주별 소스는 전주/전년 2개
   function subText(stats) {
