@@ -153,10 +153,13 @@ window.KeyIndicatorsApp = (function () {
 
     // 주별 소스(EU돈가/90CL/환율)는 주차맵으로, 일별 소스(EYCI/미국돈육)는 원본 그대로 사용
     const weekly = useMemo(() => {
-      const out = { fx: {}, eu: {}, cl90: {} };
+      const out = { fx: {}, eurKrw: {}, eu: {}, cl90: {} };
       if (fxHist?.weekly) {
         for (const [wk, r] of Object.entries(fxHist.weekly)) {
-          if (r.usd && r.krw) out.fx[wk] = { date: r.date, value: r.krw / r.usd }; // EUR/KRW ÷ EUR/USD = USD/KRW
+          if (r.usd && r.krw) {
+            out.fx[wk] = { date: r.date, value: r.krw / r.usd }; // EUR/KRW ÷ EUR/USD = USD/KRW
+            out.eurKrw[wk] = { date: r.date, value: r.krw }; // r.krw는 이미 EUR/KRW
+          }
         }
       }
       if (eu?.data) {
@@ -185,8 +188,13 @@ window.KeyIndicatorsApp = (function () {
       if (fx?.usdKrw != null && fx?.usdKrwPrevClose) {
         fxStats.dod = (fx.usdKrw - fx.usdKrwPrevClose) / fx.usdKrwPrevClose * 100;
       }
+      const eurStats = weeklyStats(weekly.eurKrw);
+      if (fx?.eurKrw != null && fx?.eurKrwPrevClose) {
+        eurStats.dod = (fx.eurKrw - fx.eurKrwPrevClose) / fx.eurKrwPrevClose * 100;
+      }
       return {
         fx: fxStats,
+        eurFx: eurStats,
         eu: weeklyStats(weekly.eu),
         eyci: dailyStats(eyciRows, "date", "value"),
         usda: dailyStats(usdaRows, "date", "value"),
@@ -209,6 +217,11 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(Card, {
             label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원",
             sub: subText(cardStats.fx), subColor: subColorOf(cardStats.fx),
+            asOf: `${fmtUpdatedAt(fx?.marketTime || fx?.updatedAt) || "—"} · ${fx?.source || ""}`
+          }),
+          React.createElement(Card, {
+            label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원",
+            sub: subText(cardStats.eurFx), subColor: subColorOf(cardStats.eurFx),
             asOf: `${fmtUpdatedAt(fx?.marketTime || fx?.updatedAt) || "—"} · ${fx?.source || ""}`
           }),
           React.createElement(Card, {
