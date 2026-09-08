@@ -130,13 +130,35 @@ window.MlaDomesticApp = (function () {
   const thStyle = { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, whiteSpace: "nowrap" };
   const tdStyle = { padding: "8px 10px", color: COLORS.cream, fontFamily: "ui-monospace,monospace" };
 
+  // EU 수출현황과 동일한 패턴의 월 단위 정밀 선택 드롭다운
+  function HoverAxisPicker({ label, value, onChange, options }) {
+    const detailsRef = useRef(null);
+    const found = options.find(([v]) => v === value);
+    const currentLabel = found ? found[1] : value;
+    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
+      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
+        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
+        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
+        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
+      ),
+      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+        options.map(([v, l]) => React.createElement("button", {
+          key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
+          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" }
+        }, l))
+      )
+    );
+  }
+
   return function MlaDomesticApp() {
     const [raw, setRaw] = useState(null);
     const [error, setError] = useState(null);
     const [selected, setSelected] = useState(["0"]);
-    const [days, setDays] = useState(180);
     const [normalize, setNormalize] = useState(false);
     const [mainTab, setMainTab] = useState("chart");
+    // null이면 "전체 기간"을 의미 (아래 렌더에서 YM_MIN/YM_MAX로 대체)
+    const [ymStart, setYmStart] = useState(null);
+    const [ymEnd, setYmEnd] = useState(null);
 
     useEffect(() => {
       fetch("./data/mla_domestic.json", { cache: "no-store" })
@@ -145,28 +167,61 @@ window.MlaDomesticApp = (function () {
         .catch((e) => setError(String(e)));
     }, []);
 
+    // EU 수출현황과 동일하게 연월(YYYYMM) 정수 단위로 전체 가용 기간을 계산.
+    // raw가 아직 없어도(로딩중) 안전하게 빈 값을 반환 - 훅은 항상 호출돼야 함.
+    const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
+      const set = new Set();
+      const inds = raw?.indicators || {};
+      Object.values(inds).forEach((series) => series.forEach((r) => {
+        const [y, m] = r.date.split("-");
+        set.add(+y * 100 + +m);
+      }));
+      const all = [...set].sort((a, b) => a - b);
+      return { ALL_YM: all, YM_MIN: all[0] ?? null, YM_MAX: all[all.length - 1] ?? null };
+    }, [raw]);
+    const ymLabel = (ym) => ym == null ? "—" : `${Math.floor(ym / 100)}년 ${ym % 100}월`;
+    const addYm = (ym, delta) => {
+      let y = Math.floor(ym / 100), m = ym % 100;
+      m += delta;
+      while (m > 12) { m -= 12; y++; }
+      while (m < 1) { m += 12; y--; }
+      return y * 100 + m;
+    };
+
     // Hooks 규칙: raw가 없을 때 일찍 return해버리면 이 아래 훅들이 아예 호출이
     // 안 됐다가, 데이터가 로드된 다음 렌더에서 갑자기 훅 개수가 늘어나
     // "Rendered more hooks than during the previous render"(#310) 에러가 남.
     // 그래서 훅 호출은 항상 이 위치에서 raw 유무와 상관없이 실행하고,
     // 화면을 안 그리는 것(early return)은 모든 훅 호출이 끝난 뒤에만 함.
-    const chartCategories = useMemoLite(raw, selected, days, normalize);
+    const chartCategories = useMemoLite(raw, selected, ymStart ?? YM_MIN, ymEnd ?? YM_MAX, normalize);
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
     const names = raw.indicatorNames || {};
+    const ys = ymStart ?? YM_MIN, ye = ymEnd ?? YM_MAX;
 
     const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
+    // 표는 최신순(내림차순)으로, 차트는 시간 흐름 그대로(오름차순) 유지
+    const tableIdx = chartCategories.categories.map((_, i) => i).reverse();
+    const colAvg = (s) => {
+      const vals = s.data.filter((v) => v != null && isFinite(v));
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
 
     const exportXlsx = () => {
       const cats = chartCategories.categories;
       const header = ["날짜", ...selected.map((id) => IND_SHORT[id] || id)];
-      const rows = cats.map((c, i) => [c, ...selected.map((id) => {
+      const rows = tableIdx.map((i) => [cats[i], ...selected.map((id) => {
         const s = chartCategories.series.find((s2) => s2.id === id);
         return s ? (s.data[i] != null ? s.data[i] : "") : "";
       })]);
-      downloadXlsx([header, ...rows], "호주_내수지표.xlsx", "지표");
+      const avgRow = ["평균", ...selected.map((id) => {
+        const s = chartCategories.series.find((s2) => s2.id === id);
+        const a = s ? colAvg(s) : null;
+        return a != null ? Math.round(a * 100) / 100 : "";
+      })];
+      downloadXlsx([header, ...rows, avgRow], "호주_내수지표.xlsx", "지표");
     };
 
     const exportSlaughterXlsx = () => {
@@ -201,13 +256,26 @@ window.MlaDomesticApp = (function () {
         })
       ),
 
-      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 4 } },
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
         IND_ORDER.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, IND_SHORT[id])),
         React.createElement("div", { style: { flex: 1 } }),
-        [["90", "3개월"], ["180", "6개월"], ["365", "1년"], ["99999", "전체"]].map(([d, l]) =>
-          React.createElement(Toggle, { key: d, active: days === +d, onClick: () => setDays(+d), color: COLORS.sage }, l)),
         React.createElement(Toggle, { active: normalize, onClick: () => setNormalize((v) => !v), color: COLORS.amberSoft }, "지수화(기준일=100)"),
         React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀")
+      ),
+
+      React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
+        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
+        [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(Toggle, {
+          key: m, active: ye === YM_MAX && ys === addYm(YM_MAX, -(Number(m) - 1)), color: COLORS.sage,
+          onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); }
+        }, lbl)),
+        React.createElement(HoverAxisPicker, { label: "시작월", value: ys, onChange: (v) => { setYmStart(+v); if (+v > ye) setYmEnd(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+        React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"),
+        React.createElement(HoverAxisPicker, { label: "종료월", value: ye, onChange: (v) => { setYmEnd(+v); if (+v < ys) setYmStart(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+        (ys !== YM_MIN || ye !== YM_MAX) && React.createElement("button", {
+          onClick: () => { setYmStart(null); setYmEnd(null); },
+          style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" }
+        }, "전체기간")
       ),
       (() => {
         const units = new Set(selected.map((id) => names[id]?.unit).filter(Boolean));
@@ -227,7 +295,9 @@ window.MlaDomesticApp = (function () {
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
       ),
 
-      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
+      mainTab === "table" && React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 8 } }, "최신 날짜가 맨 위입니다."),
+        React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
         chartCategories.series.length
           ? React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
               React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
@@ -235,14 +305,18 @@ window.MlaDomesticApp = (function () {
                   React.createElement("th", { style: { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 90 } }, "날짜"),
                   chartCategories.series.map((s) => React.createElement("th", { key: s.id, style: { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right", minWidth: 100 } }, s.name))
                 )),
-                React.createElement("tbody", null, chartCategories.categories.map((c, i) => React.createElement("tr", { key: c, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
-                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, c),
+                React.createElement("tbody", null, tableIdx.map((i) => React.createElement("tr", { key: chartCategories.categories[i], style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, chartCategories.categories[i]),
                   chartCategories.series.map((s) => React.createElement("td", { key: s.id, style: { ...tdStyle, textAlign: "right" } }, s.data[i] != null ? s.data[i].toFixed(2) : "—"))
-                )))
+                ))),
+                React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
+                  React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "평균"),
+                  chartCategories.series.map((s) => React.createElement("td", { key: s.id, style: { ...tdStyle, textAlign: "right", fontWeight: 800, color: COLORS.amberSoft } }, (() => { const a = colAvg(s); return a != null ? a.toFixed(2) : "—"; })()))
+                ))
               )
             )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
-      ),
+      )),
 
       React.createElement("h2", { style: { fontSize: 16, fontWeight: 800, color: COLORS.cream, marginBottom: 8 } }, "주간 도축량 (NLRS 자발적 조사)"),
       React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "매주 금요일 발표, 국가 합계(6개 주 합산) \u00B7 공급 선행지표"),
@@ -268,14 +342,19 @@ window.MlaDomesticApp = (function () {
     );
   };
 
-  function useMemoLite(raw, selected, days, normalize) {
+  function useMemoLite(raw, selected, ys, ye, normalize) {
     return useMemo(() => {
       if (!raw) return { categories: [], series: [] };
       const indicators = raw.indicators || {};
-      const base = indicators[selected[0]] || Object.values(indicators)[0] || [];
-      const dates = base.slice(days >= 99999 ? 0 : -days).map((r) => r.date);
+      const inRange = (r) => {
+        const [y, m] = r.date.split("-");
+        const ym = +y * 100 + +m;
+        return (ys == null || ym >= ys) && (ye == null || ym <= ye);
+      };
+      const base = (indicators[selected[0]] || Object.values(indicators)[0] || []).filter(inRange);
+      const dates = base.map((r) => r.date);
       const series = selected.filter((id) => indicators[id]).map((id) => {
-        const byDate = Object.fromEntries(indicators[id].map((r) => [r.date, r.value]));
+        const byDate = Object.fromEntries(indicators[id].filter(inRange).map((r) => [r.date, r.value]));
         let data = dates.map((d) => byDate[d] ?? null);
         if (normalize) {
           const base0 = data.find((v) => v != null && isFinite(v) && v !== 0);
@@ -284,6 +363,6 @@ window.MlaDomesticApp = (function () {
         return { id, name: IND_SHORT[id] || id, color: PALETTE[IND_ORDER.indexOf(id) % PALETTE.length], data };
       });
       return { categories: dates.map((d) => d.slice(5)), series };
-    }, [raw, selected, days, normalize]);
+    }, [raw, selected, ys, ye, normalize]);
   }
 })();
