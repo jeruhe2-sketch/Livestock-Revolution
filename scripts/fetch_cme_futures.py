@@ -88,22 +88,39 @@ def main():
     for key, symbol in SYMBOLS.items():
         data = fetch_one(symbol)
         history = data["history"]
-        latest_date = history[-1]["date"] if history else None
-        wow_ref = find_at_or_before(history[:-1], (date.fromisoformat(latest_date) - timedelta(days=7)).isoformat()) if latest_date else None
-        yoy_ref = find_at_or_before(history[:-1], (date.fromisoformat(latest_date) - timedelta(days=365)).isoformat()) if latest_date else None
+        # meta.previousClose가 이 상품(연속선물 티커)에서는 신뢰할 수 없는 걸 확인함
+        # (실제로는 212~215대인데 235.8 같은 완전히 다른 값을 준 사례 있음).
+        # 그래서 전일/전주/전년 전부 우리가 받은 history 배열 안에서만 비교함.
+        market_date = (
+            datetime.fromtimestamp(data["marketTime"], tz=timezone.utc).date().isoformat()
+            if data.get("marketTime") else None
+        )
+        latest_hist_date = history[-1]["date"] if history else None
+        # price(실시간 시세)의 날짜가 history 마지막 봉과 같은 날이면 그 봉은 "오늘"이니
+        # 전일 비교 기준에서 제외하고 그 이전 봉과 비교. 다르면(즉 history가 며칠 밀려
+        # 있으면) history 마지막 봉 자체를 "전일"로 씀.
+        if market_date and latest_hist_date and market_date == latest_hist_date:
+            dod_pool = history[:-1]
+        else:
+            dod_pool = history
+        dod_ref = dod_pool[-1] if dod_pool else None
+
+        anchor_date = market_date or latest_hist_date
+        wow_ref = find_at_or_before(dod_pool, (date.fromisoformat(anchor_date) - timedelta(days=7)).isoformat()) if anchor_date else None
+        yoy_ref = find_at_or_before(dod_pool, (date.fromisoformat(anchor_date) - timedelta(days=365)).isoformat()) if anchor_date else None
 
         result[key] = {
             "price": data["price"],
-            "prevClose": data["prevClose"],
             "contract": data["contract"],
-            "dod": pct(data["price"], data["prevClose"]),
+            "dod": pct(data["price"], dod_ref["close"]) if dod_ref else None,
             "wow": pct(data["price"], wow_ref["close"]) if wow_ref else None,
             "yoy": pct(data["price"], yoy_ref["close"]) if yoy_ref else None,
-            "latestHistoryDate": latest_date,
+            "latestHistoryDate": latest_hist_date,
+            "isStale": bool(market_date and latest_hist_date and market_date != latest_hist_date and (date.fromisoformat(market_date) - date.fromisoformat(latest_hist_date)).days > 4),
         }
         if data.get("marketTime"):
             market_time = data["marketTime"]
-        print(f"  {key} ({symbol}): {data['price']} (전일 {result[key]['dod']}, 전주 {result[key]['wow']}, 전년 {result[key]['yoy']}) 이력 {len(history)}건")
+        print(f"  {key} ({symbol}): {data['price']} (전일 {result[key]['dod']}, 전주 {result[key]['wow']}, 전년 {result[key]['yoy']}) 이력 {len(history)}건, 최신봉 {latest_hist_date}")
         time.sleep(0.5)
 
     result["marketTime"] = datetime.fromtimestamp(market_time, tz=timezone.utc).isoformat() if market_time else None

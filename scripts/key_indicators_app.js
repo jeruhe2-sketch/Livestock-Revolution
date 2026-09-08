@@ -288,17 +288,17 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(Card, {
             label: "CME Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.liveCattle), subColor: subColorOf(cardStats.liveCattle),
-            asOf: `${cme?.liveCattle?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
+            asOf: `${cme?.liveCattle?.contract || "—"} \u00B7 ${cme?.liveCattle?.isStale ? `\u26A0 데이터 지연(최근 봉 ${cme.liveCattle.latestHistoryDate})` : (fmtUpdatedAt(cme?.marketTime) || "—")} · ${cme?.source || ""}`
           }),
           React.createElement(Card, {
             label: "CME Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.feederCattle), subColor: subColorOf(cardStats.feederCattle),
-            asOf: `${cme?.feederCattle?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
+            asOf: `${cme?.feederCattle?.contract || "—"} \u00B7 ${cme?.feederCattle?.isStale ? `\u26A0 데이터 지연(최근 봉 ${cme.feederCattle.latestHistoryDate})` : (fmtUpdatedAt(cme?.marketTime) || "—")} · ${cme?.source || ""}`
           }),
           React.createElement(Card, {
             label: "CME Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.leanHog), subColor: subColorOf(cardStats.leanHog),
-            asOf: `${cme?.leanHog?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
+            asOf: `${cme?.leanHog?.contract || "—"} \u00B7 ${cme?.leanHog?.isStale ? `\u26A0 데이터 지연(최근 봉 ${cme.leanHog.latestHistoryDate})` : (fmtUpdatedAt(cme?.marketTime) || "—")} · ${cme?.source || ""}`
           })
         ),
 
