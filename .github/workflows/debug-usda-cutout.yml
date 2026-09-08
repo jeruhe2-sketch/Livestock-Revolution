@@ -1,0 +1,26 @@
+name: debug-usda-cutout
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - run: |
+          python scripts/_debug_usda_cutout.py > /tmp/usda_cutout.log 2>&1 || true
+          cat /tmp/usda_cutout.log
+      - name: post result as issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -c 60000 /tmp/usda_cutout.log > /tmp/usda_cutout_tail.log
+          gh issue create --title "debug: USDA 컷아웃 탐색 $(date -u +%Y-%m-%dT%H:%M:%SZ)" --body-file /tmp/usda_cutout_tail.log --repo "${{ github.repository }}"
