@@ -1,0 +1,29 @@
+name: debug-telegram
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/_debug_telegram.py > /tmp/tg.log 2>&1 || true
+          cat /tmp/tg.log
+      - name: post result as issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --title "debug: 텔레그램 봇 진단 $(date -u +%Y-%m-%dT%H:%M:%SZ)" --body-file /tmp/tg.log --repo "${{ github.repository }}"

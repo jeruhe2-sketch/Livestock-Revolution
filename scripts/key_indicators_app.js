@@ -210,7 +210,11 @@ window.KeyIndicatorsApp = (function () {
       };
     }, [weekly, mla, usda, fx, usdaCutout, cme]);
 
-    const goto = (hash) => { window.location.hash = hash; };
+    const goto = (hash) => {
+      const viewName = hash.replace(/^#/, "");
+      if (window.__radarSelectView) window.__radarSelectView(viewName);
+      else window.location.hash = hash; // 혹시 못 찾으면 폴백 (완전히 안 되는 것보단 나음)
+    };
 
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1080 } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "주요지표"),

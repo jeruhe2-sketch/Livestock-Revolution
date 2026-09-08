@@ -2730,6 +2730,10 @@ function ShellApp() {
     // 함 (페이지 새로고침 없이 - replaceState만 사용).
     window.history.replaceState(null, "", window.location.pathname + "#" + v);
   };
+  // 다른 배너(예: 주요지표 카드)에서 여기로 이동하고 싶을 때 쓸 수 있게 전역으로 노출.
+  // window.location.hash를 직접 바꾸는 것만으로는 화면이 안 바뀜(이 앱이 hashchange를
+  // 안 듣고 있음) - 반드시 이 함수를 통해서 이동해야 실제로 탭이 전환됨.
+  window.__radarSelectView = selectView;
   return /* @__PURE__ */ React.createElement("div", { className: "app-shell", style: { display: "flex", minHeight: "100vh", background: "#f4f5f2" } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar", style: {
     width: 235,
     flexShrink: 0,
