@@ -116,7 +116,7 @@ def main():
             "wow": pct(data["price"], wow_ref["close"]) if wow_ref else None,
             "yoy": pct(data["price"], yoy_ref["close"]) if yoy_ref else None,
             "latestHistoryDate": latest_hist_date,
-            "isStale": bool(market_date and latest_hist_date and market_date != latest_hist_date and (date.fromisoformat(market_date) - date.fromisoformat(latest_hist_date)).days > 4),
+            "isStale": bool(latest_hist_date and (date.today() - date.fromisoformat(latest_hist_date)).days > 3),
         }
         if data.get("marketTime"):
             market_time = data["marketTime"]
