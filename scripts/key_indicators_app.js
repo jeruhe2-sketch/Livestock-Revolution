@@ -93,37 +93,72 @@ window.KeyIndicatorsApp = (function () {
     if (!entry) return { latest: null };
     return { latest: entry.price, dod: entry.dod, wow: entry.wow, mom: entry.mom, yoy: entry.yoy };
   }
-  // 카드 sub 텍스트: 전일 → 전주 → 전월 → 전년 순, 계산 가능한 것만 표시
-  function subText(stats) {
-    const parts = [];
-    if ("dod" in stats && stats.dod != null) parts.push(`전일 ${pctFmt(stats.dod)}`);
-    if (stats.wow != null) parts.push(`전주 ${pctFmt(stats.wow)}`);
-    if (stats.mom != null) parts.push(`전월 ${pctFmt(stats.mom)}`);
-    if (stats.yoy != null) parts.push(`전년 ${pctFmt(stats.yoy)}`);
-    return parts.length ? parts.join(" · ") : null;
-  }
-  function subColorOf(stats) {
-    const v = ("dod" in stats && stats.dod != null) ? stats.dod : stats.wow;
-    return v > 0 ? COLORS.rust : v < 0 ? "#3a6ea5" : COLORS.mute;
-  }
+  const STAT_ORDER = [["yoy", "전년"], ["mom", "전월"], ["wow", "전주"], ["dod", "전일"]];
 
-  function Card({ label, value, unit, sub, subColor, asOf, onClick }) {
+  function StatGrid({ stats }) {
     return React.createElement("div", {
-      onClick,
       style: {
-        background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12,
-        padding: "16px 18px", cursor: onClick ? "pointer" : "default", minWidth: 220, flex: "1 1 220px"
+        display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 10px",
+        marginTop: 12, paddingTop: 12, borderTop: `1px solid ${COLORS.panelBorder}`
       }
     },
-      React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 8, fontWeight: 700 } }, label),
-      React.createElement("div", { style: { fontSize: 26, fontWeight: 800, color: COLORS.cream, lineHeight: 1.1 } },
-        value, unit && React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: COLORS.mute, marginLeft: 5 } }, unit)
-      ),
-      sub && React.createElement("div", { style: { fontSize: 12.5, color: subColor || COLORS.mute, marginTop: 6, fontWeight: 700 } }, sub),
-      asOf && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginTop: 8 } }, asOf)
+      STAT_ORDER.map(([key, label]) => {
+        const has = key in stats;
+        const v = stats[key];
+        const known = has && v != null;
+        const color = !known ? COLORS.panelBorder2 : v > 0 ? COLORS.rust : v < 0 ? "#3a6ea5" : COLORS.mute;
+        const arrow = !known ? "" : v > 0 ? "▲" : v < 0 ? "▼" : "―";
+        return React.createElement("div", {
+          key: label,
+          style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }
+        },
+          React.createElement("span", { style: { fontSize: 11, color: COLORS.mute, fontWeight: 700 } }, label),
+          React.createElement("span", { style: { fontSize: 12.5, fontWeight: 800, color, fontVariantNumeric: "tabular-nums" } },
+            has ? (known ? `${arrow} ${pctFmt(v)}` : "—") : "·"
+          )
+        );
+      })
     );
   }
 
+  function Card({ label, value, unit, stats, asOf, onClick, accent }) {
+    return React.createElement("div", {
+      onClick,
+      className: onClick ? "radar-key-card radar-key-card--clickable" : "radar-key-card",
+      style: {
+        background: COLORS.panel,
+        border: `1px solid ${COLORS.panelBorder}`,
+        borderRadius: 14, padding: "16px 18px 14px",
+        cursor: onClick ? "pointer" : "default",
+        minWidth: 200, flex: "1 1 200px",
+        boxShadow: "0 1px 2px rgba(31,36,32,0.04)",
+        transition: "transform .15s ease, box-shadow .15s ease, border-color .15s ease",
+        borderTop: `3px solid ${accent || COLORS.panelBorder}`,
+        "--accent": accent || COLORS.amber
+      }
+    },
+      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6, fontWeight: 700, letterSpacing: "-0.01em" } }, label),
+      React.createElement("div", { style: { fontSize: 24, fontWeight: 800, color: COLORS.cream, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" } },
+        value, unit && React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: COLORS.mute, marginLeft: 5 } }, unit)
+      ),
+      React.createElement(StatGrid, { stats }),
+      asOf && React.createElement("div", { style: { fontSize: 10.5, color: COLORS.panelBorder2, marginTop: 10, fontWeight: 600 } }, asOf)
+    );
+  }
+
+  function SectionLabel({ children }) {
+    return React.createElement("div", {
+      style: {
+        fontSize: 11.5, fontWeight: 800, color: COLORS.mute, textTransform: "uppercase",
+        letterSpacing: "0.08em", margin: "22px 0 10px", display: "flex", alignItems: "center", gap: 8
+      }
+    },
+      React.createElement("span", null, children),
+      React.createElement("span", { style: { flex: 1, height: 1, background: COLORS.panelBorder } })
+    );
+  }
+
+  const ACCENT = { fx: "#3a6ea5", meat: "#b96a2e", futures: "#2e7d4f" };
 
   return function KeyIndicatorsApp() {
     const [eu, setEu] = useState(null);
@@ -212,82 +247,82 @@ window.KeyIndicatorsApp = (function () {
       else window.location.hash = hash; // 혹시 못 찾으면 폴백 (완전히 안 되는 것보단 나음)
     };
 
-    return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1080 } },
+    return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1100 } },
+      React.createElement("style", { dangerouslySetInnerHTML: { __html:
+        ".radar-key-card--clickable:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(31,36,32,0.10);border-color:var(--accent) !important;}"
+      } }),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "주요지표"),
-      React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 20 } },
-        "사이트 내 각 탭에서 자동 갱신되는 데이터를 한 화면에 모은 요약입니다. 카드를 클릭하면 해당 탭으로 이동합니다."
+      React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 8 } },
+        "각 탭에서 자동 갱신되는 데이터 요약. 카드를 클릭하면 해당 탭으로 이동합니다."
       ),
 
-      !loaded && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13 } }, "불러오는 중..."),
+      !loaded && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginTop: 20 } }, "불러오는 중..."),
 
       loaded && React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 } },
+        React.createElement(SectionLabel, null, "환율"),
+        React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
           React.createElement(Card, {
             label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원",
-            sub: subText(cardStats.fx), subColor: subColorOf(cardStats.fx),
-            asOf: fx?.source || null
+            stats: cardStats.fx, asOf: fx?.source, accent: ACCENT.fx
           }),
           React.createElement(Card, {
             label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원",
-            sub: subText(cardStats.eurFx), subColor: subColorOf(cardStats.eurFx),
-            asOf: fx?.source || null
-          }),
+            stats: cardStats.eurFx, asOf: fx?.source, accent: ACCENT.fx
+          })
+        ),
+
+        React.createElement(SectionLabel, null, "해외 육류 시세"),
+        React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
           React.createElement(Card, {
             onClick: () => goto("#eupigmeatprice"),
             label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg",
-            sub: subText(cardStats.eu), subColor: subColorOf(cardStats.eu),
-            asOf: "EU 집행위"
+            stats: cardStats.eu, asOf: "EU 집행위", accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
             label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt",
-            sub: subText(cardStats.eyci), subColor: subColorOf(cardStats.eyci),
-            asOf: "MLA"
+            stats: cardStats.eyci, asOf: "MLA", accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb",
-            sub: subText(cardStats.usda), subColor: subColorOf(cardStats.usda),
-            asOf: "USDA LMR"
+            stats: cardStats.usda, asOf: "USDA LMR", accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 돈육 컷아웃", value: cardStats.porkCutout.latest != null ? cardStats.porkCutout.latest.toFixed(2) : "—", unit: "$/cwt",
-            sub: subText(cardStats.porkCutout), subColor: subColorOf(cardStats.porkCutout),
-            asOf: "USDA LM_PK602"
+            stats: cardStats.porkCutout, asOf: "USDA LM_PK602", accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 소고기 Choice 컷아웃", value: cardStats.beefCutoutChoice.latest != null ? cardStats.beefCutoutChoice.latest.toFixed(2) : "—", unit: "$/cwt",
-            sub: subText(cardStats.beefCutoutChoice), subColor: subColorOf(cardStats.beefCutoutChoice),
-            asOf: "USDA LM_XB459"
+            stats: cardStats.beefCutoutChoice, asOf: "USDA LM_XB459", accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 소고기 Select 컷아웃", value: cardStats.beefCutoutSelect.latest != null ? cardStats.beefCutoutSelect.latest.toFixed(2) : "—", unit: "$/cwt",
-            sub: subText(cardStats.beefCutoutSelect), subColor: subColorOf(cardStats.beefCutoutSelect),
-            asOf: "USDA LM_XB459"
+            stats: cardStats.beefCutoutSelect, asOf: "USDA LM_XB459", accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
             label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb",
-            sub: subText(cardStats.cl90), subColor: subColorOf(cardStats.cl90),
-            asOf: "MLA(Steiner)"
+            stats: cardStats.cl90, asOf: "MLA(Steiner)", accent: ACCENT.meat
+          })
+        ),
+
+        React.createElement(SectionLabel, null, "CME 축산 선물"),
+        React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
+          React.createElement(Card, {
+            label: "Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
+            stats: cardStats.liveCattle, asOf: "CME (야후)", accent: ACCENT.futures
           }),
           React.createElement(Card, {
-            label: "CME Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
-            sub: subText(cardStats.liveCattle), subColor: subColorOf(cardStats.liveCattle),
-            asOf: "CME (야후)"
+            label: "Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
+            stats: cardStats.feederCattle, asOf: "CME (야후)", accent: ACCENT.futures
           }),
           React.createElement(Card, {
-            label: "CME Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
-            sub: subText(cardStats.feederCattle), subColor: subColorOf(cardStats.feederCattle),
-            asOf: "CME (야후)"
-          }),
-          React.createElement(Card, {
-            label: "CME Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
-            sub: subText(cardStats.leanHog), subColor: subColorOf(cardStats.leanHog),
-            asOf: "CME (야후)"
+            label: "Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
+            stats: cardStats.leanHog, asOf: "CME (야후)", accent: ACCENT.futures
           })
         )
       )
