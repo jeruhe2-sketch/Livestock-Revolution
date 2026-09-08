@@ -79,12 +79,13 @@ window.AusTradeApp = (function () {
     const [hoverIdx, setHoverIdx] = useState(null);
     const handleMove = (e) => {
       if (!containerRef.current || categories.length === 0) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const rect = containerRef.current.getBoundingClientRect();
-      const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
       setHoverIdx(Math.round(frac * (categories.length - 1)));
     };
     const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    return React.createElement("div", { ref: containerRef, style: { position: "relative" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null) },
+    return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
       React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
         Array.from({ length: gridLines + 1 }).map((_, i) => {
           const y = padding.top + innerH / gridLines * i;
