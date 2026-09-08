@@ -362,7 +362,7 @@ window.MlaDomesticApp = (function () {
         }
         return { id, name: IND_SHORT[id] || id, color: PALETTE[IND_ORDER.indexOf(id) % PALETTE.length], data };
       });
-      return { categories: dates.map((d) => d.slice(5)), series };
+      return { categories: dates, series };
     }, [raw, selected, ys, ye, normalize]);
   }
 })();
