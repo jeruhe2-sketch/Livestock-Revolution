@@ -456,8 +456,14 @@ window.EuPigmeatPriceApp = (function () {
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
           React.createElement(HoverMultiPicker, { label: "국가", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
           React.createElement(HoverMultiPicker, { label: "연도", options: [...new Set(ROWS.map((r) => String(r.year)))].sort().reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...new Set(ROWS.map((r) => String(r.year)))]), onClear: () => setYearFilter([]) }),
-          (msFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
-            onClick: () => { setMsFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+          (mainTab !== "table" || chartSub !== "trend" || msFilter.length > 0 || clsFilter !== "ALL" || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "ms" || colDim !== "year" || displayMode !== "abs" || groupBy !== "ms" || !sortDesc || smoothed || trendDim !== "ms") && React.createElement("button", {
+            onClick: () => {
+              setMainTab("table"); setChartSub("trend");
+              setMsFilter([]); setClsFilter("ALL"); setYearFilter([]);
+              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12);
+              setRowDim("ms"); setColDim("year"); setDisplayMode("abs"); setGroupBy("ms");
+              setSortDesc(true); setSmoothed(false); setTrendDim("ms");
+            },
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")
         ),

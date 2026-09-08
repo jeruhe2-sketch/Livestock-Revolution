@@ -406,8 +406,12 @@ window.UsdaDomesticApp = (function () {
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || itemFilter.length !== ITEMS.length) && React.createElement("button", {
-            onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); setItemFilter(ITEMS.map((i) => i.key)); },
+          (mainTab !== "chart" || chartSub !== "trend" || granularity !== "day" || displayMode !== "abs" || smoothed || overlayItem !== ITEMS[0].key || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || itemFilter.length !== ITEMS.length) && React.createElement("button", {
+            onClick: () => {
+              setMainTab("chart"); setChartSub("trend"); setGranularity("day"); setDisplayMode("abs");
+              setSmoothed(false); setOverlayItem(ITEMS[0].key);
+              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); setItemFilter(ITEMS.map((i) => i.key));
+            },
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")
         ),

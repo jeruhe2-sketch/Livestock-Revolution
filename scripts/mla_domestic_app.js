@@ -279,8 +279,8 @@ window.MlaDomesticApp = (function () {
         React.createElement(HoverAxisPicker, { label: "시작월", value: ys, onChange: (v) => { setYmStart(+v); if (+v > ye) setYmEnd(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
         React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"),
         React.createElement(HoverAxisPicker, { label: "종료월", value: ye, onChange: (v) => { setYmEnd(+v); if (+v < ys) setYmStart(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-        (ys !== YM_MIN || ye !== YM_MAX || selected.length !== 1 || selected[0] !== "0" || normalize) && React.createElement("button", {
-          onClick: () => { setYmStart(null); setYmEnd(null); setSelected(["0"]); setNormalize(false); },
+        (ys !== YM_MIN || ye !== YM_MAX || selected.length !== 1 || selected[0] !== "0" || normalize || mainTab !== "chart") && React.createElement("button", {
+          onClick: () => { setYmStart(null); setYmEnd(null); setSelected(["0"]); setNormalize(false); setMainTab("chart"); },
           style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
         }, "필터 초기화")
       ),

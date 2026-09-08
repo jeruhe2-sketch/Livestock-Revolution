@@ -46,11 +46,11 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./scripts/usda_domestic_app.js?v=26"></script>
-<script src="./scripts/cepea_domestic_app.js?v=24"></script>
-<script src="./scripts/aus_trade_app.js?v=20"></script>
-<script src="./scripts/eu_pigmeat_price_app.js?v=5"></script>
-<script src="./scripts/mla_domestic_app.js?v=9"></script>
+<script src="./scripts/usda_domestic_app.js?v=27"></script>
+<script src="./scripts/cepea_domestic_app.js?v=25"></script>
+<script src="./scripts/aus_trade_app.js?v=21"></script>
+<script src="./scripts/eu_pigmeat_price_app.js?v=6"></script>
+<script src="./scripts/mla_domestic_app.js?v=10"></script>
 <script src="./scripts/key_indicators_app.js?v=16"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
@@ -467,16 +467,21 @@ function Dashboard({ db }) {
       }
     },
     p2
-  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), (countryFilter.length > 0 || partFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), (mainTab !== "table" || chartSub !== "group" || meat !== (META.\uD488\uBA85[2] || META.\uD488\uBA85[0]) || ice !== "\uC804\uCCB4" || countryFilter.length > 0 || partFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "country" || colDim !== "year" || displayMode !== "abs" || groupBy !== "year" || !sortDesc || overlayDim !== "year" || overlayXAxis !== "month") && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
+        setMainTab("table"); setChartSub("group");
+        setMeat(META.\uD488\uBA85[2] || META.\uD488\uBA85[0]); setIce("\uC804\uCCB4");
         setCountryFilter([]);
         setPartFilter([]);
         setYmStart(YM_MIN);
         setYmEnd(YM_MAX);
         setMonthFrom(1);
         setMonthTo(12);
+        setRowDim("country"); setColDim("year"); setDisplayMode("abs"); setGroupBy("year"); setSortDesc(true);
+        setOverlayDim("year"); setOverlayXAxis("month"); setOverlayYearCtx(Math.floor(YM_MAX / 100));
+        setOverlaySel({ dim: "year", list: [] });
       },
       style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
     },
@@ -1106,8 +1111,14 @@ function Dashboard({ db, exRates, fxHistory }) {
         React.createElement(HoverMultiPicker, { label: "수출국(EU 회원국)", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
         React.createElement(HoverMultiPicker, { label: "수입국", options: partnerOptions, selected: partnerFilter, onToggle: (v) => toggleFilter(partnerFilter, setPartnerFilter, v), onSelectAll: () => setPartnerFilter([...partnerOptions]), onClear: () => setPartnerFilter([]) }),
         React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
-        (msFilter.length > 0 || partnerFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
-          onClick: () => { setMsFilter([]); setPartnerFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+        (mainTab !== "table" || chartSub !== "trend" || shiftMonths !== "3" || shiftCompare !== "prev" || valueKey !== "kg" || msFilter.length > 0 || partnerFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "partner" || colDim !== "year" || displayMode !== "abs" || groupBy !== "year" || !sortDesc || smoothed || trendDim !== "partner" || outlierMode !== "exclude") && React.createElement("button", {
+          onClick: () => {
+            setMainTab("table"); setChartSub("trend"); setShiftMonths("3"); setShiftCompare("prev"); setValueKey("kg");
+            setMsFilter([]); setPartnerFilter([]); setYearFilter([]);
+            setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12);
+            setRowDim("partner"); setColDim("year"); setDisplayMode("abs"); setGroupBy("year");
+            setSortDesc(true); setSmoothed(false); setTrendDim("partner"); setOutlierMode("exclude");
+          },
           style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
         }, "필터 초기화")
       ),
@@ -1821,8 +1832,14 @@ function Dashboard({ db }) {
         React.createElement(HoverMultiPicker, { label: "수입국", options: countryOptions, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...countryOptions]), onClear: () => setCountryFilter([]) }),
         React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
         React.createElement(HoverAxisPicker, { label: "지표", value: valueKey, onChange: setValueKey, options: Object.entries(VALUE_LABEL) }),
-        (countryFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
-          onClick: () => { setCountryFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+        (commodity !== 1702 || mainTab !== "table" || chartSub !== "trend" || shiftMonths !== "3" || shiftCompare !== "prev" || valueKey !== "weeklyExports" || countryFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "country" || colDim !== "year" || displayMode !== "abs" || groupBy !== "year" || !sortDesc || smoothed) && React.createElement("button", {
+          onClick: () => {
+            setCommodity(1702); setMainTab("table"); setChartSub("trend"); setShiftMonths("3"); setShiftCompare("prev"); setValueKey("weeklyExports");
+            setCountryFilter([]); setYearFilter([]);
+            setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12);
+            setRowDim("country"); setColDim("year"); setDisplayMode("abs"); setGroupBy("year");
+            setSortDesc(true); setSmoothed(false);
+          },
           style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
         }, "필터 초기화")
       ),

@@ -519,8 +519,15 @@ window.AusTradeApp = (function () {
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
           React.createElement(HoverMultiPicker, { label: "목적지", options: destOptions, selected: destFilter, onToggle: (v) => toggleFilter(destFilter, setDestFilter, v), onSelectAll: () => setDestFilter([...destOptions]), onClear: () => setDestFilter([]) }),
           React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
-          (destFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", {
-            onClick: () => { setDestFilter([]); setYearFilter([]); setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+          (mainTab !== "table" || chartSub !== "trend" || shiftMonths !== "3" || shiftCompare !== "prev" || species !== "beef" || form !== "total" || destFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "dest" || colDim !== "year" || displayMode !== "abs" || groupBy !== "dest" || !sortDesc || smoothed) && React.createElement("button", {
+            onClick: () => {
+              setMainTab("table"); setChartSub("trend"); setShiftMonths("3"); setShiftCompare("prev");
+              setSpecies("beef"); setForm("total");
+              setDestFilter([]); setYearFilter([]);
+              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12);
+              setRowDim("dest"); setColDim("year"); setDisplayMode("abs"); setGroupBy("dest");
+              setSortDesc(true); setSmoothed(false);
+            },
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")
         ),
