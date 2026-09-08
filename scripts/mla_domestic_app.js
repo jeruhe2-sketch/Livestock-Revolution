@@ -167,7 +167,7 @@ window.MlaDomesticApp = (function () {
     };
 
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1040 } },
-      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "호주 내수(EYCI 등) 현황"),
+      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "호주 내수현황(EYCI 등)"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 18 } },
         "MLA(Meat & Livestock Australia) 공개 API \u00B7 매일 자동 갱신 \u00B7 수동작업 없음"
       ),
