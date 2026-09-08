@@ -363,7 +363,6 @@ window.UsdaDomesticApp = (function () {
 
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
-        React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "USDA AMS · LM_PK602 · NATIONAL DAILY PORK FOB PLANT"),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "미국 축산물 내수현황"),
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
 
@@ -486,10 +485,6 @@ window.UsdaDomesticApp = (function () {
               )
             )
           )
-        ),
-
-        React.createElement("div", { style: { marginTop: 16, paddingTop: 10, borderTop: `1px solid ${COLORS.panelBorder}`, fontSize: 12.5, color: COLORS.mute, lineHeight: 1.7 } },
-          "자료: USDA Agricultural Marketing Service · LMR Datamart (Slug ID 2498 / LM_PK602) · National Daily Pork FOB Plant - Negotiated Sales - Afternoon"
         )
       )
     );

@@ -121,7 +121,7 @@ window.KeyIndicatorsApp = (function () {
     );
   }
 
-  function Card({ label, value, unit, stats, asOf, onClick, accent }) {
+  function Card({ label, value, unit, stats, onClick, accent }) {
     return React.createElement("div", {
       onClick,
       className: onClick ? "radar-key-card radar-key-card--clickable" : "radar-key-card",
@@ -141,8 +141,7 @@ window.KeyIndicatorsApp = (function () {
       React.createElement("div", { style: { fontSize: 24, fontWeight: 800, color: COLORS.cream, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" } },
         value, unit && React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: COLORS.mute, marginLeft: 5 } }, unit)
       ),
-      React.createElement(StatGrid, { stats }),
-      asOf && React.createElement("div", { style: { fontSize: 10.5, color: COLORS.panelBorder2, marginTop: 10, fontWeight: 600 } }, asOf)
+      React.createElement(StatGrid, { stats })
     );
   }
 
@@ -263,11 +262,11 @@ window.KeyIndicatorsApp = (function () {
         React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
           React.createElement(Card, {
             label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원",
-            stats: cardStats.fx, asOf: fx?.source, accent: ACCENT.fx
+            stats: cardStats.fx, accent: ACCENT.fx
           }),
           React.createElement(Card, {
             label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원",
-            stats: cardStats.eurFx, asOf: fx?.source, accent: ACCENT.fx
+            stats: cardStats.eurFx, accent: ACCENT.fx
           })
         ),
 
@@ -276,37 +275,37 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(Card, {
             onClick: () => goto("#eupigmeatprice"),
             label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg",
-            stats: cardStats.eu, asOf: "EU 집행위", accent: ACCENT.meat
+            stats: cardStats.eu, accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
             label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt",
-            stats: cardStats.eyci, asOf: "MLA", accent: ACCENT.meat
+            stats: cardStats.eyci, accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb",
-            stats: cardStats.usda, asOf: "USDA LMR", accent: ACCENT.meat
+            stats: cardStats.usda, accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 돈육 컷아웃", value: cardStats.porkCutout.latest != null ? cardStats.porkCutout.latest.toFixed(2) : "—", unit: "$/cwt",
-            stats: cardStats.porkCutout, asOf: "USDA LM_PK602", accent: ACCENT.meat
+            stats: cardStats.porkCutout, accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 소고기 Choice 컷아웃", value: cardStats.beefCutoutChoice.latest != null ? cardStats.beefCutoutChoice.latest.toFixed(2) : "—", unit: "$/cwt",
-            stats: cardStats.beefCutoutChoice, asOf: "USDA LM_XB459", accent: ACCENT.meat
+            stats: cardStats.beefCutoutChoice, accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 소고기 Select 컷아웃", value: cardStats.beefCutoutSelect.latest != null ? cardStats.beefCutoutSelect.latest.toFixed(2) : "—", unit: "$/cwt",
-            stats: cardStats.beefCutoutSelect, asOf: "USDA LM_XB459", accent: ACCENT.meat
+            stats: cardStats.beefCutoutSelect, accent: ACCENT.meat
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
             label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb",
-            stats: cardStats.cl90, asOf: "MLA(Steiner)", accent: ACCENT.meat
+            stats: cardStats.cl90, accent: ACCENT.meat
           })
         ),
 
@@ -314,15 +313,15 @@ window.KeyIndicatorsApp = (function () {
         React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
           React.createElement(Card, {
             label: "Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
-            stats: cardStats.liveCattle, asOf: "CME (야후)", accent: ACCENT.futures
+            stats: cardStats.liveCattle, accent: ACCENT.futures
           }),
           React.createElement(Card, {
             label: "Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
-            stats: cardStats.feederCattle, asOf: "CME (야후)", accent: ACCENT.futures
+            stats: cardStats.feederCattle, accent: ACCENT.futures
           }),
           React.createElement(Card, {
             label: "Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
-            stats: cardStats.leanHog, asOf: "CME (야후)", accent: ACCENT.futures
+            stats: cardStats.leanHog, accent: ACCENT.futures
           })
         )
       )

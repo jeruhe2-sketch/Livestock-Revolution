@@ -668,7 +668,7 @@ window.AusTradeApp = (function () {
             )
           )
         ),
-        React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: 호주 DAFF(농림부) Red meat export statistics · 57 Destination Report. 사용자 수동 업로드로 갱신됩니다.")
+        React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "사용자 수동 업로드로 갱신됩니다.")
       )
     );
   }

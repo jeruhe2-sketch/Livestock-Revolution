@@ -236,7 +236,7 @@ window.MlaDomesticApp = (function () {
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1040 } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "호주 축산물 내수현황"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 18 } },
-        "MLA(Meat & Livestock Australia) 공개 API \u00B7 매일 자동 갱신 \u00B7 수동작업 없음"
+        "매일 자동 갱신 \u00B7 수동작업 없음"
       ),
 
       React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
@@ -335,9 +335,6 @@ window.MlaDomesticApp = (function () {
 
       React.createElement("div", { style: { fontSize: 12, color: COLORS.mute } },
         `최근 데이터 기준: ${raw.sourceMostRecentData || "—"} \u00B7 수집: ${fmtUpdatedAt(raw.collectedAt) || "—"}`
-      ),
-      React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginTop: 4 } },
-        "출처: Meat & Livestock Australia Statistics API \u00B7 MLA Market Report and Information Terms of Use 적용 (개인/내부 업무용)"
       )
     );
   };

@@ -579,7 +579,7 @@ window.EuPigmeatPriceApp = (function () {
             )
           )
         ),
-        React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: European Commission Agri-food Data Portal (pigmeat/prices) 공식 API. 매주 자동 갱신됩니다.")
+        React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "매주 자동 갱신됩니다.")
       )
     );
   }

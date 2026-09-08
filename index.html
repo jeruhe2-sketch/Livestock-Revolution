@@ -46,12 +46,12 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./scripts/usda_domestic_app.js?v=22"></script>
-<script src="./scripts/cepea_domestic_app.js?v=22"></script>
-<script src="./scripts/aus_trade_app.js?v=19"></script>
-<script src="./scripts/eu_pigmeat_price_app.js?v=4"></script>
-<script src="./scripts/mla_domestic_app.js?v=6"></script>
-<script src="./scripts/key_indicators_app.js?v=15"></script>
+<script src="./scripts/usda_domestic_app.js?v=23"></script>
+<script src="./scripts/cepea_domestic_app.js?v=23"></script>
+<script src="./scripts/aus_trade_app.js?v=20"></script>
+<script src="./scripts/eu_pigmeat_price_app.js?v=5"></script>
+<script src="./scripts/mla_domestic_app.js?v=7"></script>
+<script src="./scripts/key_indicators_app.js?v=16"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
   * { box-sizing: border-box; }
@@ -1266,7 +1266,7 @@ function Dashboard({ db, exRates, fxHistory }) {
           )
         )
       ),
-      React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: EU 집행위 Agri-food Data Portal(TAXUD Weekly Export) 공식 API. 매주 자동 갱신됩니다.")
+      React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "매주 자동 갱신됩니다.")
     )
   );
 }
@@ -1962,7 +1962,7 @@ function Dashboard({ db }) {
           )
         )
       ),
-      React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "자료: USDA FAS ESR(Export Sales Reporting) 공식 API. 매주 자동 갱신됩니다.")
+      React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "매주 자동 갱신됩니다.")
     )
   );
 }

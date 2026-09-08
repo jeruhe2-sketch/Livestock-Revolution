@@ -524,10 +524,6 @@ window.CepeaDomesticApp = (function () {
               )
             )
           )
-        ),
-
-        React.createElement("div", { style: { marginTop: 16, paddingTop: 10, borderTop: `1px solid ${COLORS.panelBorder}`, fontSize: 12.5, color: COLORS.mute, lineHeight: 1.7 } },
-          "자료: CEPEA/ESALQ (Centro de Estudos Avançados em Economia Aplicada, ESALQ/USP) · 상파울루 대량시장(Grande São Paulo) 도매가 지표. Cloudflare 챌린지로 자동 수집이 막혀 있어 수동 업로드 방식으로 부정기 갱신됩니다."
         )
       )
     );
