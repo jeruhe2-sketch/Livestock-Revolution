@@ -46,11 +46,11 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./scripts/usda_domestic_app.js?v=25"></script>
-<script src="./scripts/cepea_domestic_app.js?v=23"></script>
+<script src="./scripts/usda_domestic_app.js?v=26"></script>
+<script src="./scripts/cepea_domestic_app.js?v=24"></script>
 <script src="./scripts/aus_trade_app.js?v=20"></script>
 <script src="./scripts/eu_pigmeat_price_app.js?v=5"></script>
-<script src="./scripts/mla_domestic_app.js?v=8"></script>
+<script src="./scripts/mla_domestic_app.js?v=9"></script>
 <script src="./scripts/key_indicators_app.js?v=16"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
@@ -467,18 +467,20 @@ function Dashboard({ db }) {
       }
     },
     p2
-  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), (countryFilter.length > 0 || partFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
+        setCountryFilter([]);
+        setPartFilter([]);
         setYmStart(YM_MIN);
         setYmEnd(YM_MAX);
         setMonthFrom(1);
         setMonthTo(12);
       },
-      style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" }
+      style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
     },
-    "\uC804\uCCB4\uAE30\uAC04"
+    "\uD544\uD130 \uCD08\uAE30\uD654"
   )), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: COLORS.mute } }, meat, " \xB7 ", ice, countryFilter.length ? ` \xB7 \uAD6D\uAC00 ${countryFilter.length}\uAC1C` : "", partFilter.length ? ` \xB7 \uBD80\uC704 ${partFilter.length}\uAC1C` : "", " \xB7 ", ymLabel(ymStart), "~", ymLabel(ymEnd), (monthFrom !== 1 || monthTo !== 12) ? ` \xB7 ${monthFrom}\uC6D4~${monthTo}\uC6D4\uB9CC` : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement(
     "button",
     {
