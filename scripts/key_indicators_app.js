@@ -99,6 +99,24 @@ window.KeyIndicatorsApp = (function () {
     if (!entry) return { latest: null };
     return { latest: entry.price, dod: entry.dod, wow: entry.wow, mom: entry.mom, yoy: entry.yoy };
   }
+  // 각 시세를 kg당 원화로 근사 환산 (해외 육류시세 + 축산선물만 - 요청대로 딱 이 범위)
+  const LB_TO_KG = 0.453592;
+  function approxKrwPerKg(value, kind, fx) {
+    if (value == null || !fx) return null;
+    switch (kind) {
+      case "usd_per_lb": return fx.usdKrw ? (value / LB_TO_KG) * fx.usdKrw : null;
+      case "usd_cents_per_lb": return fx.usdKrw ? ((value / 100) / LB_TO_KG) * fx.usdKrw : null;
+      case "usd_per_cwt": return fx.usdKrw ? (value / (100 * LB_TO_KG)) * fx.usdKrw : null; // 1 cwt = 100 lb
+      case "eur_per_100kg": return fx.eurKrw ? (value / 100) * fx.eurKrw : null;
+      case "aud_cents_per_kg": return fx.audKrw ? (value / 100) * fx.audKrw : null;
+      default: return null;
+    }
+  }
+  function fmtKrwPerKg(v) {
+    if (v == null || !isFinite(v)) return null;
+    return `\u2248 ${Math.round(v).toLocaleString()}\uC6D0/kg`;
+  }
+
   const STAT_ORDER = [["yoy", "전년"], ["mom", "전월"], ["wow", "전주"], ["dod", "전일"]];
 
   function StatGrid({ stats }) {
@@ -127,7 +145,7 @@ window.KeyIndicatorsApp = (function () {
     );
   }
 
-  function Card({ label, value, unit, stats, onClick, accent }) {
+  function Card({ label, value, unit, stats, onClick, accent, krwPerKg }) {
     return React.createElement("div", {
       onClick,
       className: onClick ? "radar-key-card radar-key-card--clickable" : "radar-key-card",
@@ -147,6 +165,7 @@ window.KeyIndicatorsApp = (function () {
       React.createElement("div", { style: { fontSize: 24, fontWeight: 800, color: COLORS.cream, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" } },
         value, unit && React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: COLORS.mute, marginLeft: 5 } }, unit)
       ),
+      fmtKrwPerKg(krwPerKg) && React.createElement("div", { style: { fontSize: 11.5, color: COLORS.amberSoft, marginTop: 2, fontWeight: 700 } }, fmtKrwPerKg(krwPerKg)),
       React.createElement(StatGrid, { stats })
     );
   }
@@ -208,6 +227,7 @@ window.KeyIndicatorsApp = (function () {
           value, unit && React.createElement("span", { style: { fontSize: 11.5, fontWeight: 600, color: COLORS.mute, marginLeft: 4 } }, unit)
         )
       ),
+      fmtKrwPerKg(entry.krwPerKg) && React.createElement("div", { style: { fontSize: 11, color: COLORS.amberSoft, fontWeight: 700, marginTop: 2 } }, fmtKrwPerKg(entry.krwPerKg)),
       React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" } },
         STAT_ORDER.map(([key, slabel]) => {
           const has = key in stats;
@@ -304,16 +324,16 @@ window.KeyIndicatorsApp = (function () {
       { section: "fx", label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원", stats: cardStats.eurFx, accent: ACCENT.fx },
       { section: "fx", label: "AUD/KRW", value: fx?.audKrw != null ? fx.audKrw.toLocaleString() : "—", unit: "원", stats: cardStats.audFx, accent: ACCENT.fx },
       { section: "fx", label: "BRL/KRW", value: fx?.brlKrw != null ? fx.brlKrw.toLocaleString() : "—", unit: "원", stats: cardStats.brlFx, accent: ACCENT.fx },
-      { section: "meat", label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg", stats: cardStats.eu, accent: ACCENT.meat, onClick: () => goto("#eupigmeatprice") },
-      { section: "meat", label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt", stats: cardStats.eyci, accent: ACCENT.meat, onClick: () => goto("#mladomestic") },
-      { section: "meat", label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb", stats: cardStats.usda, accent: ACCENT.meat, onClick: () => goto("#usdedomestic") },
-      { section: "meat", label: "미국 돈육 컷아웃", value: cardStats.porkCutout.latest != null ? cardStats.porkCutout.latest.toFixed(2) : "—", unit: "$/cwt", stats: cardStats.porkCutout, accent: ACCENT.meat, onClick: () => goto("#usdedomestic") },
-      { section: "meat", label: "미국 소고기 Choice 컷아웃", value: cardStats.beefCutoutChoice.latest != null ? cardStats.beefCutoutChoice.latest.toFixed(2) : "—", unit: "$/cwt", stats: cardStats.beefCutoutChoice, accent: ACCENT.meat, onClick: () => goto("#usdedomestic") },
-      { section: "meat", label: "미국 소고기 Select 컷아웃", value: cardStats.beefCutoutSelect.latest != null ? cardStats.beefCutoutSelect.latest.toFixed(2) : "—", unit: "$/cwt", stats: cardStats.beefCutoutSelect, accent: ACCENT.meat, onClick: () => goto("#usdedomestic") },
-      { section: "meat", label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb", stats: cardStats.cl90, accent: ACCENT.meat, onClick: () => goto("#mladomestic") },
-      { section: "futures", label: "Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.liveCattle, accent: ACCENT.futures },
-      { section: "futures", label: "Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.feederCattle, accent: ACCENT.futures },
-      { section: "futures", label: "Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.leanHog, accent: ACCENT.futures },
+      { section: "meat", label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg", stats: cardStats.eu, accent: ACCENT.meat, onClick: () => goto("#eupigmeatprice"), krwPerKg: approxKrwPerKg(cardStats.eu.latest, "eur_per_100kg", fx) },
+      { section: "meat", label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt", stats: cardStats.eyci, accent: ACCENT.meat, onClick: () => goto("#mladomestic"), krwPerKg: approxKrwPerKg(cardStats.eyci.latest, "aud_cents_per_kg", fx) },
+      { section: "meat", label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb", stats: cardStats.usda, accent: ACCENT.meat, onClick: () => goto("#usdedomestic"), krwPerKg: approxKrwPerKg(cardStats.usda.latest, "usd_per_lb", fx) },
+      { section: "meat", label: "미국 돈육 컷아웃", value: cardStats.porkCutout.latest != null ? cardStats.porkCutout.latest.toFixed(2) : "—", unit: "$/cwt", stats: cardStats.porkCutout, accent: ACCENT.meat, onClick: () => goto("#usdedomestic"), krwPerKg: approxKrwPerKg(cardStats.porkCutout.latest, "usd_per_cwt", fx) },
+      { section: "meat", label: "미국 소고기 Choice 컷아웃", value: cardStats.beefCutoutChoice.latest != null ? cardStats.beefCutoutChoice.latest.toFixed(2) : "—", unit: "$/cwt", stats: cardStats.beefCutoutChoice, accent: ACCENT.meat, onClick: () => goto("#usdedomestic"), krwPerKg: approxKrwPerKg(cardStats.beefCutoutChoice.latest, "usd_per_cwt", fx) },
+      { section: "meat", label: "미국 소고기 Select 컷아웃", value: cardStats.beefCutoutSelect.latest != null ? cardStats.beefCutoutSelect.latest.toFixed(2) : "—", unit: "$/cwt", stats: cardStats.beefCutoutSelect, accent: ACCENT.meat, onClick: () => goto("#usdedomestic"), krwPerKg: approxKrwPerKg(cardStats.beefCutoutSelect.latest, "usd_per_cwt", fx) },
+      { section: "meat", label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb", stats: cardStats.cl90, accent: ACCENT.meat, onClick: () => goto("#mladomestic"), krwPerKg: approxKrwPerKg(cardStats.cl90.latest, "usd_cents_per_lb", fx) },
+      { section: "futures", label: "Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.liveCattle, accent: ACCENT.futures, krwPerKg: approxKrwPerKg(cardStats.liveCattle.latest, "usd_cents_per_lb", fx) },
+      { section: "futures", label: "Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.feederCattle, accent: ACCENT.futures, krwPerKg: approxKrwPerKg(cardStats.feederCattle.latest, "usd_cents_per_lb", fx) },
+      { section: "futures", label: "Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.leanHog, accent: ACCENT.futures, krwPerKg: approxKrwPerKg(cardStats.leanHog.latest, "usd_cents_per_lb", fx) },
     ];
 
     if (isMobile) {
@@ -345,7 +365,7 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(SectionLabel, null, label),
           React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
             entries.filter((e) => e.section === key).map((e, i) => React.createElement(Card, {
-              key: i, label: e.label, value: e.value, unit: e.unit, stats: e.stats, accent: e.accent, onClick: e.onClick
+              key: i, label: e.label, value: e.value, unit: e.unit, stats: e.stats, accent: e.accent, onClick: e.onClick, krwPerKg: e.krwPerKg
             }))
           )
         ))
