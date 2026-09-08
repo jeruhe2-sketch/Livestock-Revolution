@@ -179,14 +179,20 @@ window.KeyIndicatorsApp = (function () {
     const cardStats = useMemo(() => {
       const eyciRows = mla?.indicators?.["0"] || [];
       const usdaRows = usda?.data ? usda.data.map((r) => ({ date: r.date, value: r["1/4 Trim Butt VAC"]?.usdPerLb })) : [];
+      const fxStats = weeklyStats(weekly.fx);
+      // 환율은 이제 실시간 시세라 야후가 주는 전일종가(prevClose)로 진짜 전일대비를 계산.
+      // (ECB 폴백이 걸린 경우 prevClose가 없어서 dod는 자동으로 빠짐)
+      if (fx?.usdKrw != null && fx?.usdKrwPrevClose) {
+        fxStats.dod = (fx.usdKrw - fx.usdKrwPrevClose) / fx.usdKrwPrevClose * 100;
+      }
       return {
-        fx: weeklyStats(weekly.fx),
+        fx: fxStats,
         eu: weeklyStats(weekly.eu),
         eyci: dailyStats(eyciRows, "date", "value"),
         usda: dailyStats(usdaRows, "date", "value"),
         cl90: weeklyStats(weekly.cl90),
       };
-    }, [weekly, mla, usda]);
+    }, [weekly, mla, usda, fx]);
 
     const goto = (hash) => { window.location.hash = hash; };
 
@@ -203,7 +209,7 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(Card, {
             label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원",
             sub: subText(cardStats.fx), subColor: subColorOf(cardStats.fx),
-            asOf: `${fmtUpdatedAt(fx?.updatedAt) || "—"} · ${fx?.source || ""}`
+            asOf: `${fmtUpdatedAt(fx?.marketTime || fx?.updatedAt) || "—"} · ${fx?.source || ""}`
           }),
           React.createElement(Card, {
             onClick: () => goto("#eupigmeatprice"),
