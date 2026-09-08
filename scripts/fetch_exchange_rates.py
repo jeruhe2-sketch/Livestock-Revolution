@@ -99,6 +99,7 @@ def main():
     source = "Yahoo Finance (실시간 시장가, 비공식 API)"
     market_time = None
     yahoo_ok = True
+    histories = {}  # 통화별 실제 이력 저장 (BRL 역산에 USD 이력을 재사용)
 
     for key, (symbol, ecb_base) in CURRENCIES.items():
         try:
@@ -116,12 +117,13 @@ def main():
             continue
 
         history = data["history"]
+        histories[key] = history
         latest_date = history[-1]["date"] if history else None
         dod_pool = history[:-1] if history else []
         anchor = latest_date
 
-        def ref(days):
-            return find_at_or_before(dod_pool, (date.fromisoformat(anchor) - timedelta(days=days)).isoformat()) if anchor else None
+        def ref(days, pool=dod_pool, anchor_date=anchor):
+            return find_at_or_before(pool, (date.fromisoformat(anchor_date) - timedelta(days=days)).isoformat()) if anchor_date else None
 
         dod_ref, wow_ref, mom_ref, yoy_ref = ref(1), ref(7), ref(30), ref(365)
         price = data["price"]
@@ -135,6 +137,37 @@ def main():
             market_time = data["marketTime"]
         print(f"  {key.upper()}/KRW: {price} (전일 {result[f'{key}KrwDod']}, 전주 {result[f'{key}KrwWow']}, 전월 {result[f'{key}KrwMom']}, 전년 {result[f'{key}KrwYoy']})")
         time.sleep(0.3)
+
+    # BRLKRW=X는 야후가 이력을 거의 안 줘서(당일 1건뿐) 전주/전월/전년이 전부 비어있었음.
+    # USDBRL=X(유동성 높은 페어라 이력 풍부)와 이미 받아둔 USD/KRW 이력을 나눠서
+    # "USD/KRW ÷ USD/BRL = BRL/KRW" 역산 이력을 합성함. 현재가(brlKrw)는 그대로 유지하고
+    # 비교용 과거값만 이 방식으로 보강.
+    if histories.get("brl", []).__len__() < 5 and histories.get("usd") and result.get("brlKrw") is not None:
+        try:
+            usdbrl = fetch_yahoo("USDBRL=X")
+            usdbrl_hist = {r["date"]: r["close"] for r in usdbrl["history"]}
+            usd_hist = {r["date"]: r["close"] for r in histories["usd"]}
+            synth = []
+            for d_, usdbrl_close in usdbrl_hist.items():
+                usd_close = usd_hist.get(d_)
+                if usd_close and usdbrl_close:
+                    synth.append({"date": d_, "close": usd_close / usdbrl_close})
+            synth.sort(key=lambda r: r["date"])
+            if synth:
+                brl_price = result["brlKrw"]
+                anchor = synth[-1]["date"]
+                pool = synth[:-1]
+
+                def bref(days):
+                    return find_at_or_before(pool, (date.fromisoformat(anchor) - timedelta(days=days)).isoformat())
+
+                result["brlKrwWow"] = pct(brl_price, bref(7)["close"]) if bref(7) else None
+                result["brlKrwMom"] = pct(brl_price, bref(30)["close"]) if bref(30) else None
+                result["brlKrwYoy"] = pct(brl_price, bref(365)["close"]) if bref(365) else None
+                result["brlKrwDod"] = pct(brl_price, bref(1)["close"]) if bref(1) else None
+                print(f"  BRL/KRW 이력 역산 완료({len(synth)}건, USD/KRW ÷ USD/BRL): 전주 {result['brlKrwWow']}, 전월 {result['brlKrwMom']}, 전년 {result['brlKrwYoy']}")
+        except Exception as e:
+            print(f"BRL 역산 실패(그냥 전일/전주/전월/전년 비움): {e!r}", file=sys.stderr)
 
     if not yahoo_ok:
         source = "European Central Bank (via frankfurter.dev) - 야후 일부 실패로 폴백"
