@@ -51,6 +51,7 @@
 <script src="./scripts/aus_trade_app.js?v=19"></script>
 <script src="./scripts/eu_pigmeat_price_app.js?v=4"></script>
 <script src="./scripts/mla_domestic_app.js?v=3"></script>
+<script src="./scripts/key_indicators_app.js?v=1"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
   * { box-sizing: border-box; }
@@ -2716,6 +2717,7 @@ function ShellApp() {
     if (h === "#austrade") return "austrade";
     if (h === "#eupigmeatprice") return "eupigmeatprice";
     if (h === "#mladomestic") return "mladomestic";
+    if (h === "#keyindicators") return "keyindicators";
     return "quarantine";
   });
   const selectView = (v) => {
@@ -2739,6 +2741,14 @@ function ShellApp() {
     height: "100vh",
     overflowY: "auto"
   } }, /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-title", style: { fontSize: 15, fontWeight: 800, color: "#1f2420", marginBottom: 2, letterSpacing: "-0.01em" } }, "\u{1F3E2} \uD1B5\uD569 \uB300\uC2DC\uBCF4\uB4DC"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-subtitle", style: { fontSize: 12, color: "#5b615c", marginBottom: 20 } }, "\uD68C\uC0AC \uB0B4\uBD80 \uD1B5\uD569 \uC870\uD68C"), /* @__PURE__ */ React.createElement("div", { className: "app-sidebar-nav" }, /* @__PURE__ */ React.createElement(
+    NavItem,
+    {
+      active: view === "keyindicators",
+      onClick: () => selectView("keyindicators"),
+      icon: "\u{1F4CC}",
+      label: "\uC8FC\uC694\uC9C0\uD45C"
+    }
+  ), /* @__PURE__ */ React.createElement(
     NavItem,
     {
       active: view === "warehouse",
@@ -2816,7 +2826,7 @@ function ShellApp() {
       icon: "\u{1F1E6}\u{1F1FA}",
       label: "\uD638\uC8FC \uB0B4\uC218(EYCI \uB4F1) \uD604\uD669"
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "austrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.AusTradeApp, null)), view === "eupigmeatprice" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uAC00(\uB3C4\uCCB4) \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.EuPigmeatPriceApp, null)), view === "mladomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.MlaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
+  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "keyindicators" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC8FC\uC694\uC9C0\uD45C" }, /* @__PURE__ */ React.createElement(window.KeyIndicatorsApp, null)), view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED \uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "austrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.AusTradeApp, null)), view === "eupigmeatprice" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uAC00(\uB3C4\uCCB4) \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.EuPigmeatPriceApp, null)), view === "mladomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uB0B4\uC218 \uD604\uD669" }, /* @__PURE__ */ React.createElement(window.MlaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
 }
 function WarehousePasswordGate({ children }) {
   const [phase, setPhase] = useState("checking"); // checking | locked | unlocked
