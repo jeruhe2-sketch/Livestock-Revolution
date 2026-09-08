@@ -180,13 +180,17 @@ def main() -> None:
             continue
 
         text = (msg.get("text") or "").strip()
+        # 그룹채팅에서는 텔레그램이 슬래시 명령에 "@봇이름"을 자동으로 붙여줌
+        # (예: "/방문자@livest123ock_bot") - 이걸 안 떼면 TRIGGER_COMMANDS와
+        # 절대 정확히 일치하지 않아서 조용히 무시되던 버그.
+        text_normalized = text.split("@")[0].strip() if text.startswith("/") else text
         msg_chat_id = str(msg.get("chat", {}).get("id", ""))
 
         # 등록된 채팅방(chat_id)에서 온 메시지만 처리 (다른 곳에서 봇을 추가해도 무시)
         if msg_chat_id != str(chat_id):
             continue
 
-        if text.lower() in {c.lower() for c in TRIGGER_COMMANDS}:
+        if text_normalized.lower() in {c.lower() for c in TRIGGER_COMMANDS}:
             try:
                 reply = build_stats_message(api_key)
             except Exception as e:
@@ -196,6 +200,9 @@ def main() -> None:
                 {"chat_id": chat_id, "text": reply},
             )
             print("응답 전송 완료")
+        elif text:
+            # 매칭 안 된 메시지도 로그에 남겨서 "왜 답장 안 왔지" 디버깅 쉽게
+            print(f"명령어 불일치, 무시함: {text!r} (정규화: {text_normalized!r})")
 
     save_state({"last_update_id": max_update_id})
 
