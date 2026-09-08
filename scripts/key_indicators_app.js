@@ -50,17 +50,18 @@ window.KeyIndicatorsApp = (function () {
     d.setUTCDate(d.getUTCDate() + days);
     return d.toISOString().slice(0, 10);
   }
-  // 일별 시계열용: 전일/전주/전년대비
+  // 일별 시계열용: 전일/전주/전월/전년대비
   function dailyStats(rows, dateKey, valueKey) {
     const sorted = rows.filter((r) => r[dateKey] != null && r[valueKey] != null && isFinite(r[valueKey])).sort((a, b) => (a[dateKey] < b[dateKey] ? -1 : 1));
-    if (!sorted.length) return { latest: null, latestDate: null, dod: null, wow: null, yoy: null };
+    if (!sorted.length) return { latest: null, latestDate: null, dod: null, wow: null, mom: null, yoy: null };
     const last = sorted[sorted.length - 1];
     const latestDate = last[dateKey];
     const dodRef = findAtOrBefore(sorted.slice(0, -1), dateKey, valueKey, addDaysStr(latestDate, -1));
     const wowRef = findAtOrBefore(sorted, dateKey, valueKey, addDaysStr(latestDate, -7));
+    const momRef = findAtOrBefore(sorted, dateKey, valueKey, addDaysStr(latestDate, -30));
     const yoyRef = findAtOrBefore(sorted, dateKey, valueKey, addDaysStr(latestDate, -365));
     const pct = (ref) => (ref ? (last[valueKey] - ref.value) / ref.value * 100 : null);
-    return { latest: last[valueKey], latestDate, dod: pct(dodRef), wow: pct(wowRef), yoy: pct(yoyRef) };
+    return { latest: last[valueKey], latestDate, dod: pct(dodRef), wow: pct(wowRef), mom: pct(momRef), yoy: pct(yoyRef) };
   }
   // 일별 시계열을 ISO 주차별로 리샘플(그 주의 마지막 값 사용) - 주별 소스와 비교기준을 맞출 때 사용
   function resampleWeekly(rows, dateKey, valueKey) {
@@ -74,35 +75,30 @@ window.KeyIndicatorsApp = (function () {
     }
     return byWeek;
   }
-  // 주별 시계열용: 전주/전년대비만 (일별 데이터가 없어 "전일"은 계산 불가).
+  // 주별 시계열용: 전주/전월/전년대비 (일별 데이터가 없어 "전일"은 계산 불가).
   // 소스마다 최신 발표 주차가 다를 수 있어서(예: EU는 2주 전까지만) 공통 주차가 아니라
   // "그 소스 자신의" 최신 주차를 기준으로 계산.
   function weeklyStats(weeklyMap) {
     const keys = Object.keys(weeklyMap).sort();
-    if (!keys.length) return { latest: null, latestWeek: null, wow: null, yoy: null };
+    if (!keys.length) return { latest: null, latestWeek: null, wow: null, mom: null, yoy: null };
     const lastWeek = keys[keys.length - 1];
     const latest = weeklyMap[lastWeek];
-    const wowWeek = keys[keys.length - 2];
-    const yoyWeek = keys[keys.length - 53];
-    const wowV = wowWeek ? weeklyMap[wowWeek] : null;
-    const yoyV = yoyWeek ? weeklyMap[yoyWeek] : null;
-    return {
-      latest: latest ? latest.value : null,
-      latestWeek: lastWeek,
-      wow: latest && wowV ? (latest.value - wowV.value) / wowV.value * 100 : null,
-      yoy: latest && yoyV ? (latest.value - yoyV.value) / yoyV.value * 100 : null,
-    };
+    const at = (idx) => (keys.length + idx >= 0 ? weeklyMap[keys[keys.length + idx]] : null);
+    const wowV = at(-2), momV = at(-5) /* ~4.3주 전 ≈ 1개월 */, yoyV = at(-53);
+    const pct = (ref) => (latest && ref ? (latest.value - ref.value) / ref.value * 100 : null);
+    return { latest: latest ? latest.value : null, latestWeek: lastWeek, wow: pct(wowV), mom: pct(momV), yoy: pct(yoyV) };
   }
-  // CME 선물 카드용 통계: 수집 스크립트가 이미 전일/전주/전년을 계산해서 넣어줌
+  // CME 선물 카드용 통계: 수집 스크립트가 이미 전일/전주/전월/전년을 계산해서 넣어줌
   function cmeStat(entry) {
     if (!entry) return { latest: null };
-    return { latest: entry.price, dod: entry.dod, wow: entry.wow, yoy: entry.yoy };
+    return { latest: entry.price, dod: entry.dod, wow: entry.wow, mom: entry.mom, yoy: entry.yoy };
   }
-  // 카드 sub 텍스트: 일별 소스는 전일/전주/전년 3개, 주별 소스는 전주/전년 2개
+  // 카드 sub 텍스트: 전일 → 전주 → 전월 → 전년 순, 계산 가능한 것만 표시
   function subText(stats) {
     const parts = [];
     if ("dod" in stats && stats.dod != null) parts.push(`전일 ${pctFmt(stats.dod)}`);
     if (stats.wow != null) parts.push(`전주 ${pctFmt(stats.wow)}`);
+    if (stats.mom != null) parts.push(`전월 ${pctFmt(stats.mom)}`);
     if (stats.yoy != null) parts.push(`전년 ${pctFmt(stats.yoy)}`);
     return parts.length ? parts.join(" · ") : null;
   }
@@ -236,80 +232,80 @@ window.KeyIndicatorsApp = (function () {
           React.createElement(Card, {
             label: "USD/KRW", value: fx?.usdKrw != null ? fx.usdKrw.toLocaleString() : "—", unit: "원",
             sub: subText(cardStats.fx), subColor: subColorOf(cardStats.fx),
-            asOf: `${fmtUpdatedAt(fx?.marketTime || fx?.updatedAt) || "—"} · ${fx?.source || ""}`
+            asOf: fx?.source || null
           }),
           React.createElement(Card, {
             label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원",
             sub: subText(cardStats.eurFx), subColor: subColorOf(cardStats.eurFx),
-            asOf: `${fmtUpdatedAt(fx?.marketTime || fx?.updatedAt) || "—"} · ${fx?.source || ""}`
+            asOf: fx?.source || null
           }),
           React.createElement(Card, {
             onClick: () => goto("#eupigmeatprice"),
             label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg",
             sub: subText(cardStats.eu), subColor: subColorOf(cardStats.eu),
-            asOf: `EU 집행위 \u00B7 ${cardStats.eu.latestWeek || "—"} (주간 발표, 전일대비 없음)`
+            asOf: "EU 집행위"
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
             label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt",
             sub: subText(cardStats.eyci), subColor: subColorOf(cardStats.eyci),
-            asOf: `MLA \u00B7 ${cardStats.eyci.latestDate || "—"}`
+            asOf: "MLA"
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb",
             sub: subText(cardStats.usda), subColor: subColorOf(cardStats.usda),
-            asOf: `USDA LMR \u00B7 ${cardStats.usda.latestDate || "—"}`
+            asOf: "USDA LMR"
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 돈육 컷아웃", value: cardStats.porkCutout.latest != null ? cardStats.porkCutout.latest.toFixed(2) : "—", unit: "$/cwt",
             sub: subText(cardStats.porkCutout), subColor: subColorOf(cardStats.porkCutout),
-            asOf: `USDA LM_PK602 \u00B7 ${cardStats.porkCutout.latestDate || "—"}`
+            asOf: "USDA LM_PK602"
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 소고기 Choice 컷아웃", value: cardStats.beefCutoutChoice.latest != null ? cardStats.beefCutoutChoice.latest.toFixed(2) : "—", unit: "$/cwt",
             sub: subText(cardStats.beefCutoutChoice), subColor: subColorOf(cardStats.beefCutoutChoice),
-            asOf: `USDA LM_XB459 \u00B7 ${cardStats.beefCutoutChoice.latestDate || "—"}`
+            asOf: "USDA LM_XB459"
           }),
           React.createElement(Card, {
             onClick: () => goto("#usdedomestic"),
             label: "미국 소고기 Select 컷아웃", value: cardStats.beefCutoutSelect.latest != null ? cardStats.beefCutoutSelect.latest.toFixed(2) : "—", unit: "$/cwt",
             sub: subText(cardStats.beefCutoutSelect), subColor: subColorOf(cardStats.beefCutoutSelect),
-            asOf: `USDA LM_XB459 \u00B7 ${cardStats.beefCutoutSelect.latestDate || "—"}`
+            asOf: "USDA LM_XB459"
           }),
           React.createElement(Card, {
             onClick: () => goto("#mladomestic"),
             label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb",
             sub: subText(cardStats.cl90), subColor: subColorOf(cardStats.cl90),
-            asOf: `MLA(Steiner) \u00B7 ${cardStats.cl90.latestWeek || "—"} (주간 발표, 전일대비 없음)`
+            asOf: "MLA(Steiner)"
           }),
           React.createElement(Card, {
             label: "CME Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.liveCattle), subColor: subColorOf(cardStats.liveCattle),
-            asOf: `${cme?.liveCattle?.contract || "—"} \u00B7 ${cme?.liveCattle?.isStale ? `\u26A0 데이터 지연(최근 봉 ${cme.liveCattle.latestHistoryDate})` : (fmtUpdatedAt(cme?.marketTime) || "—")} · ${cme?.source || ""}`
+            asOf: cme?.liveCattle?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
           }),
           React.createElement(Card, {
             label: "CME Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.feederCattle), subColor: subColorOf(cardStats.feederCattle),
-            asOf: `${cme?.feederCattle?.contract || "—"} \u00B7 ${cme?.feederCattle?.isStale ? `\u26A0 데이터 지연(최근 봉 ${cme.feederCattle.latestHistoryDate})` : (fmtUpdatedAt(cme?.marketTime) || "—")} · ${cme?.source || ""}`
+            asOf: cme?.feederCattle?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
           }),
           React.createElement(Card, {
             label: "CME Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.leanHog), subColor: subColorOf(cardStats.leanHog),
-            asOf: `${cme?.leanHog?.contract || "—"} \u00B7 ${cme?.leanHog?.isStale ? `\u26A0 데이터 지연(최근 봉 ${cme.leanHog.latestHistoryDate})` : (fmtUpdatedAt(cme?.marketTime) || "—")} · ${cme?.source || ""}`
+            asOf: cme?.leanHog?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
           })
         ),
 
-        React.createElement("h2", { style: { fontSize: 14, fontWeight: 800, color: COLORS.mute, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" } }, "자동화 안 되는 지표 (수동 확인 필요)"),
+        React.createElement("h2", { style: { fontSize: 14, fontWeight: 800, color: COLORS.mute, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" } }, "자동화 안 되는 지표"),
         React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
-          React.createElement(PendingCard, { label: "미국 소 도축(주간 두수)", note: "USDA LMR API는 도축용 소 '가격' 리포트만 있고 '두수' 통계는 없음. NASS Quick Stats API(무료지만 키 등록 필요)로 가야 함." })
+          React.createElement(PendingCard, { label: "미국 소 도축(주간 두수)", note: "NASS API 키 등록 필요." })
         )
       ),
 
       React.createElement("p", { style: { fontSize: 12, color: COLORS.mute, marginTop: 20, lineHeight: 1.6 } },
-        "이 화면은 새로 데이터를 수집하지 않고, 각 탭이 이미 자동 갱신한 파일을 한 번 더 읽어 보여줍니다. 상세 추이/차트는 각 탭에서 확인하세요."
+        "각 탭에서 자동 갱신된 데이터를 요약한 화면입니다. 상세 추이는 각 탭에서 확인하세요."
       )
     );
   };

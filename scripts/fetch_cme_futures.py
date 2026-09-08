@@ -107,6 +107,7 @@ def main():
 
         anchor_date = market_date or latest_hist_date
         wow_ref = find_at_or_before(dod_pool, (date.fromisoformat(anchor_date) - timedelta(days=7)).isoformat()) if anchor_date else None
+        mom_ref = find_at_or_before(dod_pool, (date.fromisoformat(anchor_date) - timedelta(days=30)).isoformat()) if anchor_date else None
         yoy_ref = find_at_or_before(dod_pool, (date.fromisoformat(anchor_date) - timedelta(days=365)).isoformat()) if anchor_date else None
 
         result[key] = {
@@ -114,6 +115,7 @@ def main():
             "contract": data["contract"],
             "dod": pct(data["price"], dod_ref["close"]) if dod_ref else None,
             "wow": pct(data["price"], wow_ref["close"]) if wow_ref else None,
+            "mom": pct(data["price"], mom_ref["close"]) if mom_ref else None,
             "yoy": pct(data["price"], yoy_ref["close"]) if yoy_ref else None,
             "latestHistoryDate": latest_hist_date,
             "isStale": bool(latest_hist_date and (date.today() - date.fromisoformat(latest_hist_date)).days > 3),
