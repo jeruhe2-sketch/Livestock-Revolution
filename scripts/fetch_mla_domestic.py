@@ -174,7 +174,9 @@ def fetch_us_imported_meat(from_date, to_date):
 
 def main():
     today = date.today()
-    today_iso = today.isoformat()
+    # report/5, report/9도 toDate가 "오늘"이면 500 "Please provide date range before today!"
+    # 응답이 남 (report/10의 "7일 이전" 제약과 비슷한 종류). 안전하게 하루 전까지만 요청.
+    safe_to_iso = (today - timedelta(days=1)).isoformat()
     # report/10은 "오늘로부터 7일 이전"까지만 허용 -> 여유있게 10일 전으로 자름
     slaughter_to = (today - timedelta(days=10)).isoformat()
 
@@ -183,7 +185,7 @@ def main():
 
     indicators = {}
     for iid in INDICATOR_IDS:
-        series = fetch_indicator_series(iid, START_DATE, today_iso)
+        series = fetch_indicator_series(iid, START_DATE, safe_to_iso)
         indicators[str(iid)] = series
         print(f"  indicator {iid} ({names.get(str(iid), {}).get('desc')}): {len(series)}건")
         time.sleep(1)
@@ -192,7 +194,7 @@ def main():
     for sp, series in slaughter.items():
         print(f"  slaughter {sp}: {len(series)}주")
 
-    us_imported_90cl = fetch_us_imported_meat(START_DATE, today_iso)
+    us_imported_90cl = fetch_us_imported_meat(START_DATE, safe_to_iso)
     print(f"  us_imported_90cl: {len(us_imported_90cl)}건")
 
     all_dates = (
