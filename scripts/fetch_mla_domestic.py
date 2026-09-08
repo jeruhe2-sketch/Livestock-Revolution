@@ -148,6 +148,30 @@ def fetch_slaughter(from_date, to_date):
     return result
 
 
+def fetch_us_imported_meat(from_date, to_date):
+    """/report/9 US Imported Meat Prices (Steiner, republished by MLA, weekly 화요일 갱신).
+    응답에 여러 indicator_name이 섞여 있을 수 있어 "90CL Boneless Beef, NZ/Australia"만 필터.
+    indicator_value가 문자열로 오므로 float 변환."""
+    TARGET_NAME = "90CL Boneless Beef, NZ/Australia"
+    rows = _get_all_pages("/report/9", {
+        "fromDate": from_date, "toDate": to_date,
+    }, "report9 90CL")
+    out = []
+    for row in rows:
+        if row.get("indicator_name") != TARGET_NAME:
+            continue
+        try:
+            out.append({
+                "date": row["indicator_date"][:10],
+                "value": float(row["indicator_value"]),
+                "unit": row.get("indicator_units"),
+            })
+        except (ValueError, TypeError, KeyError):
+            continue
+    out.sort(key=lambda r: r["date"])
+    return out
+
+
 def main():
     today = date.today()
     today_iso = today.isoformat()
@@ -168,7 +192,14 @@ def main():
     for sp, series in slaughter.items():
         print(f"  slaughter {sp}: {len(series)}주")
 
-    all_dates = [r["date"] for s in indicators.values() for r in s] + [r["date"] for s in slaughter.values() for r in s]
+    us_imported_90cl = fetch_us_imported_meat(START_DATE, today_iso)
+    print(f"  us_imported_90cl: {len(us_imported_90cl)}건")
+
+    all_dates = (
+        [r["date"] for s in indicators.values() for r in s]
+        + [r["date"] for s in slaughter.values() for r in s]
+        + [r["date"] for r in us_imported_90cl]
+    )
     source_most_recent = max(all_dates) if all_dates else None
 
     output = {
@@ -177,6 +208,7 @@ def main():
         "indicatorNames": {k: v for k, v in names.items() if int(k) in INDICATOR_IDS},
         "indicators": indicators,
         "slaughter": slaughter,
+        "usImported90cl": us_imported_90cl,
     }
 
     os.makedirs("data", exist_ok=True)
