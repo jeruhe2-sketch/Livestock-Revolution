@@ -93,6 +93,11 @@ window.KeyIndicatorsApp = (function () {
       yoy: latest && yoyV ? (latest.value - yoyV.value) / yoyV.value * 100 : null,
     };
   }
+  // CME 선물 카드용 통계: 현재가 + 전일종가 기준 전일대비 (선물이라 주/년 이력 없음)
+  function cmeStat(entry) {
+    if (!entry) return { latest: null };
+    return { latest: entry.price, dod: entry.prevClose ? (entry.price - entry.prevClose) / entry.prevClose * 100 : null };
+  }
   // 카드 sub 텍스트: 일별 소스는 전일/전주/전년 3개, 주별 소스는 전주/전년 2개
   function subText(stats) {
     const parts = [];
@@ -206,7 +211,9 @@ window.KeyIndicatorsApp = (function () {
         porkCutout: dailyStats(usdaCutout?.pork?.data || [], "date", "value"),
         beefCutoutChoice: dailyStats(usdaCutout?.beef?.data || [], "date", "choice"),
         beefCutoutSelect: dailyStats(usdaCutout?.beef?.data || [], "date", "select"),
-        liveCattle: cme?.liveCattle ? { latest: cme.liveCattle.price, dod: cme.liveCattle.prevClose ? (cme.liveCattle.price - cme.liveCattle.prevClose) / cme.liveCattle.prevClose * 100 : null } : { latest: null },
+        liveCattle: cmeStat(cme?.liveCattle),
+        feederCattle: cmeStat(cme?.feederCattle),
+        leanHog: cmeStat(cme?.leanHog),
       };
     }, [weekly, mla, usda, fx, usdaCutout, cme]);
 
@@ -282,6 +289,16 @@ window.KeyIndicatorsApp = (function () {
             label: "CME Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
             sub: subText(cardStats.liveCattle), subColor: subColorOf(cardStats.liveCattle),
             asOf: `${cme?.liveCattle?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
+          }),
+          React.createElement(Card, {
+            label: "CME Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
+            sub: subText(cardStats.feederCattle), subColor: subColorOf(cardStats.feederCattle),
+            asOf: `${cme?.feederCattle?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
+          }),
+          React.createElement(Card, {
+            label: "CME Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb",
+            sub: subText(cardStats.leanHog), subColor: subColorOf(cardStats.leanHog),
+            asOf: `${cme?.leanHog?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
           })
         ),
 
