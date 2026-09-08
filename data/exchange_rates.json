@@ -1,9 +1,9 @@
 {
-  "usdKrw": 1344.63,
+  "usdKrw": 1342.05,
   "usdKrwPrevClose": 1344.99,
-  "eurKrw": 1560.7,
+  "eurKrw": 1557.5,
   "eurKrwPrevClose": 1562.8,
-  "marketTime": "2026-09-08T09:14:24+00:00",
-  "updatedAt": "2026-09-08T09:14:35.065428+00:00",
+  "marketTime": "2026-09-08T12:00:39+00:00",
+  "updatedAt": "2026-09-08T12:00:42.089832+00:00",
   "source": "Yahoo Finance (실시간 시장가, 비공식 API)"
 }
