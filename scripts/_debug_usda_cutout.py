@@ -7,16 +7,15 @@ def get(url, label):
         print("status", r.status_code)
         if r.status_code == 200:
             data = r.json()
-            secs = data.get("reportSection", [])
-            print("sections:", secs)
-            results = data.get("results", [])
-            for i, sec_rows in enumerate(results):
-                sec_name = secs[i] if i < len(secs) else f"section{i}"
-                if isinstance(sec_rows, list) and sec_rows:
-                    print(f"-- section '{sec_name}' sample row keys:", list(sec_rows[0].keys()))
-                    # cutout/전체 관련 행만 몇 개 출력
-                    for row in sec_rows[:8]:
-                        print("   ", row)
+            print("top-level type:", type(data))
+            if isinstance(data, list):
+                print("list length:", len(data))
+                print("first element type:", type(data[0]) if data else None)
+                print("first element (truncated):", json.dumps(data[0], ensure_ascii=False)[:2000] if data else None)
+                if len(data) > 1:
+                    print("second element (truncated):", json.dumps(data[1], ensure_ascii=False)[:1500])
+            else:
+                print(json.dumps(data, ensure_ascii=False)[:3000])
         else:
             print(r.text[:300])
     except Exception as e:
