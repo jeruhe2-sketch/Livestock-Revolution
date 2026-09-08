@@ -391,7 +391,7 @@ window.CepeaDomesticApp = (function () {
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "CEPEA/ESALQ · 브라질 상파울루 도매가 지표 (수동 갱신)"),
-        React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "브라질 돈육·계육 내수현황"),
+        React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "브라질 축산물 내수현황"),
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "카르카사 특급(돈육) · 냉장 계육 도매가 · 상파울루주(Grande São Paulo)"),
 
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${Math.max(1, visibleItems.length)},minmax(0,1fr))`, gap: 8, marginBottom: 12 } },

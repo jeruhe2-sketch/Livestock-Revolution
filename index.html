@@ -1090,7 +1090,7 @@ function Dashboard({ db, exRates, fxHistory }) {
   return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
     React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
       React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU → 한국 · 미국 · 영국 · 중국 · 일본 · 필리핀"),
-      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 돈육 수출현황"),
+      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 수출현황"),
       React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
         ["kg", "euro", "unitprice"].map((k) => React.createElement("button", {
           key: k, onClick: () => setValueKey(k),
@@ -2775,7 +2775,7 @@ function ShellApp() {
       onClick: () => selectView("eutrade"),
       icon: "\u{1F1EA}\u{1F1FA}",
       iconImg: "https://flagcdn.com/w40/eu.png",
-      label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669"
+      label: "EU \uCD95\uC0B0\uBB3C \uC218\uCD9C\uD604\uD669"
     }
   ), /* @__PURE__ */ React.createElement(
     NavItem,
@@ -2802,7 +2802,7 @@ function ShellApp() {
       onClick: () => selectView("usdedomestic"),
       icon: "\u{1F1FA}\u{1F1F8}",
       iconImg: "https://flagcdn.com/w40/us.png",
-      label: "\uBBF8\uAD6D \uB3C8\uC721 \uB0B4\uC218\uD604\uD669"
+      label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669"
     }
   ), /* CEPEA domestic */ React.createElement(
     NavItem,
@@ -2811,7 +2811,7 @@ function ShellApp() {
       onClick: () => selectView("cepeadomestic"),
       icon: "\u{1F1E7}\u{1F1F7}",
       iconImg: "https://flagcdn.com/w40/br.png",
-      label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218\uD604\uD669"
+      label: "\uBE0C\uB77C\uC9C8 \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669"
     }
   ), /* EU pigmeat price */ React.createElement(
     NavItem,
@@ -2820,7 +2820,7 @@ function ShellApp() {
       onClick: () => selectView("eupigmeatprice"),
       icon: "\u{1F1EA}\u{1F1FA}",
       iconImg: "https://flagcdn.com/w40/eu.png",
-      label: "EU \uB3C8\uAC00\uD604\uD669(\uB3C4\uCCB4)"
+      label: "EU \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669"
     }
   ), /* MLA AU domestic */ React.createElement(
     NavItem,
@@ -2828,9 +2828,9 @@ function ShellApp() {
       active: view === "mladomestic",
       onClick: () => selectView("mladomestic"),
       icon: "\u{1F1E6}\u{1F1FA}",
-      label: "\uD638\uC8FC \uB0B4\uC218\uD604\uD669(EYCI \uB4F1)"
+      label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669"
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "keyindicators" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC8FC\uC694\uC9C0\uD45C" }, /* @__PURE__ */ React.createElement(window.KeyIndicatorsApp, null)), view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED\uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uC721 \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uB3C8\uC721 \uB0B4\uC218\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uB3C8\uC721\u00B7\uACC4\uC721 \uB0B4\uC218\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "austrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.AusTradeApp, null)), view === "eupigmeatprice" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uB3C8\uAC00\uD604\uD669(\uB3C4\uCCB4)" }, /* @__PURE__ */ React.createElement(window.EuPigmeatPriceApp, null)), view === "mladomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uB0B4\uC218\uD604\uD669(EYCI \uB4F1)" }, /* @__PURE__ */ React.createElement(window.MlaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
+  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, view === "keyindicators" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC8FC\uC694\uC9C0\uD45C" }, /* @__PURE__ */ React.createElement(window.KeyIndicatorsApp, null)), view === "quarantine" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC218\uC785\uAC80\uC5ED\uD604\uD669" }, /* @__PURE__ */ React.createElement(QuarantineApp, null)), view === "eutrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uCD95\uC0B0\uBB3C \uC218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(EuTradeApp, null)), view === "usda" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(UsdaTradeApp, null)), view === "usdedomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBBF8\uAD6D \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.UsdaDomesticApp, null)), view === "cepeadomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uBE0C\uB77C\uC9C8 \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.CepeaDomesticApp, null)), view === "austrade" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uc218\uCD9C\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.AusTradeApp, null)), view === "eupigmeatprice" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "EU \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.EuPigmeatPriceApp, null)), view === "mladomestic" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uD638\uC8FC \uCD95\uC0B0\uBB3C \uB0B4\uC218\uD604\uD669" }, /* @__PURE__ */ React.createElement(window.MlaDomesticApp, null)), view === "warehouse" && /* @__PURE__ */ React.createElement(ErrorBoundary, { label: "\uC885\uD569\uCC3D\uACE0\uD604\uD669" }, /* @__PURE__ */ React.createElement(WarehousePasswordGate, null, /* @__PURE__ */ React.createElement(WarehouseDashboardApp, null)))));
 }
 function WarehousePasswordGate({ children }) {
   const [phase, setPhase] = useState("checking"); // checking | locked | unlocked
