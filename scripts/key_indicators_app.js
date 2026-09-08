@@ -138,6 +138,7 @@ window.KeyIndicatorsApp = (function () {
     const [mla, setMla] = useState(null);
     const [usda, setUsda] = useState(null);
     const [usdaCutout, setUsdaCutout] = useState(null);
+    const [cme, setCme] = useState(null);
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
@@ -148,8 +149,9 @@ window.KeyIndicatorsApp = (function () {
         fetchJson("./data/mla_domestic.json"),
         fetchJson("./data/usda_pork_domestic.json"),
         fetchJson("./data/usda_cutout.json"),
-      ]).then(([euD, fxD, fxHistD, mlaD, usdaD, usdaCutoutD]) => {
-        setEu(euD); setFx(fxD); setFxHist(fxHistD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setLoaded(true);
+        fetchJson("./data/cme_futures.json"),
+      ]).then(([euD, fxD, fxHistD, mlaD, usdaD, usdaCutoutD, cmeD]) => {
+        setEu(euD); setFx(fxD); setFxHist(fxHistD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setCme(cmeD); setLoaded(true);
       });
     }, []);
 
@@ -204,8 +206,9 @@ window.KeyIndicatorsApp = (function () {
         porkCutout: dailyStats(usdaCutout?.pork?.data || [], "date", "value"),
         beefCutoutChoice: dailyStats(usdaCutout?.beef?.data || [], "date", "choice"),
         beefCutoutSelect: dailyStats(usdaCutout?.beef?.data || [], "date", "select"),
+        liveCattle: cme?.liveCattle ? { latest: cme.liveCattle.price, dod: cme.liveCattle.prevClose ? (cme.liveCattle.price - cme.liveCattle.prevClose) / cme.liveCattle.prevClose * 100 : null } : { latest: null },
       };
-    }, [weekly, mla, usda, fx, usdaCutout]);
+    }, [weekly, mla, usda, fx, usdaCutout, cme]);
 
     const goto = (hash) => { window.location.hash = hash; };
 
@@ -270,13 +273,17 @@ window.KeyIndicatorsApp = (function () {
             label: "90CL 수입육 지표", value: cardStats.cl90.latest != null ? cardStats.cl90.latest.toFixed(2) : "—", unit: "US c/lb",
             sub: subText(cardStats.cl90), subColor: subColorOf(cardStats.cl90),
             asOf: `MLA(Steiner) \u00B7 ${cardStats.cl90.latestWeek || "—"} (주간 발표, 전일대비 없음)`
+          }),
+          React.createElement(Card, {
+            label: "CME Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb",
+            sub: subText(cardStats.liveCattle), subColor: subColorOf(cardStats.liveCattle),
+            asOf: `${cme?.liveCattle?.contract || "—"} \u00B7 ${fmtUpdatedAt(cme?.marketTime) || "—"} · ${cme?.source || ""}`
           })
         ),
 
         React.createElement("h2", { style: { fontSize: 14, fontWeight: 800, color: COLORS.mute, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" } }, "자동화 안 되는 지표 (수동 확인 필요)"),
         React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
-          React.createElement(PendingCard, { label: "CME Live Cattle 선물", note: "CME 실시간/지연 시세는 유료 라이선스 필요. 무료 API 없음." }),
-          React.createElement(PendingCard, { label: "미국 소 도축(주간)", note: "USDA 리포트 slug 확인 후 추가 예정." })
+          React.createElement(PendingCard, { label: "미국 소 도축(주간 두수)", note: "USDA LMR API는 도축용 소 '가격' 리포트만 있고 '두수' 통계는 없음. NASS Quick Stats API(무료지만 키 등록 필요)로 가야 함." })
         )
       ),
 
