@@ -1,0 +1,1683 @@
+<!DOCTYPE html><html class=" js flexbox flexboxlegacy canvas canvastext webgl no-touch geolocation postmessage no-websqldatabase indexeddb hashchange history draganddrop websockets rgba hsla multiplebgs backgroundsize borderimage borderradius boxshadow textshadow opacity cssanimations csscolumns cssgradients cssreflections csstransforms csstransforms3d csstransitions fontface generatedcontent video audio localstorage sessionstorage webworkers no-applicationcache svg inlinesvg smil svgclippaths dxChrome dxWindowsPlatform dxWebKitFamily dxBrowserVersion-120" style=""><head>
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+        <title>Intralogis  - WMS</title>
+        <link rel="SHORTCUT ICON" href="/IL6/Content/images/IntraLogis_fav.ico">
+    
+    
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAbaWTgWIIQnCab0Em7zS1mtTt82bbKsSw"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+
+    <script src="http://code.jquery.com/jquery-1.9.0.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.2.1.js"></script>
+
+    <script type="text/javascript">
+        
+        var ILWEB6_SITECODE = "WMS";
+        var ILWEB6_CONTROLLER = "";  
+    </script>
+     
+    
+    <script type="text/javascript" src="/IL6/Scripts/modernizr-2.6.2.js"></script>
+
+    
+    <script type="text/javascript" src="/IL6/Scripts/jquery.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/globalize.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/MarkerWithLabel.js"></script><script type="text/javascript" charset="UTF-8" src="https://maps.googleapis.com/maps-api-v3/api/js/66/3d/common.js"></script><script type="text/javascript" charset="UTF-8" src="https://maps.googleapis.com/maps-api-v3/api/js/66/3d/util.js"></script><script type="text/javascript" charset="UTF-8" src="https://maps.googleapis.com/maps-api-v3/api/js/66/3d/marker.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/common.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery.cookie.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/bowser.js"></script>
+
+    
+    <script type="text/javascript" src="/IL6/Scripts/jquery.validate-vsdoc.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery.validate.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery.validate.unobtrusive.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery.validate.unobtrusive.min.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/jquery.unobtrusive-ajax.js"></script>
+
+    
+    <script type="text/javascript" src="/IL6/Scripts/bootstrap.js"></script>
+    <script type="text/javascript" src="/IL6/Scripts/respond.js"></script>
+
+    
+    <link type="text/css" href="/IL6/Content/bootstrap.css" rel="stylesheet">
+    <link type="text/css" href="/IL6/Content/reset.css" rel="stylesheet">
+    <link type="text/css" href="/IL6/Content/jquery-ui.css" rel="stylesheet">
+    <link type="text/css" href="/IL6/Content/style.css" rel="stylesheet">
+    <link type="text/css" href="/IL6/Content/animate.css" rel="stylesheet">
+    <link type="text/css" href="/IL6/Content/main.css" rel="stylesheet">
+    <link type="text/css" href="/IL6/Content/footer.css" rel="stylesheet">
+
+    
+    
+
+    <script type="text/javascript" src="/IL6/Scripts/General.js"></script>
+
+    
+        <script type="text/javascript" src="/IL6/Scripts/Site/WMS.js"></script>
+
+
+    
+
+    <link rel="stylesheet" type="text/css" href="/IL6/DXR.axd?r=1_29,1_33,1_35,1_3,1_17,1_18,1_16,1_22,1_21,1_19,7_1,7_2,7_0,6_1,6_2,6_0,1_4,1_9,1_5,15_2,15_4,5_1,5_0-2S47u">
+
+    <script id="dxis_42631651" src="/IL6/DXR.axd?r=1_231,1_168,1_134,1_131,1_206,1_219,1_213,1_216,1_133,17_39,17_3,1_212,1_137,17_8,1_224,1_150,17_10,1_214,1_152,1_151,17_11,1_166,1_174,1_229,1_193,1_195,1_230,1_178,17_12,1_223,1_222,1_205,17_38,1_138,1_179,1_217,1_215,1_153,1_226,1_192,1_190,1_196,17_15,17_17,1_198,1_199,17_19,1_200,1_201,17_20,17_21,1_180,17_14,1_203,1_207,17_24,1_220,17_26,1_218,1_221,17_30,1_225,17_34,17_37,1_155,17_1,1_165,1_194,17_16,7_50,7_53,7_48,7_52,17_25,1_158,1_170,1_154,17_0,1_156,17_2,1_157,17_4,1_159,1_160,1_162,1_176,1_163,17_7,1_169,1_164,17_9,1_202,1_172,1_173,17_22,17_23,1_171,1_175,17_35,1_177,6_12,17_36,15_1,1_140,1_147,1_148,1_142,1_141,1_143,1_144,1_145,1_146,15_0,15_14,15_15,20_0,1_149,5_5,5_4,17_32-8S47u" type="text/javascript"></script><script>DevExpress.viz.currentTheme('generic', 'light')</script><script id="dxss_723645489" type="text/javascript">
+<!--
+(function(){var a = ({'currNegPattern':1,'abbrDayNames':['일','월','화','수','목','금','토'],'monthNames':['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월',''],'shortTime':'tt h:mm','longTime':'tt h:mm:ss','ds':'-','longDate':'yyyy\'년\' M\'월\' d\'일\' dddd','abbrMonthNames':['1','2','3','4','5','6','7','8','9','10','11','12',''],'pm':'오후','am':'오전','numPosInf':'∞','numNegInf':'-∞','currPrec':0,'monthDay':'M월 d일','currency':'?','yearMonth':'yyyy\'년\' M\'월\'','percentPattern':1,'dayNames':['일요일','월요일','화요일','수요일','목요일','금요일','토요일'],'genMonthNames':['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월',''],'shortDate':'yyyy-MM-dd'});for(var b in a) ASPx.CultureInfo[b] = a[b];})();
+//-->
+</script><script id="dxss_2126757881" type="text/javascript">
+<!--
+ASPx.NumberDecimalSeparator = '.';
+
+//-->
+</script>
+    <script type="text/javascript">
+        $(function () {
+
+            //$('.title:eq(0)').find('a').addClass('on');
+            //$('.sub:not(:eq(0))').hide();
+
+            $('.title > a').click(function () {
+
+                if ($(this).hasClass('on') == false) {
+
+                    $('.title a > .plus').addClass("on");
+                    $('.title a > .minus').removeClass("on");
+                    $('.sub').stop().slideUp(400);
+                    $('.title a.on').removeClass('on');
+
+
+                    $(this).addClass('on');
+                    $('.title a.on >.minus').addClass('on');
+                    $('.title a.on >.plus').removeClass('on');
+                    $(this).parent().next().stop().slideDown(400);
+                }
+
+            });
+
+            //
+            $(".faqTitle").click(function () {
+
+                var others = $(this).parent().siblings();
+
+                others.find(".faqDl").slideUp(300);
+                others.find(".plusBtn").addClass("on");
+                others.find(".minusBtn").removeClass("on");
+
+                $(this).next(".faqDl").stop().slideToggle(300);
+
+                var plusBtn = $(this).children(".plusBtn");
+                var minusBtn = $(this).children(".minusBtn");
+
+                if ($(plusBtn).hasClass("on")) {
+                    $(plusBtn).removeClass("on");
+                    $(minusBtn).addClass("on");
+                } else {
+                    $(plusBtn).addClass("on");
+                    $(minusBtn).removeClass("on");
+                }
+
+            });
+
+            $('.lnbD3 > li a').click(function () {
+                $('.lnbD3 > li a').removeClass("on");
+                $(this).addClass("on");
+            });
+
+            if (bowser.android || bowser.ios) {
+                $("#header").css("display", "none");
+                $("#container").css("margin-left", "0");
+                $("#container").css("width", "100%");
+            }
+        });
+        /* 구조변경해서 다시 만들어야 함. 우선 넣어둘께요.*/
+        //tab 오른쪽 상세페이지
+        
+        
+    </script>
+    <style type="text/css">
+        .dxpnlControl.dxpnl-edge .dxpnl-scc {
+            padding: 0px;
+        }
+
+        .dxgvEditFormDisplayRo td.dxgv, .dxgvDetailCell td.dxgv, .dxgvDataRow td.dxgv, .dxgvADR.dxgvDetailRow td.dxgvAIC {
+            overflow: hidden;
+            border-bottom: 1px solid #cfddee;
+            border-right: 1px solid #cfddee;
+            border-top-width: 0px;
+            border-left-width: 0px;
+            padding: 4px 6px;
+        }
+
+        #summary-grid .dxgvDataRow td.dxgv {
+            text-align: center;
+        }
+
+        .dxgvControl {
+            border: 1px solid #93c7c8;
+        }
+
+        .dxpnlControl.dxpnl-edge {
+            background-color: #efefef;
+        }
+
+        .dxpnlControl {
+            border-right: 1px solid #cfddee;
+            border-top: 1px solid #cfddee;
+        }
+
+        .dxgvHeader {
+            border: 1px solid #93c7c8;
+            background-color: #d4eaea;
+        }
+
+        .dxgvHeader, .dxgvHeader table {
+            color: #0b3737;
+        }
+
+        .hiddenCell {
+            display: none;
+        }
+    </style>
+<style></style></head>
+<body>
+    <div id="wrapper">
+        <header id="header">
+            <section class="siteLogoArea">
+                <!--Site Logo-->
+                <h1 class="siteLogo">
+                    <img src="/IL6/Content/Site/Default.PNG?ver=1.0" alt="사이트로고">
+                </h1>
+                <!--Customer Name or Customer Name(Site) -->
+                <!--22.06.07.LJS. AJ토탈(cs.total.ajway.kr) -> ACE냉장(cs.acecs.co.kr) 으로 사업소 변경 -->
+                <p class="siteName mt5">
+고객용 (WMS)                </p>
+
+                <!--사용자이름 or 사용자이름(아이디)-->
+                <p class="userName">
+대한제당 (주) 서울사무소                    <span class="ml5 mr5">|</span> <a href="javascript:pcModalMode.Show();">로그아웃</a>
+                </p>
+
+            </section>
+            
+
+<nav id="gnb">
+    <h2 class="skip">주메뉴</h2>
+    <dl class="sub_left_navi">
+        
+
+                        <dt class="title"><a href="#" class="on"><span class="plus">+</span><span class="minus on">-</span>관리정보</a></dt>
+                <dd class="sub">
+                    <ul class="lnbD1">
+
+                                <li>
+                                        <div class="faqTitle">일반<span class="minusBtn on">-</span><span class="plusBtn">+</span></div>
+                                    <ul id="ul_model2_Menu_1" class="faqDl lnbD3" style="display: block;">
+
+                                                <li>
+                                                            <a href="javascript:void(0);" onclick="javascript:ShowNewTab('계근조회', 'WeightCheckInfo', '510');">계근조회</a>
+                                                </li>
+                                                <li>
+                                                            <a href="javascript:void(0);" onclick="javascript:ShowNewTab('청구조회', 'SettlementInfo', '631');">청구조회</a>
+                                                </li>
+                                                <li>
+                                                            <a href="javascript:void(0);" onclick="javascript:ShowNewTab('수불조회', 'ResultInfo', '512');">수불조회</a>
+                                                </li>
+                                                <li>
+                                                            <a href="javascript:void(0);" onclick="javascript:ShowNewTab('입고확인서', 'ReceiptConfirmInfo', '630');">입고확인서</a>
+                                                </li>
+                                                <li>
+                                                            <a href="javascript:void(0);" onclick="javascript:ShowNewTab('재고조회', 'InventoryInfo', '511');" class="on">재고조회</a>
+                                                </li>
+                                                <li>
+                                                            <a href="javascript:void(0);" onclick="javascript:ShowNewTab('재고일보', 'InventoryByDateInfo', '670');">재고일보</a>
+                                                </li>
+
+                                    </ul>
+                                </li>
+
+                    </ul>
+                </dd>
+    </dl>
+</nav>
+<script>
+    var fvaar = "False";
+    var topMenuCnt = 0;
+
+    if (topMenuCnt > 0) {
+
+        if (fvaar == "False") {
+            $('.title:eq(1)').find('a').addClass('on');
+            $('.sub:not(:eq(1))').hide();
+
+        }
+        else {
+            $('.title:eq(0)').find('a').addClass('on');
+            $('.sub:not(:eq(0))').hide();
+        }
+    } else {
+        $('.title:eq(0)').find('a').addClass('on');
+        $('.sub:not(:eq(0))').hide();
+
+        
+        //$("#span_plus_model2_Menu_1").addClass('plusBtn');
+        //$("#span_minus_model2_Menu_1").addClass('minusBtn on');
+        
+    }
+
+    //첫번째 메뉴에서 3단메뉴를 오픈하기 위해 임의로 클릭상태로 둔다.(테스트 잘됨)
+    $("#ul_model2_Menu_1").css("display", "block");
+    $("#ul_model2_Menu_1").css("overflow", "none");
+    
+    
+
+</script>
+
+    <script>
+       
+        ShowNewTab('홈', 'WorkFlow', '', true, true);
+    </script>
+
+        </header>
+        <!--header e-->
+
+        <div id="container">
+            <section class="guide">
+                <h3 class="skip">사이트이용안내</h3>
+                <ul class="contactInfo pr10">
+                    <li class="language"><a href="#">KOR</a></li>
+                    <li><a href="#">도움말</a></li>
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="http://as82.kr/neo/" target="_blank">원격기술지원</a></li>
+                </ul>
+            </section>
+   
+            <ul class="tab-wrap"><li id="WorkFlow" class=""><span class="bg_a"></span><span class="spanTabName">홈</span></li><li id="InventoryInfo" class="active"><span class="bg_a"></span><span class="spanTabName">재고조회</span><a><span class="closeBtn">+</span></a></li></ul>
+
+            <section class="contents-wrap">
+                <h4 class="skip">탭내용</h4>
+                    
+
+            <div class="content" id="teb-1" style="display: none;">
+
+
+
+<div id="Home" style="width:100%;height:100%;overflow:hidden;text-align:center;    border: 0px solid rgb(255, 0, 0); ">    
+    <img src="/IL6/Content/Site/Default/WorkFlow/Images/WMS.png?ver=1.1" usemap="#userm" style="display:inline-block;margin-top:50px; ">
+    <map name="userm">
+
+    </map>
+</div>
+</div><div class="content" id="teb-2">
+
+
+
+<script type="text/javascript">
+
+    var InventoryInfoSearchDepot = "";
+    var InventoryInfoSearchDepotID = "";
+    var InventoryInfoSearchOwner = "";
+    var InventoryInfoSearchOwnerID = "";
+    var InventoryInfoSearchSupplier = "";
+
+    // 그리드 룩업 닫기 버튼 클릭
+    function CloseGridLookupInventoryInfo(s, e) {
+        var oname = s.name;
+        var gname = "";
+
+        if (oname == "btnCloseDepotInventoryInfo") {
+            gname = "gridLookupDepotInventoryInfo";
+        } else if (oname == "btnCloseOwnerInventoryInfo") {
+            gname = "gridLookupOwnerInventoryInfo";
+        }
+
+        eval(gname).ConfirmCurrentSelection();
+        eval(gname).HideDropDown();
+    }
+
+    // 창고 Row 클릭 후 셋팅
+    function GetInventoryInfoDepotSelectedFieldValues(s, e) {
+        s.GetRowValues(e.visibleIndex, 'OID;ID', function (obj) {
+            InventoryInfoSearchDepot = obj[0];
+            InventoryInfoSearchDepotID = obj[1];
+        });
+    }
+
+    // 창고 최초 로드시 Oid 값 셋팅
+    function SetInventoryInfoDepotFieldValues() {
+        InventoryInfoSearchDepot = '2';
+        InventoryInfoSearchDepotID = '12';
+    }
+
+    // 재고 조회 버튼 클릭
+    function InventorySearchBtn(s, e) {
+
+        if (gridLookupDepotInventoryInfo.GetText() == "") {
+            alert("창고를 선택해주세요.");
+            return;
+        }
+        if (gridLookupOwnerInventoryInfo.GetText() == "") {
+            alert("위탁사를 선택해주세요.");
+            return;
+        }
+        
+        InventoryList.PerformCallback();
+    }
+
+    // 위탁사 Row 클릭 후 셋팅
+    function GetInventoryInfoOwnerSelectedFieldValues(s, e) {
+        s.GetRowValues(e.visibleIndex, 'OID;ContractorOid;ContractorID;ContractorName;SupplierID;SupplierName;SupplierOid', function (obj) {
+            InventoryInfoSearchOwner = obj[1];
+            InventoryInfoSearchOwnerID = obj[2];
+            InventoryInfoSearchSupplier = obj[6];
+        });
+    }
+
+    // 위탁사 최초 로드시 Oid 값 셋팅
+    function SetInventoryInfoOwnerFieldValues() {
+        InventoryInfoSearchOwner = '290';
+        InventoryInfoSearchOwnerID = '8376';
+        InventoryInfoSearchSupplier = '';
+        gridLookupOwnerInventoryInfo.gridView.GetRowValues(0, 'OID;SupplierOid', function (obj) {
+            InventoryInfoSearchSupplier = obj[1];
+        });
+    }
+
+    // 재고 조회 리스트 BeginCallback
+    function OnBeginCallbackInventoryList(s, e) {
+
+        // 컨트롤러에 파라메터 값 넘겨 주기
+        e.customArgs["depotOid"] = InventoryInfoSearchDepot;
+        e.customArgs["customerOid"] = InventoryInfoSearchOwner;
+        e.customArgs["listSupplierOid"] = InventoryInfoSearchSupplier;
+        e.customArgs["listFromDate"] = InventoryInfoSearchDate1.GetText();
+        e.customArgs["blNo"] = teBLNo.GetText();
+        e.customArgs["itemName"] = teItemName.GetText();
+        e.customArgs["AltNo"] = teInvAltNo.GetText();
+    }
+
+    function OnEndCallbackInventoryList(s, e) {
+    }
+
+    // 엑셀 다운로드
+    function InventoryInfoExcelOnClick(s, e) {
+
+        var url = getRootDir() + ILWEB6_SITECODE + "/General/AJT_ExportTo?Page=InventoryInfoList&OutputFormat=XLSX&depotOid=" + InventoryInfoSearchDepot + "&customerOid=" + InventoryInfoSearchOwner + "&customerId=" + InventoryInfoSearchOwnerID + "&subCustomerOid=" + InventoryInfoSearchSupplier + "&fromDate=" + InventoryInfoSearchDate1.GetText() + "&AltNo=" + teInvAltNo.GetText() + "&blNo=" + teBLNo.GetText() + "&itemName=" + teItemName.GetText();
+        s.submitUrl = url;
+    }
+
+    // 인쇄 클릭
+    function OnShowInventoryPreviewBtnClick(s, e) {
+
+        window.open(getRootDir() + ILWEB6_SITECODE + "/General/AJT_PrintTo?Page=InventoryInfoList&depotOid=" + InventoryInfoSearchDepot + "&customerOid=" + InventoryInfoSearchOwner + "&customerId=" + InventoryInfoSearchOwnerID + "&subCustomerOid=" + InventoryInfoSearchSupplier + "&fromDate=" + InventoryInfoSearchDate1.GetText() + "&AltNo=" + teInvAltNo.GetText() + "&blNo=" + teBLNo.GetText() + "&itemName=" + escape(teItemName.GetText()));
+
+    }
+
+</script>
+
+<style type="text/css">
+    .searchBar {
+        width: auto;
+        height: auto;
+    }
+
+        .searchBar label {
+            font-family: sans-serif;
+            font-size: 13px;
+            margin-right: auto;
+            margin-top: 5px;
+        }
+
+    .contents {
+        width: 100%;
+        height: auto;
+    }
+</style>
+
+
+<section class="searchBar">
+
+    <div class="termSection">
+        <p class="termSelect">
+            <label>* 창고</label>
+            </p><div style="float:left; width: 120px; margin-left: 5px; margin-right: 10px; margin-top: 7px; padding-right:10px;">
+                
+
+<input type="hidden" name="gridLookupDepotInventoryInfo$State" id="gridLookupDepotInventoryInfo_State" value="{&amp;quot;selectedKeyValues&amp;quot;:[&amp;quot;처인사업소&amp;quot;]}"><table class="dxeButtonEditSys dxeButtonEdit form-control" id="gridLookupDepotInventoryInfo" style="width:100%;">
+	<tbody><tr>
+		<td class="dxic" onmousedown="return ASPx.DDMC_MD('gridLookupDepotInventoryInfo', event)" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="gridLookupDepotInventoryInfo_I" name="gridLookupDepotInventoryInfo" onfocus="ASPx.EGotFocus('gridLookupDepotInventoryInfo')" onblur="ASPx.ELostFocus('gridLookupDepotInventoryInfo')" onchange="ASPx.ETextChanged('gridLookupDepotInventoryInfo')" value="기흥사업소" type="text" autocomplete="off" readonly=""></td><td id="gridLookupDepotInventoryInfo_B-1" class="dxeButton dxeButtonEditButton" onmousedown="return ASPx.DDDropDown('gridLookupDepotInventoryInfo', event)" style="-webkit-user-select:none;"><img id="gridLookupDepotInventoryInfo_B-1Img" class="dxEditors_edtDropDown" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="v"></td>
+	</tr>
+</tbody></table><input type="hidden" name="gridLookupDepotInventoryInfo$DDDState" id="gridLookupDepotInventoryInfo_DDD_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:274:96:1:0:0:1:0:0:0&amp;quot;}"><div id="gridLookupDepotInventoryInfo_DDD_PW-1" class="dxpcDropDown dxpclW dxpc-ddSys" style="width: auto; cursor: default; z-index: 10000; visibility: hidden; height: 0px; display: none; position: absolute; left: 54px; top: 40px; overflow: visible;">
+	<div class="dxpc-mainDiv dxpc-shadow" style="left: 0px; top: 0px;">
+		<div class="dxpc-contentWrapper" style="display: table;">
+			<div class="dxeDropDownWindow dxpc-content" id="gridLookupDepotInventoryInfo_DDD_PWC-1" style="display: table-cell;">
+				<input type="hidden" name="gridLookupDepotInventoryInfo$DDD$gv" id="gridLookupDepotInventoryInfo_DDD_gv_State" value="{&amp;quot;keys&amp;quot;:[&amp;quot;처인사업소&amp;quot;,&amp;quot;기흥사업소&amp;quot;,&amp;quot;용인사업소&amp;quot;,&amp;quot;수지냉장&amp;quot;],&amp;quot;callbackState&amp;quot;:&amp;quot;BwMHAQIFU3RhdGUHVQcCBwACAQcBAgEHAAcABwAHAAIABwEHAg/quLDtnaXsgqzsl4XshowCBE5BTUUHAQIETkFNRQcJAgACAAMHBAIABwACAQcEBwACAAIBBwAHAAcABwACDVNob3dGaWx0ZXJSb3cKAgECCFBhZ2VTaXplAwcH&amp;quot;,&amp;quot;focusedRow&amp;quot;:0,&amp;quot;selection&amp;quot;:&amp;quot;&amp;quot;,&amp;quot;focusedKey&amp;quot;:&amp;quot;처인사업소&amp;quot;}"><table class="dxgvControl" id="gridLookupDepotInventoryInfo_DDD_gv" style="border-width:0px;width:250px;border-collapse:separate;" tabindex="0">
+					<tbody><tr>
+						<td><table id="gridLookupDepotInventoryInfo_DDD_gv_DXMainTable" class="dxgvTable" onclick="ASPx.GTableClick('gridLookupDepotInventoryInfo_DDD_gv', event);" style="width:100%;empty-cells:show;">
+	<tbody><tr id="gridLookupDepotInventoryInfo_DDD_gv_DXHeadersRow0">
+		<td id="gridLookupDepotInventoryInfo_DDD_gv_col0" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('gridLookupDepotInventoryInfo_DDD_gv', this, event);" style="width:60px;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+			<tbody><tr>
+				<td>코드</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+			</tr>
+		</tbody></table></td><td id="gridLookupDepotInventoryInfo_DDD_gv_col1" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('gridLookupDepotInventoryInfo_DDD_gv', this, event);" style="border-top-width:0px;border-left-width:0px;border-right-width:0px;"><table style="width:100%;">
+			<tbody><tr>
+				<td>명칭</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+			</tr>
+		</tbody></table></td>
+	</tr><tr id="gridLookupDepotInventoryInfo_DDD_gv_DXFilterRow" class="dxgvFilterRow">
+		<td class="dxgv">&nbsp;</td><td class="dxgv" style="border-right-width:0px;"><table class="dxeTextBoxSys dxeTextBox dxeTextBoxDefaultWidthSys" id="gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1" style="width:100%;">
+			<tbody><tr>
+				<td class="dxic" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1_I" name="gridLookupDepotInventoryInfo$DDD$gv$DXFREditorcol1" onfocus="ASPx.EGotFocus('gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1')" onblur="ASPx.ELostFocus('gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1')" onchange="ASPx.EValueChanged('gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1')" type="text"></td>
+			</tr>
+		</tbody></table><script id="dxss_447978999" type="text/javascript">
+<!--
+ASPx.AddDisabledItems('gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1',[[['dxeDisabled'],[''],['','I']]]);
+
+var dxo = new ASPxClientTextBox('gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1');
+dxo.InitGlobalVariable('gridLookupDepotInventoryInfo_DDD_gv_DXFREditorcol1');
+dxo.uniqueID = 'gridLookupDepotInventoryInfo$DDD$gv$DXFREditorcol1';
+dxo.ValueChanged.AddHandler(function(s, event) { ASPx.GVFilterChanged('gridLookupDepotInventoryInfo_DDD_gv',s); });
+dxo.KeyDown.AddHandler(function(s, event) { ASPx.GVFilterKeyPress('gridLookupDepotInventoryInfo_DDD_gv',s,event); });
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.AfterCreate();
+
+//-->
+</script></td>
+	</tr><tr id="gridLookupDepotInventoryInfo_DDD_gv_DXDataRow0" class="dxgvDataRow dxgvFocusedRow" style="">
+		<td class="dxgv">1</td><td class="dxgv" style="border-right-width:0px;">처인사업소</td>
+	</tr><tr id="gridLookupDepotInventoryInfo_DDD_gv_DXDataRow1" class="dxgvDataRow" style="">
+		<td class="dxgv">2</td><td class="dxgv" style="border-right-width:0px;">기흥사업소</td>
+	</tr><tr id="gridLookupDepotInventoryInfo_DDD_gv_DXDataRow2" class="dxgvDataRow" style="">
+		<td class="dxgv">3</td><td class="dxgv" style="border-right-width:0px;">용인사업소</td>
+	</tr><tr id="gridLookupDepotInventoryInfo_DDD_gv_DXDataRow3" class="dxgvDataRow dxgvLVR" style="">
+		<td class="dxgv" style="border-bottom-width:0px;">4</td><td class="dxgv" style="border-right-width:0px;border-bottom-width:0px;">수지냉장</td>
+	</tr>
+</tbody></table><table id="gridLookupDepotInventoryInfo_DDD_gv_DXStatus" class="dxgvStatusBar" style="width:100%;">
+	<tbody><tr class="dxgv">
+		<td id="gridLookupDepotInventoryInfo_DDD_gv_tcStatusBar" style="width:100%;"><div style="padding: 2px 8px 2px 0; float: right"><div class="dxbButton dxbButtonSys dxbTSys" id="btnCloseDepotInventoryInfo" style="-webkit-user-select:none;">
+	<div class="dxb" id="btnCloseDepotInventoryInfo_CD">
+		<div class="dxb-hbc">
+			<input id="btnCloseDepotInventoryInfo_I" class="dxb-hb" value="Close" type="button" name="btnCloseDepotInventoryInfo">
+		</div><span class="dx-vam">Close</span>
+	</div>
+</div><script id="dxss_1152723483" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnCloseDepotInventoryInfo',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnCloseDepotInventoryInfo',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnCloseDepotInventoryInfo',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnCloseDepotInventoryInfo');
+dxo.InitGlobalVariable('btnCloseDepotInventoryInfo');
+dxo.Click.AddHandler(CloseGridLookupInventoryInfo);
+ASPx.AddSelectedItems('btnCloseDepotInventoryInfo',[[['dxbf'],[''],['CD']]]);
+dxo.useSubmitBehavior = false;
+dxo.AfterCreate();
+
+//-->
+</script></div></td>
+	</tr>
+</tbody></table><table id="gridLookupDepotInventoryInfo_DDD_gv_LP" class="dxgvLoadingPanel" style="left:0px;top:0px;z-index:30000;display:none;">
+	<tbody><tr>
+		<td class="dx" style="padding-right:0px;"><img class="dxlp-loadingImage dxlp-imgPosLeft" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="" style="vertical-align:middle;"></td><td class="dx" style="padding-left:0px;"><span id="gridLookupDepotInventoryInfo_DDD_gv_TL">Loading…</span></td>
+	</tr>
+</tbody></table><div id="gridLookupDepotInventoryInfo_DDD_gv_LD" class="dxgvLoadingDiv" style="display:none;z-index:29999;position:absolute;">
+
+</div><img id="gridLookupDepotInventoryInfo_DDD_gv_IADD" class="dxGridView_gvDragAndDropArrowDown" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="|" style="position:absolute;visibility:hidden;top:-100px;"><img id="gridLookupDepotInventoryInfo_DDD_gv_IADU" class="dxGridView_gvDragAndDropArrowUp" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="|" style="position:absolute;visibility:hidden;top:-100px;"><img id="gridLookupDepotInventoryInfo_DDD_gv_IDHF" class="dxGridView_gvDragAndDropHideColumn" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="Hide" style="position:absolute;visibility:hidden;top:-100px;"><script id="dxss_612714978" type="text/javascript">
+<!--
+var dxo = ASPx.GetControlCollection().Get('gridLookupDepotInventoryInfo_DDD_gv');
+dxo.callBacksEnabled=true;
+dxo.pageRowCount=4;
+dxo.pageRowSize=7;
+dxo.pageIndex=0;
+dxo.pageCount=1;
+dxo.selectedWithoutPageRowCount=0;
+dxo.visibleStartIndex=0;
+dxo.focusedRowIndex=0;
+dxo.allowFocusedRow=true;
+dxo.allowSelectByItemClick=false;
+dxo.allowSelectSingleRowOnly=true;
+dxo.callbackOnFocusedRowChanged=false;
+dxo.callbackOnSelectionChanged=false;
+dxo.columns = [new ASPxClientGridViewColumn('',0,-1,'OID',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('',1,-1,'NAME',1,'',0,1,1,1,0,0,0,0)];
+dxo.editState=0;
+dxo.editItemVisibleIndex=-1;
+dxo.enableKeyboard=true;
+dxo.customKbdHelperName='GridLookupKeyboardSupportHelper';
+dxo.searchPanelFilter='';
+dxo.editMode=2;
+dxo.indentColumnCount=0;
+dxo.allowMultiColumnAutoFilter=false;
+dxo.autoFilterDelay='1200';
+dxo.editingItemVisibleIndex=-1;
+dxo.itemTexts=['처인사업소','기흥사업소','용인사업소','수지냉장'];
+dxo.callbackCommand='GLP_AC';
+dxo.currentSelectionState={InputText: '처인사업소', SelectedRowTexts: ({'처인사업소':'처인사업소'})};
+
+//-->
+</script><script id="dxss_129193550" type="text/javascript">
+<!--
+ASPxClientGridBase.InitializeStyles('gridLookupDepotInventoryInfo_DDD_gv',({'sel':{'css':'dxgvSelectedRow'},'fi':{'css':'dxgvFocusedRow'},'bec':{'css':'dxgvBatchEditCell dxgv'},'bemc':{'css':'dxgvBatchEditModifiedCell dxgv'},'bemergmc':{'css':'dxgvBatchEditCell dxgvBatchEditModifiedCell dxgv'},'ei':'<tr class="dxgvEditingErrorRow">\r\n\t<td class="dxgv" data-colSpan="2" style="border-right-width:0px;"></td>\r\n</tr>','fgi':{'css':'dxgvFocusedGroupRow'}}),[])
+//-->
+</script></td>
+					</tr>
+				</tbody></table><script id="dxss_1799819076" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientGridView('gridLookupDepotInventoryInfo_DDD_gv');
+dxo.InitGlobalVariable('gridLookupDepotInventoryInfo_DDD_gv');
+dxo.callBack = function(arg) { ; };
+dxo.uniqueID = 'gridLookupDepotInventoryInfo$DDD$gv';
+dxo.stateObject = ({'keys':['처인사업소','기흥사업소','용인사업소','수지냉장'],'callbackState':'BwMHAQIFU3RhdGUHVQcCBwACAQcBAgEHAAcABwAHAAIABwEHAg/quLDtnaXsgqzsl4XshowCBE5BTUUHAQIETkFNRQcJAgACAAMHBAIABwACAQcEBwACAAIBBwAHAAcABwACDVNob3dGaWx0ZXJSb3cKAgECCFBhZ2VTaXplAwcH','focusedRow':'','selection':''});
+dxo.callBacksEnabled=true;
+dxo.pageRowCount=4;
+dxo.pageRowSize=7;
+dxo.pageIndex=0;
+dxo.pageCount=1;
+dxo.selectedWithoutPageRowCount=0;
+dxo.visibleStartIndex=0;
+dxo.focusedRowIndex=1;
+dxo.allowFocusedRow=true;
+dxo.allowSelectByItemClick=false;
+dxo.allowSelectSingleRowOnly=true;
+dxo.callbackOnFocusedRowChanged=false;
+dxo.callbackOnSelectionChanged=false;
+dxo.columns = [new ASPxClientGridViewColumn('',0,-1,'OID',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('',1,-1,'NAME',1,'',0,1,1,1,0,0,0,0)];
+dxo.editState=0;
+dxo.editItemVisibleIndex=-1;
+dxo.enableKeyboard=true;
+dxo.customKbdHelperName='GridLookupKeyboardSupportHelper';
+dxo.searchPanelFilter='';
+dxo.editMode=2;
+dxo.indentColumnCount=0;
+dxo.allowMultiColumnAutoFilter=false;
+dxo.autoFilterDelay='1200';
+dxo.editingItemVisibleIndex=-1;
+dxo.itemTexts=['처인사업소','기흥사업소','용인사업소','수지냉장'];
+dxo.callbackCommand='';
+dxo.currentSelectionState={InputText: '기흥사업소', SelectedRowTexts: ({'기흥사업소':'기흥사업소'})};
+dxo.callbackUrl="/IL6/WMS/General/CommonSearchDepot?ParentName=InventoryInfo";
+dxo.keyName="NAME";
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_129193550" type="text/javascript">
+<!--
+ASPxClientGridBase.InitializeStyles('gridLookupDepotInventoryInfo_DDD_gv',({'sel':{'css':'dxgvSelectedRow'},'fi':{'css':'dxgvFocusedRow'},'bec':{'css':'dxgvBatchEditCell dxgv'},'bemc':{'css':'dxgvBatchEditModifiedCell dxgv'},'bemergmc':{'css':'dxgvBatchEditCell dxgvBatchEditModifiedCell dxgv'},'ei':'<tr class="dxgvEditingErrorRow">\r\n\t<td class="dxgv" data-colSpan="2" style="border-right-width:0px;"></td>\r\n</tr>','fgi':{'css':'dxgvFocusedGroupRow'}}),[])
+//-->
+</script>
+			</div>
+		</div>
+	</div>
+</div><script id="dxss_1045822498" type="text/javascript">
+<!--
+ASPx.AddHoverItems('gridLookupDepotInventoryInfo_DDD',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new ASPxClientPopupControl('gridLookupDepotInventoryInfo_DDD');
+dxo.InitGlobalVariable('gridLookupDepotInventoryInfo_DDD');
+dxo.uniqueID = 'gridLookupDepotInventoryInfo$DDD';
+dxo.Shown.AddHandler(function (s, e) { ASPx.DDBPCShown('gridLookupDepotInventoryInfo', e); });
+dxo.adjustInnerControlsSizeOnShow=false;
+dxo.popupAnimationType='slide';
+dxo.closeAction='CloseButton';
+dxo.popupHorizontalAlign='LeftSides';
+dxo.popupVerticalAlign='Below';
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_539921820" type="text/javascript">
+<!--
+ASPx.AddHoverItems('gridLookupDepotInventoryInfo',[[['dxeButtonEditButtonHover'],[''],['B-1']]]);
+ASPx.RemoveHoverItems('gridLookupDepotInventoryInfo',[[['B-100']]]);
+ASPx.AddPressedItems('gridLookupDepotInventoryInfo',[[['dxeButtonEditButtonPressed'],[''],['B-1']]]);
+ASPx.RemovePressedItems('gridLookupDepotInventoryInfo',[[['B-100']]]);
+ASPx.AddDisabledItems('gridLookupDepotInventoryInfo',[[['dxeDisabled'],[''],['','I']],[['dxeDisabled dxeButtonDisabled'],[''],['B-1'],,[[{'spriteCssClass':'dxEditors_edtDropDownDisabled'}]],['Img']]]);
+ASPx.RemoveDisabledItems('gridLookupDepotInventoryInfo',[[['B-100'],]]);
+document.getElementById("gridLookupDepotInventoryInfo_I").setAttribute("autocomplete", "off");
+
+var dxo = new MVCxClientGridLookup('gridLookupDepotInventoryInfo');
+dxo.InitGlobalVariable('gridLookupDepotInventoryInfo');
+dxo.Init.AddHandler(SetInventoryInfoDepotFieldValues);
+dxo.RowClick.AddHandler(GetInventoryInfoDepotSelectedFieldValues);
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.allowUserInput = false;
+dxo.textFormatString='{1}';
+dxo.keyFieldName='NAME';
+dxo.AfterCreate();
+
+//-->
+</script>
+
+            </div>
+        <p></p>
+
+        <p class="termSelect">
+            <label>위탁사</label>
+            </p><div class="editorContainer" style="float:left; width: 120px; margin-left: 5px; margin-right: 10px; margin-top: 7px; padding-right:10px;">
+                
+
+<input type="hidden" name="gridLookupOwnerInventoryInfo$State" id="gridLookupOwnerInventoryInfo_State" value="{&amp;quot;selectedKeyValues&amp;quot;:[&amp;quot;8376&amp;quot;]}"><table class="dxeButtonEditSys dxeButtonEdit form-control" id="gridLookupOwnerInventoryInfo" style="width:100%;">
+	<tbody><tr>
+		<td class="dxic" onmousedown="return ASPx.DDMC_MD('gridLookupOwnerInventoryInfo', event)" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="gridLookupOwnerInventoryInfo_I" name="gridLookupOwnerInventoryInfo" onfocus="ASPx.EGotFocus('gridLookupOwnerInventoryInfo')" onblur="ASPx.ELostFocus('gridLookupOwnerInventoryInfo')" onchange="ASPx.ETextChanged('gridLookupOwnerInventoryInfo')" value="대한제당 (주) 서울사무소" type="text" autocomplete="off"></td><td id="gridLookupOwnerInventoryInfo_B-1" class="dxeButton dxeButtonEditButton" onmousedown="return ASPx.DDDropDown('gridLookupOwnerInventoryInfo', event)" style="-webkit-user-select:none;"><img id="gridLookupOwnerInventoryInfo_B-1Img" class="dxEditors_edtDropDown" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="v"></td>
+	</tr>
+</tbody></table><input type="hidden" name="gridLookupOwnerInventoryInfo$DDDState" id="gridLookupOwnerInventoryInfo_DDD_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="gridLookupOwnerInventoryInfo_DDD_PW-1" class="dxpcDropDown dxpclW dxpc-ddSys" style="width:0px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-mainDiv dxpc-shadow">
+		<div class="dxpc-contentWrapper">
+			<div class="dxeDropDownWindow dxpc-content" id="gridLookupOwnerInventoryInfo_DDD_PWC-1">
+				<input type="hidden" name="gridLookupOwnerInventoryInfo$DDD$gv" id="gridLookupOwnerInventoryInfo_DDD_gv_State" value="{&amp;quot;keys&amp;quot;:[&amp;quot;8376&amp;quot;],&amp;quot;callbackState&amp;quot;:&amp;quot;BwIHAQIFU3RhdGUHXAcGBv//AgAG//8CAAcAAgEG//8CAAcBAgEG//8CAAcABwAHAAcAAgAHAAcCBDgzNzYCA09JRAcBAgNPSUQHCQIAAgADBwQCAAcAAgEHAQcAAgACAQcABwAHAAcAAghQYWdlU2l6ZQMHBQ==&amp;quot;,&amp;quot;focusedRow&amp;quot;:0,&amp;quot;selection&amp;quot;:&amp;quot;&amp;quot;,&amp;quot;focusedKey&amp;quot;:&amp;quot;8376&amp;quot;}"><table class="dxgvControl" id="gridLookupOwnerInventoryInfo_DDD_gv" style="border-width:0px;border-collapse:separate;" tabindex="0">
+					<tbody><tr>
+						<td><table id="gridLookupOwnerInventoryInfo_DDD_gv_DXMainTable" class="dxgvTable" onclick="ASPx.GTableClick('gridLookupOwnerInventoryInfo_DDD_gv', event);" style="width:100%;empty-cells:show;">
+							<tbody><tr id="gridLookupOwnerInventoryInfo_DDD_gv_DXHeadersRow0">
+								<td id="gridLookupOwnerInventoryInfo_DDD_gv_col2" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('gridLookupOwnerInventoryInfo_DDD_gv', this, event);" style="border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+									<tbody><tr>
+										<td>위탁사명</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+									</tr>
+								</tbody></table></td><td id="gridLookupOwnerInventoryInfo_DDD_gv_col4" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('gridLookupOwnerInventoryInfo_DDD_gv', this, event);" style="border-top-width:0px;border-left-width:0px;border-right-width:0px;"><table style="width:100%;">
+									<tbody><tr>
+										<td>사업부명</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+									</tr>
+								</tbody></table></td>
+							</tr><tr id="gridLookupOwnerInventoryInfo_DDD_gv_DXDataRow0" class="dxgvDataRow dxgvFocusedRow" style="">
+								<td class="dxgv" style="border-bottom-width:0px;">대한제당 (주) 서울사무소</td><td class="dxgv" style="border-right-width:0px;border-bottom-width:0px;">&nbsp;</td>
+							</tr>
+						</tbody></table><table id="gridLookupOwnerInventoryInfo_DDD_gv_DXStatus" class="dxgvStatusBar" style="width:100%;">
+							<tbody><tr class="dxgv">
+								<td id="gridLookupOwnerInventoryInfo_DDD_gv_tcStatusBar" style="width:100%;"><div style="padding: 2px 8px 2px 0; float: right"><div class="dxbButton dxbButtonSys dxbTSys" id="btnCloseOwnerInventoryInfo" style="-webkit-user-select:none;">
+	<div class="dxb" id="btnCloseOwnerInventoryInfo_CD">
+		<div class="dxb-hbc">
+			<input id="btnCloseOwnerInventoryInfo_I" class="dxb-hb" value="Close" type="button" name="btnCloseOwnerInventoryInfo">
+		</div><span class="dx-vam">Close</span>
+	</div>
+</div><script id="dxss_2048699407" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnCloseOwnerInventoryInfo',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnCloseOwnerInventoryInfo',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnCloseOwnerInventoryInfo',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnCloseOwnerInventoryInfo');
+dxo.InitGlobalVariable('btnCloseOwnerInventoryInfo');
+dxo.Click.AddHandler(CloseGridLookupInventoryInfo);
+ASPx.AddSelectedItems('btnCloseOwnerInventoryInfo',[[['dxbf'],[''],['CD']]]);
+dxo.useSubmitBehavior = false;
+dxo.AfterCreate();
+
+//-->
+</script></div></td>
+							</tr>
+						</tbody></table><table id="gridLookupOwnerInventoryInfo_DDD_gv_LP" class="dxgvLoadingPanel" style="left:0px;top:0px;z-index:30000;display:none;">
+							<tbody><tr>
+								<td class="dx" style="padding-right:0px;"><img class="dxlp-loadingImage dxlp-imgPosLeft" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="" style="vertical-align:middle;"></td><td class="dx" style="padding-left:0px;"><span id="gridLookupOwnerInventoryInfo_DDD_gv_TL">Loading…</span></td>
+							</tr>
+						</tbody></table><div id="gridLookupOwnerInventoryInfo_DDD_gv_LD" class="dxgvLoadingDiv" style="display:none;z-index:29999;position:absolute;">
+
+						</div><img id="gridLookupOwnerInventoryInfo_DDD_gv_IADD" class="dxGridView_gvDragAndDropArrowDown" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="|" style="position:absolute;visibility:hidden;top:-100px;"><img id="gridLookupOwnerInventoryInfo_DDD_gv_IADU" class="dxGridView_gvDragAndDropArrowUp" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="|" style="position:absolute;visibility:hidden;top:-100px;"><img id="gridLookupOwnerInventoryInfo_DDD_gv_IDHF" class="dxGridView_gvDragAndDropHideColumn" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="Hide" style="position:absolute;visibility:hidden;top:-100px;"></td>
+					</tr>
+				</tbody></table><script id="dxss_1277444741" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientGridView('gridLookupOwnerInventoryInfo_DDD_gv');
+dxo.InitGlobalVariable('gridLookupOwnerInventoryInfo_DDD_gv');
+dxo.callBack = function(arg) { ; };
+dxo.uniqueID = 'gridLookupOwnerInventoryInfo$DDD$gv';
+dxo.stateObject = ({'keys':['8376'],'callbackState':'BwIHAQIFU3RhdGUHXAcGBv//AgAG//8CAAcAAgEG//8CAAcBAgEG//8CAAcABwAHAAcAAgAHAAcCBDgzNzYCA09JRAcBAgNPSUQHCQIAAgADBwQCAAcAAgEHAQcAAgACAQcABwAHAAcAAghQYWdlU2l6ZQMHBQ==','focusedRow':'','selection':''});
+dxo.callBacksEnabled=true;
+dxo.pageRowCount=1;
+dxo.pageRowSize=5;
+dxo.pageIndex=0;
+dxo.pageCount=1;
+dxo.selectedWithoutPageRowCount=0;
+dxo.visibleStartIndex=0;
+dxo.focusedRowIndex=0;
+dxo.allowFocusedRow=true;
+dxo.allowSelectByItemClick=false;
+dxo.allowSelectSingleRowOnly=true;
+dxo.callbackOnFocusedRowChanged=false;
+dxo.callbackOnSelectionChanged=false;
+dxo.columns = [new ASPxClientGridViewColumn('',0,-1,'ContractorOid',0,'',0,1,1,1,0,1,0,0),
+new ASPxClientGridViewColumn('',1,-1,'ContractorID',0,'',0,1,1,1,0,1,0,0),
+new ASPxClientGridViewColumn('',2,-1,'ContractorName',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('',3,-1,'SupplierID',0,'',0,1,1,1,0,1,0,0),
+new ASPxClientGridViewColumn('',4,-1,'SupplierName',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('',5,-1,'SupplierType',0,'',0,1,1,1,0,1,0,0)];
+dxo.editState=0;
+dxo.editItemVisibleIndex=-1;
+dxo.enableKeyboard=true;
+dxo.customKbdHelperName='GridLookupKeyboardSupportHelper';
+dxo.searchPanelFilter='';
+dxo.editMode=2;
+dxo.indentColumnCount=0;
+dxo.allowMultiColumnAutoFilter=false;
+dxo.editingItemVisibleIndex=-1;
+dxo.itemTexts=['대한제당 (주) 서울사무소'];
+dxo.callbackCommand='';
+dxo.currentSelectionState={InputText: '대한제당 (주) 서울사무소', SelectedRowTexts: ({'8376':'대한제당 (주) 서울사무소'})};
+dxo.callbackUrl="/IL6/WMS/General/SearchOwnerLoad?ParentName=InventoryInfo";
+dxo.keyName="OID";
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_891432167" type="text/javascript">
+<!--
+ASPxClientGridBase.InitializeStyles('gridLookupOwnerInventoryInfo_DDD_gv',({'sel':{'css':'dxgvSelectedRow'},'fi':{'css':'dxgvFocusedRow'},'bec':{'css':'dxgvBatchEditCell dxgv'},'bemc':{'css':'dxgvBatchEditModifiedCell dxgv'},'bemergmc':{'css':'dxgvBatchEditCell dxgvBatchEditModifiedCell dxgv'},'ei':'<tr class="dxgvEditingErrorRow">\r\n\t<td class="dxgv" data-colSpan="2" style="border-right-width:0px;"></td>\r\n</tr>','fgi':{'css':'dxgvFocusedGroupRow'}}),[])
+//-->
+</script>
+			</div>
+		</div>
+	</div>
+</div><script id="dxss_382973927" type="text/javascript">
+<!--
+ASPx.AddHoverItems('gridLookupOwnerInventoryInfo_DDD',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new ASPxClientPopupControl('gridLookupOwnerInventoryInfo_DDD');
+dxo.InitGlobalVariable('gridLookupOwnerInventoryInfo_DDD');
+dxo.uniqueID = 'gridLookupOwnerInventoryInfo$DDD';
+dxo.Shown.AddHandler(function (s, e) { ASPx.DDBPCShown('gridLookupOwnerInventoryInfo', e); });
+dxo.adjustInnerControlsSizeOnShow=false;
+dxo.popupAnimationType='slide';
+dxo.closeAction='CloseButton';
+dxo.popupHorizontalAlign='LeftSides';
+dxo.popupVerticalAlign='Below';
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_741833851" type="text/javascript">
+<!--
+ASPx.AddHoverItems('gridLookupOwnerInventoryInfo',[[['dxeButtonEditButtonHover'],[''],['B-1']]]);
+ASPx.RemoveHoverItems('gridLookupOwnerInventoryInfo',[[['B-100']]]);
+ASPx.AddPressedItems('gridLookupOwnerInventoryInfo',[[['dxeButtonEditButtonPressed'],[''],['B-1']]]);
+ASPx.RemovePressedItems('gridLookupOwnerInventoryInfo',[[['B-100']]]);
+ASPx.AddDisabledItems('gridLookupOwnerInventoryInfo',[[['dxeDisabled'],[''],['','I']],[['dxeDisabled dxeButtonDisabled'],[''],['B-1'],,[[{'spriteCssClass':'dxEditors_edtDropDownDisabled'}]],['Img']]]);
+ASPx.RemoveDisabledItems('gridLookupOwnerInventoryInfo',[[['B-100'],]]);
+document.getElementById("gridLookupOwnerInventoryInfo_I").setAttribute("autocomplete", "off");
+
+var dxo = new MVCxClientGridLookup('gridLookupOwnerInventoryInfo');
+dxo.InitGlobalVariable('gridLookupOwnerInventoryInfo');
+dxo.Init.AddHandler(SetInventoryInfoOwnerFieldValues);
+dxo.RowClick.AddHandler(GetInventoryInfoOwnerSelectedFieldValues);
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.textFormatString='{2}';
+dxo.keyFieldName='OID';
+dxo.incrementalFilteringMode = "None";
+dxo.AfterCreate();
+
+//-->
+</script>
+            </div>
+        <p></p>
+
+        <p class="termSelect">
+            <label>기간</label>
+            </p><div class="editorContainer" style="float:left; width: 120px; margin-left: 5px; margin-right: 10px; margin-top: 7px; padding-right:5px;">
+                <script id="dxss_723645489" type="text/javascript">
+<!--
+(function(){var a = ({'currNegPattern':1,'abbrDayNames':['일','월','화','수','목','금','토'],'monthNames':['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월',''],'shortTime':'tt h:mm','longTime':'tt h:mm:ss','ds':'-','longDate':'yyyy\'년\' M\'월\' d\'일\' dddd','abbrMonthNames':['1','2','3','4','5','6','7','8','9','10','11','12',''],'pm':'오후','am':'오전','numPosInf':'∞','numNegInf':'-∞','currPrec':0,'monthDay':'M월 d일','currency':'?','yearMonth':'yyyy\'년\' M\'월\'','percentPattern':1,'dayNames':['일요일','월요일','화요일','수요일','목요일','금요일','토요일'],'genMonthNames':['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월',''],'shortDate':'yyyy-MM-dd'});for(var b in a) ASPx.CultureInfo[b] = a[b];})();
+//-->
+</script><input type="hidden" name="InventoryInfoSearchDate1$State" id="InventoryInfoSearchDate1_State" value="{&amp;quot;rawValue&amp;quot;:&amp;quot;1788871010219.3&amp;quot;}"><table class="dxeButtonEditSys dxeButtonEdit form-control" id="InventoryInfoSearchDate1" style="width:100%;">
+	<tbody><tr>
+		<td class="dxic" onmousedown="return ASPx.DDMC_MD('InventoryInfoSearchDate1', event)" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="InventoryInfoSearchDate1_I" name="InventoryInfoSearchDate1" readonly="readonly" onfocus="ASPx.EGotFocus('InventoryInfoSearchDate1')" onblur="ASPx.ELostFocus('InventoryInfoSearchDate1')" onchange="ASPx.ETextChanged('InventoryInfoSearchDate1')" value="2026-09-08" type="text" autocomplete="off"></td><td id="InventoryInfoSearchDate1_B-1" class="dxeButton dxeButtonEditButton" onmousedown="return ASPx.DDDropDown('InventoryInfoSearchDate1', event)" style="-webkit-user-select:none;"><img id="InventoryInfoSearchDate1_B-1Img" class="dxEditors_edtDropDown" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="v"></td>
+	</tr>
+</tbody></table><input type="hidden" name="InventoryInfoSearchDate1$DDDState" id="InventoryInfoSearchDate1_DDD_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="InventoryInfoSearchDate1_DDD_PW-1" class="dxpcDropDown dxpclW dxpc-ddSys" style="width:0px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-mainDiv dxpc-shadow">
+		<div class="dxpc-contentWrapper">
+			<div class="dxpc-content" id="InventoryInfoSearchDate1_DDD_PWC-1">
+				<table style="display:none;">
+					<tbody><tr>
+						<td id="InventoryInfoSearchDate1_DDD_C_EC_D" class="dxeCalendarDay"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DS" class="dxeCalendarSelected"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DA" class="dxeCalendarOtherMonth"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DW" class="dxeCalendarWeekend"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DO" class="dxeCalendarOutOfRange"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DDD" class="dxeCalendarDayDisabled"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DT" class="dxeCalendarToday"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_DD" class="dxeDisabled"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_FNM" class="dxeCalendarFastNavMonth"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_FNMS" class="dxeCalendarFastNavMonthSelected"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_FNY" class="dxeCalendarFastNavYear"></td><td id="InventoryInfoSearchDate1_DDD_C_EC_FNYS" class="dxeCalendarFastNavYearSelected"></td>
+					</tr>
+				</tbody></table><input type="hidden" name="InventoryInfoSearchDate1$DDD$C" id="InventoryInfoSearchDate1_DDD_C_State" value="{&amp;quot;visibleDate&amp;quot;:&amp;quot;09/08/2026&amp;quot;,&amp;quot;selectedDates&amp;quot;:[&amp;quot;09/08/2026&amp;quot;]}"><table class="dxeCalendar" id="InventoryInfoSearchDate1_DDD_C">
+					<tbody><tr>
+						<td style="vertical-align:Top;"><table style="width:100%;border-collapse:collapse;">
+							<tbody><tr>
+								<td class="dxeCalendarHeader" style="border-top:0;"><table style="width:100%;border-collapse:collapse;">
+									<tbody><tr>
+										<td id="InventoryInfoSearchDate1_DDD_C_PYC" class="dxe" onclick="ASPx.CalShiftMonth('InventoryInfoSearchDate1_DDD_C', -12);"><img id="InventoryInfoSearchDate1_DDD_C_PYCImg" class="dxEditors_edtCalendarPrevYear" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="&lt;&lt;"></td><td class="dxeCHS"></td><td id="InventoryInfoSearchDate1_DDD_C_PMC" class="dxe" onclick="ASPx.CalShiftMonth('InventoryInfoSearchDate1_DDD_C', -1);"><img id="InventoryInfoSearchDate1_DDD_C_PMCImg" class="dxEditors_edtCalendarPrevMonth" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="&lt;"></td><td id="InventoryInfoSearchDate1_DDD_C_TC" class="dxe" style="width:100%;cursor:default;"><span id="InventoryInfoSearchDate1_DDD_C_T" onclick="ASPx.CalTitleClick('InventoryInfoSearchDate1_DDD_C', 0, 0)" style="cursor:pointer;">2026년 9월</span></td><td id="InventoryInfoSearchDate1_DDD_C_NMC" class="dxe" onclick="ASPx.CalShiftMonth('InventoryInfoSearchDate1_DDD_C', 1);"><img id="InventoryInfoSearchDate1_DDD_C_NMCImg" class="dxEditors_edtCalendarNextMonth" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="&gt;"></td><td class="dxeCHS"></td><td id="InventoryInfoSearchDate1_DDD_C_NYC" class="dxe" onclick="ASPx.CalShiftMonth('InventoryInfoSearchDate1_DDD_C', 12);"><img id="InventoryInfoSearchDate1_DDD_C_NYCImg" class="dxEditors_edtCalendarNextYear" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="&gt;&gt;"></td>
+									</tr>
+								</tbody></table></td>
+							</tr><tr>
+								<td id="InventoryInfoSearchDate1_DDD_C_mc" class="dxMonthGrid" style="-webkit-user-select:none;"><table id="InventoryInfoSearchDate1_DDD_C_mt" style="width:100%;border-collapse:separate;">
+									<tbody><tr class="dx-ac">
+										<td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_0">일</td><td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_1">월</td><td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_2">화</td><td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_3">수</td><td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_4">목</td><td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_5">금</td><td class="dxeCalendarDayHeader" id="InventoryInfoSearchDate1_DDD_C_AUX_0_0_6">토</td>
+									</tr><tr>
+										<td class="dxeCalendarDay dxeCalendarWeekend dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">30</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">31</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">1</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">2</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">3</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">4</td><td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">5</td>
+									</tr><tr>
+										<td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">6</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">7</td><td class="dxeCalendarDay dxeCalendarToday dxeCalendarSelected" savedcursor="[object Object]" style="cursor: pointer;">8</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">9</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">10</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">11</td><td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">12</td>
+									</tr><tr>
+										<td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">13</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">14</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">15</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">16</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">17</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">18</td><td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">19</td>
+									</tr><tr>
+										<td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">20</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">21</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">22</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">23</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">24</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">25</td><td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">26</td>
+									</tr><tr>
+										<td class="dxeCalendarDay dxeCalendarWeekend" savedcursor="[object Object]" style="cursor: pointer;">27</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">28</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">29</td><td class="dxeCalendarDay" savedcursor="[object Object]" style="cursor: pointer;">30</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">1</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">2</td><td class="dxeCalendarDay dxeCalendarWeekend dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">3</td>
+									</tr><tr>
+										<td class="dxeCalendarDay dxeCalendarWeekend dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">4</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">5</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">6</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">7</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">8</td><td class="dxeCalendarDay dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">9</td><td class="dxeCalendarDay dxeCalendarWeekend dxeCalendarOtherMonth" savedcursor="[object Object]" style="cursor: pointer;">10</td>
+									</tr>
+								</tbody></table></td>
+							</tr>
+						</tbody></table></td>
+					</tr>
+				</tbody></table><input type="hidden" name="InventoryInfoSearchDate1$DDD$C$FNPState" id="InventoryInfoSearchDate1_DDD_C_FNP_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="InventoryInfoSearchDate1_DDD_C_FNP_PW-1" class="dxpcDropDown dxpclW dxpc-ddSys" style="width:0px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+					<div class="dxpc-mainDiv dxpc-shadow">
+						<div class="dxpc-contentWrapper">
+							<div class="dxpc-content" id="InventoryInfoSearchDate1_DDD_C_FNP_PWC-1">
+								<div class="dxeCalendarFastNav">
+									<div class="dxeCalendarFastNavMonthArea">
+										<table id="InventoryInfoSearchDate1_DDD_C_FNP_m" style="width:100%;border-collapse:separate;">
+											<tbody><tr>
+												<td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M0">1</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M1">2</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M2">3</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M3">4</td>
+											</tr><tr>
+												<td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M4">5</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M5">6</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M6">7</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M7">8</td>
+											</tr><tr>
+												<td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M8">9</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M9">10</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M10">11</td><td class="dxeCalendarFastNavMonth" id="InventoryInfoSearchDate1_DDD_C_FNP_M11">12</td>
+											</tr>
+										</tbody></table>
+									</div><div class="dxeCalendarFastNavYearArea">
+										<table id="InventoryInfoSearchDate1_DDD_C_FNP_y" style="width:100%;border-collapse:separate;">
+											<tbody><tr>
+												<td onclick="ASPx.CalFNYShuffle('InventoryInfoSearchDate1_DDD_C', -10)" rowspan="2" style="cursor:pointer;"><img class="dxEditors_edtCalendarFNPrevYear" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="&lt;"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y0"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y1"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y2"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y3"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y4"></td><td onclick="ASPx.CalFNYShuffle('InventoryInfoSearchDate1_DDD_C', 10)" rowspan="2" style="cursor:pointer;"><img class="dxEditors_edtCalendarFNNextYear" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="&gt;"></td>
+											</tr><tr>
+												<td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y5"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y6"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y7"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y8"></td><td class="dxeCalendarFastNavYear" id="InventoryInfoSearchDate1_DDD_C_FNP_Y9"></td>
+											</tr>
+										</tbody></table>
+									</div>
+								</div><div class="dxeCalendarFastNavFooter dx-ac">
+									<table>
+										<tbody><tr>
+											<td id="InventoryInfoSearchDate1_DDD_C_FNP_BO" class="dxeCalendarButton" onclick="ASPx.CalFNBClick('InventoryInfoSearchDate1_DDD_C', 'ok')">OK</td><td class="dxeCFNFS"></td><td id="InventoryInfoSearchDate1_DDD_C_FNP_BC" class="dxeCalendarButton" onclick="ASPx.CalFNBClick('InventoryInfoSearchDate1_DDD_C', 'cancel')">Cancel</td>
+										</tr>
+									</tbody></table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div><script id="dxss_2103780483" type="text/javascript">
+<!--
+ASPx.AddHoverItems('InventoryInfoSearchDate1_DDD_C_FNP',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new ASPxClientPopupControl('InventoryInfoSearchDate1_DDD_C_FNP');
+dxo.InitGlobalVariable('InventoryInfoSearchDate1_DDD_C_FNP');
+dxo.uniqueID = 'InventoryInfoSearchDate1$DDD$C$FNP';
+dxo.adjustInnerControlsSizeOnShow=false;
+dxo.popupAnimationType='fade';
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_2124405770" type="text/javascript">
+<!--
+ASPx.AddHoverItems('InventoryInfoSearchDate1_DDD_C',[[['dxeCalendarButtonHover'],[''],['BO','BCN','FNP_BO','FNP_BC']],[['dxeCalendarFastNavMonthHover'],[''],['FNP_M0','FNP_M1','FNP_M2','FNP_M3','FNP_M4','FNP_M5','FNP_M6','FNP_M7','FNP_M8','FNP_M9','FNP_M10','FNP_M11']],[['dxeCalendarFastNavYearHover'],[''],['FNP_Y0','FNP_Y1','FNP_Y2','FNP_Y3','FNP_Y4','FNP_Y5','FNP_Y6','FNP_Y7','FNP_Y8','FNP_Y9']]]);
+ASPx.AddDisabledItems('InventoryInfoSearchDate1_DDD_C',[[['dxeDisabled'],[''],['']],[['dxeDisabled dxeButtonDisabled'],[''],['BO','BCN','FNP_BO','FNP_BC']],[[''],[''],['PYC','PMC','NMC','NYC'],,[[{'spriteCssClass':'dxEditors_edtCalendarPrevYearDisabled'}],[{'spriteCssClass':'dxEditors_edtCalendarPrevMonthDisabled'}],[{'spriteCssClass':'dxEditors_edtCalendarNextMonthDisabled'}],[{'spriteCssClass':'dxEditors_edtCalendarNextYearDisabled'}]],['Img']]]);
+
+var dxo = new MVCxClientCalendar('InventoryInfoSearchDate1_DDD_C');
+dxo.InitGlobalVariable('InventoryInfoSearchDate1_DDD_C');
+dxo.uniqueID = 'InventoryInfoSearchDate1$DDD$C';
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.serverCurrentDate=new Date(2026,8,8);
+dxo.visibleDate = new Date(2026,8,8);
+dxo.selection.AddArray([new Date(2026,8,8,0,0,0,0)]);
+dxo.showWeekNumbers = false;
+dxo.isDateEditCalendar = true;
+dxo.AfterCreate();
+
+//-->
+</script>
+			</div>
+		</div>
+	</div>
+</div><script id="dxss_1182236519" type="text/javascript">
+<!--
+ASPx.AddHoverItems('InventoryInfoSearchDate1_DDD',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new ASPxClientPopupControl('InventoryInfoSearchDate1_DDD');
+dxo.InitGlobalVariable('InventoryInfoSearchDate1_DDD');
+dxo.uniqueID = 'InventoryInfoSearchDate1$DDD';
+dxo.Shown.AddHandler(function (s, e) { ASPx.DDBPCShown('InventoryInfoSearchDate1', e); });
+dxo.adjustInnerControlsSizeOnShow=false;
+dxo.popupAnimationType='slide';
+dxo.closeAction='CloseButton';
+dxo.popupHorizontalAlign='LeftSides';
+dxo.popupVerticalAlign='Below';
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_192216754" type="text/javascript">
+<!--
+ASPx.AddHoverItems('InventoryInfoSearchDate1',[[['dxeButtonEditButtonHover'],[''],['B-1']]]);
+ASPx.RemoveHoverItems('InventoryInfoSearchDate1',[[['B-100']]]);
+ASPx.AddPressedItems('InventoryInfoSearchDate1',[[['dxeButtonEditButtonPressed'],[''],['B-1']]]);
+ASPx.RemovePressedItems('InventoryInfoSearchDate1',[[['B-100']]]);
+ASPx.AddDisabledItems('InventoryInfoSearchDate1',[[['dxeDisabled'],[''],['','I']],[['dxeDisabled dxeButtonDisabled'],[''],['B-1'],,[[{'spriteCssClass':'dxEditors_edtDropDownDisabled'}]],['Img']]]);
+ASPx.RemoveDisabledItems('InventoryInfoSearchDate1',[[['B-100'],]]);
+document.getElementById("InventoryInfoSearchDate1_I").setAttribute("autocomplete", "off");
+
+var dxo = new MVCxClientDateEdit('InventoryInfoSearchDate1');
+dxo.InitGlobalVariable('InventoryInfoSearchDate1');
+dxo.stateObject = ({'rawValue':'1788871010219.3'});
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.styleDecoration.AddStyle('N','dxeNullText','');
+dxo.nullText = 'yyyy/MM/dd';
+dxo.outOfRangeWarningClassName='dxeOutOfRWarn dxeOutOfRWarnRight';
+dxo.outOfRangeWarningMessages=['The date must be in the range {0}...{1}', 'The date must be greater than or equal to {0}', 'The date must be less than or equal to {0}'];
+dxo.allowUserInput = false;
+dxo.date = new Date(2026,8,8,12,36,50,219);
+dxo.dateFormatter = ASPx.DateFormatter.Create('yyyy/MM/dd');
+dxo.AfterCreate();
+
+//-->
+</script>
+            </div>
+        <p></p>
+
+        <p class="termSelect">
+            <label>관리번호</label>
+            </p><div class="editorContainer" style="float:left; width: 80px; margin-left: 5px; margin-right: 10px; margin-top: 7px; padding-right:10px;">
+                <table class="dxeTextBoxSys dxeTextBox form-control dxeTextBoxDefaultWidthSys" id="teInvAltNo" style="width:100%;">
+	<tbody><tr>
+		<td class="dxic" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="teInvAltNo_I" name="teInvAltNo" onfocus="ASPx.EGotFocus('teInvAltNo')" onblur="ASPx.ELostFocus('teInvAltNo')" onchange="ASPx.EValueChanged('teInvAltNo')" type="text"></td>
+	</tr>
+</tbody></table><script id="dxss_1809120172" type="text/javascript">
+<!--
+
+var dxo = new ASPxClientTextBox('teInvAltNo');
+dxo.InitGlobalVariable('teInvAltNo');
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.AfterCreate();
+
+//-->
+</script>
+            </div>
+        <p></p>
+
+        <p class="termSelect">
+            <label>B/L No</label>
+            </p><div class="editorContainer" style="float:left; width: 100px; margin-left: 5px; margin-right: 10px; margin-top: 7px; padding-right:10px;">
+                <table class="dxeTextBoxSys dxeTextBox form-control dxeTextBoxDefaultWidthSys" id="teBLNo" style="width:100%;">
+	<tbody><tr>
+		<td class="dxic" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="teBLNo_I" name="teBLNo" onfocus="ASPx.EGotFocus('teBLNo')" onblur="ASPx.ELostFocus('teBLNo')" onchange="ASPx.EValueChanged('teBLNo')" type="text"></td>
+	</tr>
+</tbody></table><script id="dxss_2333356" type="text/javascript">
+<!--
+
+var dxo = new ASPxClientTextBox('teBLNo');
+dxo.InitGlobalVariable('teBLNo');
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.AfterCreate();
+
+//-->
+</script>
+            </div>
+        <p></p>
+
+        <p class="termSelect">
+            <label>수탁품</label>
+            </p><div class="editorContainer" style="float:left; width: 100px; margin-left: 5px; margin-right: 10px; margin-top: 7px; padding-right:10px;">
+                <table class="dxeTextBoxSys dxeTextBox form-control dxeTextBoxDefaultWidthSys" id="teItemName" style="width:100%;">
+	<tbody><tr>
+		<td class="dxic" style="width:100%;"><input class="dxeEditArea dxeEditAreaSys" id="teItemName_I" name="teItemName" onfocus="ASPx.EGotFocus('teItemName')" onblur="ASPx.ELostFocus('teItemName')" onchange="ASPx.EValueChanged('teItemName')" type="text"></td>
+	</tr>
+</tbody></table><script id="dxss_2029878092" type="text/javascript">
+<!--
+
+var dxo = new ASPxClientTextBox('teItemName');
+dxo.InitGlobalVariable('teItemName');
+dxo.RequireStyleDecoration();
+dxo.styleDecoration.AddStyle('F','dxeFocused','');
+dxo.AfterCreate();
+
+//-->
+</script>
+            </div>
+        <p></p>
+
+        <p class="termSelect" style="margin-right: 10px; margin-top: 5px;">
+            <input class="btnPrimary" id="btnInventorySearch" value="조회" type="button"><script id="dxss_1145835836" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientButton('btnInventorySearch');
+dxo.InitGlobalVariable('btnInventorySearch');
+dxo.isNative = true;
+dxo.Click.AddHandler(InventorySearchBtn);
+dxo.useSubmitBehavior = false;
+dxo.AfterCreate();
+
+//-->
+</script>
+        </p>
+
+        <p class="termSelect" style="margin-right: 10px; margin-top: 5px;">
+            <input class="btnExcel" id="btnInvoiceExportToXLSX" value="" type="button"><script id="dxss_713460084" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientButton('btnInvoiceExportToXLSX');
+dxo.InitGlobalVariable('btnInvoiceExportToXLSX');
+dxo.isNative = true;
+dxo.Click.AddHandler(InventoryInfoExcelOnClick);
+dxo.isTextEmpty = true;
+dxo.useSubmitBehavior = false;
+dxo.submitUrl="/IL6/WMS/General/AJT_ExportTo";
+dxo.AfterCreate();
+
+//-->
+</script>
+        </p>
+
+        <p class="termSelect" style="margin-right: 10px; margin-top: 5px;">
+            <input class="btnGreen" id="InventoryShowPreview" value="인쇄" type="button"><script id="dxss_704912364" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientButton('InventoryShowPreview');
+dxo.InitGlobalVariable('InventoryShowPreview');
+dxo.isNative = true;
+dxo.Click.AddHandler(OnShowInventoryPreviewBtnClick);
+dxo.useSubmitBehavior = false;
+dxo.AfterCreate();
+
+//-->
+</script>
+        </p>
+
+    </div>
+</section>
+
+
+<section>
+    
+
+<input type="hidden" name="InventoryList" id="InventoryList_State" value="{&amp;quot;focusedRow&amp;quot;:-1,&amp;quot;keys&amp;quot;:[],&amp;quot;resizingState&amp;quot;:&amp;quot;{}&amp;quot;,&amp;quot;callbackState&amp;quot;:&amp;quot;BwIHAQIFU3RhdGUGWgEHEQb//wIABwACAQcBAgEHAgIBBwMCAQcEAgEHBQIBBwYCAQcHAgEHCAIBBwkCAQcKAgEHCwIBBwwCAQcNAgEHAAIBBwECAQcABwAHDAcBBwECAAAAAAAAaUAHAgcBAgAAAAAAAFRABwQHAQIAAAAAAABJQAcFBwECAAAAAADAYkAHBgcBAgAAAAAAwGJABwkHAQIAAAAAAIBRQAcKBwECAAAAAACAUUAHCwcBAgAAAAAAgFFABwwHAQIAAAAAAIBRQAcNBwECAAAAAAAAVEAHDwcBAgAAAAAAAElABxAHAQIAAAAAAABJQAcAAgAFAAAAgAkCA09JRAcACQIAAgADBwQCAAcAAgEHAAcAAgACAQcABwAHAAcCAgxJbnZlbnRvcnlRdHkHAAICbjACAAIAAgECAAIAAgACD0ludmVudG9yeVdlaWdodAcAAgFuAgACAAIBAgACAAIAAgpTaG93Rm9vdGVyCgIB&amp;quot;,&amp;quot;scrollState&amp;quot;:null,&amp;quot;selection&amp;quot;:&amp;quot;&amp;quot;}"><table class="dxgvControl grid" id="InventoryList" style="width: 986px; border-collapse: separate;">
+	<tbody><tr>
+		<td><div class="dxgvHSDC" style="padding-right: 0px;">
+	<div style="overflow: hidden; width: 986px;" align="left">
+		<table id="InventoryList_DXHeaderTable" class="dxgvTable" onclick="ASPx.GTableClick('InventoryList', event);" style="width:100%;empty-cells:show;table-layout:fixed;overflow:hidden;text-overflow:ellipsis;">
+			<tbody><tr class="dxgvArm">
+				<td style="width:200px;"></td><td style="width:80px;"></td><td style="width:100px;"></td><td style="width:50px;"></td><td style="width:150px;"></td><td style="width:150px;"></td><td style="width:100px;"></td><td style="width:100px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:80px;"></td><td style="width:50px;"></td><td style="width:50px;"></td><td></td>
+			</tr><tr id="InventoryList_DXHeadersRow0">
+				<td id="InventoryList_col1" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">수탁품명</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col2" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">관리번호</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col3" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">규격</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col4" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">단위</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col5" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">LOT-NO</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col6" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">BL-NO</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col7" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">유통식별번호</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col8" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">EST-NO</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col9" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">저장구역</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col10" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">현재고</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col11" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">중량</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col12" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">단위중량</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col13" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" rowspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">유통기한</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col14" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" colspan="2" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;">비고</td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td class="dxgvHEC"></td>
+			</tr><tr id="InventoryList_DXHeadersRow1">
+				<td id="InventoryList_col15" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;"> </td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td id="InventoryList_col16" class="dxgvHeader" onmousedown="ASPx.GHeaderMouseDown('InventoryList', this, event);" style="text-align:Center;border-top-width:0px;border-left-width:0px;"><table style="width:100%;">
+					<tbody><tr>
+						<td style="text-align:Center;"> </td><td style="width:1px;text-align:right;"><span class="dx-vam">&nbsp;</span></td>
+					</tr>
+				</tbody></table></td><td class="dxgvHEC"></td>
+			</tr>
+		</tbody></table>
+	</div>
+</div><div class="dxgvCSD" style="height: 650px; overflow: auto; width: 986px;" align="left">
+	<table id="InventoryList_DXMainTable" class="dxgvTable dxgvRBB" onclick="ASPx.GTableClick('InventoryList', event);" style="width: 1390px; empty-cells: show; table-layout: fixed; overflow: hidden; text-overflow: ellipsis;">
+		<tbody><tr class="dxgvArm">
+			<td style="width:200px;"></td><td style="width:80px;"></td><td style="width:100px;"></td><td style="width:50px;"></td><td style="width:150px;"></td><td style="width:150px;"></td><td style="width:100px;"></td><td style="width:100px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:80px;"></td><td style="width:50px;"></td><td style="width:50px;"></td><td></td>
+		</tr><tr id="InventoryList_DXEmptyRow" class="dxgvEmptyDataRow dxgvLVR">
+			<td id="InventoryList_tcEmptyRow" class="dxgv" colspan="15"><div>조회된 데이터가 없습니다.</div></td>
+		</tr>
+	</tbody></table>
+</div><div class="dxgvFSDC" style="padding-right: 0px;">
+	<div style="overflow: hidden; width: 986px;" align="left">
+		<table id="InventoryList_DXFooterTable" class="dxgvTable" onclick="ASPx.GTableClick('InventoryList', event);" style="width:100%;empty-cells:show;table-layout:fixed;overflow:hidden;text-overflow:ellipsis;">
+			<tbody><tr class="dxgvArm">
+				<td style="width:200px;"></td><td style="width:80px;"></td><td style="width:100px;"></td><td style="width:50px;"></td><td style="width:150px;"></td><td style="width:150px;"></td><td style="width:100px;"></td><td style="width:100px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:70px;"></td><td style="width:80px;"></td><td style="width:50px;"></td><td style="width:50px;"></td><td></td>
+			</tr><tr id="InventoryList_DXFooterRow" class="dxgvFooter">
+				<td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="text-align:Right;overflow:hidden;">0</td><td class="dxgv" style="text-align:Right;overflow:hidden;">0.00</td><td class="dxgv" style="text-align:Right;overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgv" style="overflow:hidden;">&nbsp;</td><td class="dxgvHEC"></td>
+			</tr>
+		</tbody></table>
+	</div>
+</div><table id="InventoryList_LP" class="dxgvLoadingPanel" style="left:0px;top:0px;z-index:30000;display:none;">
+	<tbody><tr>
+		<td class="dx" style="padding-right:0px;"><img class="dxlp-loadingImage dxlp-imgPosLeft" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="" style="vertical-align:middle;"></td><td class="dx" style="padding-left:0px;"><span id="InventoryList_TL">Loading…</span></td>
+	</tr>
+</tbody></table><div id="InventoryList_LD" class="dxgvLoadingDiv" style="display:none;z-index:29999;position:absolute;">
+
+</div><img id="InventoryList_IADD" class="dxGridView_gvDragAndDropArrowDown" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="|" style="position:absolute;visibility:hidden;top:-100px;"><img id="InventoryList_IADU" class="dxGridView_gvDragAndDropArrowUp" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="|" style="position:absolute;visibility:hidden;top:-100px;"><img id="InventoryList_IDHF" class="dxGridView_gvDragAndDropHideColumn" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="Hide" style="position:absolute;visibility:hidden;top:-100px;"><script id="dxss_426224939" type="text/javascript">
+<!--
+var dxo = ASPx.GetControlCollection().Get('InventoryList');
+dxo.callBacksEnabled=true;
+dxo.pageRowCount=0;
+dxo.pageRowSize=10;
+dxo.pageIndex=-1;
+dxo.pageCount=0;
+dxo.selectedWithoutPageRowCount=0;
+dxo.visibleStartIndex=0;
+dxo.focusedRowIndex=-1;
+dxo.allowFocusedRow=true;
+dxo.allowSelectByItemClick=false;
+dxo.allowSelectSingleRowOnly=false;
+dxo.horzScroll=2;
+dxo.vertScroll=2;
+dxo.callbackOnFocusedRowChanged=false;
+dxo.callbackOnSelectionChanged=false;
+dxo.columns = [new ASPxClientGridViewColumn('',0,-1,'OID',0,'',0,1,1,1,0,1,0,0),
+new ASPxClientGridViewColumn('colItem',1,-1,'ILItem_Name',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colReceiptAltNo',2,-1,'ILReceiptLine_AltNo',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colItemSize',3,-1,'ItemSize',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colUom',4,-1,'Uom',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colLot',5,-1,'LOT',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colBL',6,-1,'ILReceipt_BL',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colStickerNo',7,-1,'StickerNo',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colEst_No',8,-1,'Est_No',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colLocation',9,-1,'ILLocation_ID',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colInventoryQty',10,-1,'InventoryQty',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colInventoryWeight',11,-1,'InventoryWeight',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colUOMWeight',12,-1,'VOLUMEWEIGHT',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colExpirationDate',13,-1,'EXPIRATIONDATE',1,'',0,1,1,1,1,0,0,0),
+new ASPxClientGridViewColumn('',14,-1,null,1,'',0,0,0,1,0,0,0,0),
+new ASPxClientGridViewColumn('colCusClearance',15,14,'CusClearance',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colOrigin',16,14,'ILReceipt_Origin',1,'',0,1,1,1,0,0,0,0)];
+dxo.editState=0;
+dxo.editItemVisibleIndex=-1;
+dxo.searchPanelFilter='';
+dxo.editMode=2;
+dxo.indentColumnCount=0;
+dxo.allowMultiColumnAutoFilter=false;
+dxo.columnResizeMode=1;
+dxo.editingItemVisibleIndex=-1;
+
+//-->
+</script><script id="dxss_1940765990" type="text/javascript">
+<!--
+ASPxClientGridBase.InitializeStyles('InventoryList',({'sel':{'css':'dxgvSelectedRow'},'fi':{'css':'dxgvFocusedRow'},'bec':{'css':'dxgvBatchEditCell dxgv'},'bemc':{'css':'dxgvBatchEditModifiedCell dxgv'},'bemergmc':{'css':'dxgvBatchEditCell dxgvBatchEditModifiedCell dxgv'},'ei':'<tr class="dxgvEditingErrorRow">\r\n\t<td class="dxgv" data-colSpan="15"></td>\r\n</tr>','fgi':{'css':'dxgvFocusedGroupRow'}}),[])
+//-->
+</script></td>
+	</tr>
+</tbody></table><script id="dxss_1561596743" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientGridView('InventoryList');
+dxo.InitGlobalVariable('InventoryList');
+dxo.callBack = function(arg) { ; };
+dxo.BeginCallback.AddHandler(OnBeginCallbackInventoryList);
+dxo.EndCallback.AddHandler(OnEndCallbackInventoryList);
+dxo.stateObject = ({'focusedRow':'','keys':[],'resizingState':'','callbackState':'BwIHAQIFU3RhdGUGWgEHEQb//wIABwACAQcBAgEHAgIBBwMCAQcEAgEHBQIBBwYCAQcHAgEHCAIBBwkCAQcKAgEHCwIBBwwCAQcNAgEHAAIBBwECAQcABwAHDAcBBwECAAAAAAAAaUAHAgcBAgAAAAAAAFRABwQHAQIAAAAAAABJQAcFBwECAAAAAADAYkAHBgcBAgAAAAAAwGJABwkHAQIAAAAAAIBRQAcKBwECAAAAAACAUUAHCwcBAgAAAAAAgFFABwwHAQIAAAAAAIBRQAcNBwECAAAAAAAAVEAHDwcBAgAAAAAAAElABxAHAQIAAAAAAABJQAcAAgAFAAAAgAkCA09JRAcACQIAAgADBwQCAAcAAgEHAAcAAgACAQcABwAHAAcCAgxJbnZlbnRvcnlRdHkHAAICbjACAAIAAgECAAIAAgACD0ludmVudG9yeVdlaWdodAcAAgFuAgACAAIBAgACAAIAAgpTaG93Rm9vdGVyCgIB','scrollState':null,'selection':''});
+dxo.callBacksEnabled=true;
+dxo.pageRowCount=0;
+dxo.pageRowSize=10;
+dxo.pageIndex=-1;
+dxo.pageCount=0;
+dxo.selectedWithoutPageRowCount=0;
+dxo.visibleStartIndex=0;
+dxo.focusedRowIndex=-1;
+dxo.allowFocusedRow=true;
+dxo.allowSelectByItemClick=false;
+dxo.allowSelectSingleRowOnly=false;
+dxo.horzScroll=2;
+dxo.vertScroll=2;
+dxo.callbackOnFocusedRowChanged=false;
+dxo.callbackOnSelectionChanged=false;
+dxo.columns = [new ASPxClientGridViewColumn('',0,-1,'OID',0,'',0,1,1,1,0,1,0,0),
+new ASPxClientGridViewColumn('colItem',1,-1,'ILItem_Name',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colReceiptAltNo',2,-1,'ILReceiptLine_AltNo',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colItemSize',3,-1,'ItemSize',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colUom',4,-1,'Uom',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colLot',5,-1,'LOT',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colBL',6,-1,'ILReceipt_BL',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colStickerNo',7,-1,'StickerNo',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colEst_No',8,-1,'Est_No',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colLocation',9,-1,'ILLocation_ID',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colInventoryQty',10,-1,'InventoryQty',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colInventoryWeight',11,-1,'InventoryWeight',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colUOMWeight',12,-1,'VOLUMEWEIGHT',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colExpirationDate',13,-1,'EXPIRATIONDATE',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('',14,-1,null,1,'',0,0,0,1,0,0,0,0),
+new ASPxClientGridViewColumn('colCusClearance',15,14,'CusClearance',1,'',0,1,1,1,0,0,0,0),
+new ASPxClientGridViewColumn('colOrigin',16,14,'ILReceipt_Origin',1,'',0,1,1,1,0,0,0,0)];
+dxo.pendingEvents=['RaiseFocusedItemChanged'];
+dxo.editState=0;
+dxo.editItemVisibleIndex=-1;
+dxo.searchPanelFilter='';
+dxo.editMode=2;
+dxo.indentColumnCount=0;
+dxo.allowMultiColumnAutoFilter=false;
+dxo.columnResizeMode=1;
+dxo.editingItemVisibleIndex=-1;
+dxo.callbackUrl="/IL6/WMS/General/InventoryInfoList";
+dxo.keyName="OID";
+dxo.AfterCreate();
+
+//-->
+</script><script id="dxss_1940765990" type="text/javascript">
+<!--
+ASPxClientGridBase.InitializeStyles('InventoryList',({'sel':{'css':'dxgvSelectedRow'},'fi':{'css':'dxgvFocusedRow'},'bec':{'css':'dxgvBatchEditCell dxgv'},'bemc':{'css':'dxgvBatchEditModifiedCell dxgv'},'bemergmc':{'css':'dxgvBatchEditCell dxgvBatchEditModifiedCell dxgv'},'ei':'<tr class="dxgvEditingErrorRow">\r\n\t<td class="dxgv" data-colSpan="15"></td>\r\n</tr>','fgi':{'css':'dxgvFocusedGroupRow'}}),[])
+//-->
+</script>
+
+
+
+</section></div></section>           
+
+        </div><!--container e-->
+
+        <footer id="footer">
+            <h3 class="skip">하단메뉴</h3>
+            
+<ul class="add fl pl10">
+    <li><b class="mr5">NeoSystems</b> 서울시 강남구 대치동 891-25 보성빌딩 10층</li>
+    <li>TEL 02 566 4813</li>
+    <li>FAX 02 566 9935</li>
+</ul>
+<p class="dividerFooter"></p>
+<section class="copy fl">
+    <p class="fl"><small>Copyright © 1998-2017 NeoSystems Co., Ltd. All rights reserved.</small></p>
+        <p class="fr pr20"><img src="/IL6/Content/images/footerlogo_intra.png" alt="LogisHub"></p>
+
+
+</section>
+
+
+
+
+            
+        </footer>
+
+    </div><!--wrapper e-->
+
+    <div id="spinner" class="spinner" style="display: none;">
+        <img id="img-spinner" src="/IL6/Content/images/ajax-loader.gif">
+    </div>
+
+    <input type="hidden" name="pcModalModeState" id="pcModalMode_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="pcModalMode_PW-1" class="dxpcLite dxpclW dxpc-mainDiv dxpc-shadow" style="width:100px;font-size:12px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-header dxpc-withBtn" style="cursor:move;-webkit-user-select:none;" id="pcModalMode_PWH-1">
+		<div class="dxpc-closeBtn" id="pcModalMode_HCB-1">
+			<img class="dxWeb_pcCloseButton" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="[Close]">
+		</div><div class="dxpc-headerContent">
+			<span class="dxpc-headerText dx-vam" id="pcModalMode_PWH-1T">서비스를 종료합니다.</span>
+		</div><b class="dx-clear"></b>
+	</div><div class="dxpc-contentWrapper">
+		<div class="dxpc-content" id="pcModalMode_PWC-1">
+			<form action="/IL6/WMS/Common/PcLogout" class="edit_form" id="popupForm" method="post" style="width: 260px"><div style="text-align:center;"><div class="dxbButton dxbButtonSys dxbTSys" id="btnUpdate" style="width:80px;margin-right:5px;-webkit-user-select:none;">
+	<div class="dxb" id="btnUpdate_CD">
+		<div class="dxb-hbc">
+			<input id="btnUpdate_I" class="dxb-hb" value="로그아웃" type="submit" name="btnUpdate">
+		</div><span class="dx-vam">로그아웃</span>
+	</div>
+</div><script id="dxss_920323160" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnUpdate',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnUpdate',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnUpdate',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnUpdate');
+dxo.InitGlobalVariable('btnUpdate');
+dxo.autoPostBack = true;
+dxo.Click.AddHandler(function(s, e) { setTimeout("document.location.replace('/IL6/');", 1500);});
+ASPx.AddSelectedItems('btnUpdate',[[['dxbf'],[''],['CD']]]);
+dxo.AfterCreate();
+
+//-->
+</script><div class="dxbButton button dxbButtonSys dxbTSys" id="btnCancel" style="width:80px;-webkit-user-select:none;">
+	<div class="dxb" id="btnCancel_CD">
+		<div class="dxb-hbc">
+			<input id="btnCancel_I" class="dxb-hb" value="취소" type="button" name="btnCancel">
+		</div><span class="dx-vam">취소</span>
+	</div>
+</div><script id="dxss_2014541849" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnCancel',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnCancel',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnCancel',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnCancel');
+dxo.InitGlobalVariable('btnCancel');
+dxo.Click.AddHandler(function(s, e){ pcModalMode.Hide(); });
+ASPx.AddSelectedItems('btnCancel',[[['dxbf'],[''],['CD']]]);
+dxo.useSubmitBehavior = false;
+dxo.AfterCreate();
+
+//-->
+</script></div><b class="Clear"></b><input type="hidden" name="DXScript" id="DXScript" value="1_231,1_168,1_134,1_131,1_206,1_219,1_213,1_216,1_133,17_39,17_3,1_212,1_137,17_8,1_224,1_150,17_10,1_214,1_152,1_151,17_11,1_166,1_174,1_229,1_193,1_195,1_230,1_178,17_12,1_223,1_222,1_205,17_38,1_138,1_179,1_217,1_215,1_153,1_226,1_192,1_190,1_196,17_15,17_17,1_198,1_199,17_19,1_200,1_201,17_20,17_21,1_180,17_14,1_203,1_207,17_24,1_220,17_26,1_218,1_221,17_30,1_225,17_34,17_37,1_155,17_1,1_165,1_194,17_16,7_50,7_53,7_48,7_52,17_25,1_158,1_170,1_154,17_0,1_156,17_2,1_157,17_4,1_159,1_160,1_162,1_176,1_163,17_7,1_169,1_164,17_9,1_202,1_172,1_173,17_22,17_23,1_171,1_175,17_35,1_177,6_12,17_36,15_1,1_140,1_147,1_148,1_142,1_141,1_143,1_144,1_145,1_146,15_0,15_14,15_15,20_0,1_149,5_5,5_4,17_32"><input type="hidden" name="DXCss" id="DXCss" value="/IL6/Content/images/IntraLogis_fav.ico,/IL6/Content/bootstrap.css,/IL6/Content/reset.css,/IL6/Content/jquery-ui.css,/IL6/Content/style.css,/IL6/Content/animate.css,/IL6/Content/main.css,/IL6/Content/footer.css,1_29,1_33,1_35,1_3,1_17,1_18,1_16,1_22,1_21,1_19,7_1,7_2,7_0,6_1,6_2,6_0,1_4,1_9,1_5,15_2,15_4,5_1,5_0"></form>
+		</div>
+	</div>
+</div><div id="pcModalMode_DXPWMB-1" class="dxpcModalBackLite" style="z-index:9999;">
+
+</div><script id="dxss_1254826610" type="text/javascript">
+<!--
+ASPx.AddHoverItems('pcModalMode',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new MVCxClientPopupControl('pcModalMode');
+dxo.InitGlobalVariable('pcModalMode');
+dxo.CloseUp.AddHandler(function(s, e){ ASPxClientEdit.ClearEditorsInContainer(null, '', true); });
+dxo.enableAnimation=false;
+dxo.closeAction='CloseButton';
+dxo.closeOnEscape=true;
+dxo.popupHorizontalAlign='WindowCenter';
+dxo.popupVerticalAlign='WindowCenter';
+dxo.allowDragging=true;
+dxo.width=100;
+dxo.widthFromServer=true;
+dxo.AfterCreate();
+
+//-->
+</script>
+ 
+    <input type="hidden" name="pcModalMode_LoginViewState" id="pcModalMode_LoginView_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="pcModalMode_LoginView_PW-1" class="dxpcLite dxpclW dxpc-mainDiv dxpc-shadow" style="width:100px;font-size:12px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-header dxpc-withBtn" style="cursor:move;-webkit-user-select:none;" id="pcModalMode_LoginView_PWH-1">
+		<div class="dxpc-closeBtn" id="pcModalMode_LoginView_HCB-1">
+			<img class="dxWeb_pcCloseButton" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="[Close]">
+		</div><div class="dxpc-headerContent">
+			<span class="dxpc-headerText dx-vam" id="pcModalMode_LoginView_PWH-1T">비밀번호가 수정되었습니다. 다시로그인 해주세요.</span>
+		</div><b class="dx-clear"></b>
+	</div><div class="dxpc-contentWrapper">
+		<div class="dxpc-content" id="pcModalMode_LoginView_PWC-1">
+			<form action="/IL6/WMS/Common/PcLogout" class="edit_form" id="popupForm" method="post" style="width: 260px"><div style="text-align:center;"><div class="dxbButton dxbButtonSys dxbTSys" id="btnUpdate_LoginView" style="width:80px;margin-right:5px;-webkit-user-select:none;">
+	<div class="dxb" id="btnUpdate_LoginView_CD">
+		<div class="dxb-hbc">
+			<input id="btnUpdate_LoginView_I" class="dxb-hb" value="확인" type="submit" name="btnUpdate_LoginView">
+		</div><span class="dx-vam">확인</span>
+	</div>
+</div><script id="dxss_358444383" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnUpdate_LoginView',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnUpdate_LoginView',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnUpdate_LoginView',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnUpdate_LoginView');
+dxo.InitGlobalVariable('btnUpdate_LoginView');
+dxo.autoPostBack = true;
+dxo.Click.AddHandler(function(s, e) { setTimeout("document.location.href = '/IL6/';", 1500);});
+ASPx.AddSelectedItems('btnUpdate_LoginView',[[['dxbf'],[''],['CD']]]);
+dxo.AfterCreate();
+
+//-->
+</script></div><b class="Clear"></b><input type="hidden" name="DXScript" id="DXScript" value="1_231,1_168,1_134,1_131,1_206,1_219,1_213,1_216,1_133,17_39,17_3,1_212,1_137,17_8,1_224,1_150,17_10,1_214,1_152,1_151,17_11,1_166,1_174,1_229,1_193,1_195,1_230,1_178,17_12,1_223,1_222,1_205,17_38,1_138,1_179,1_217,1_215,1_153,1_226,1_192,1_190,1_196,17_15,17_17,1_198,1_199,17_19,1_200,1_201,17_20,17_21,1_180,17_14,1_203,1_207,17_24,1_220,17_26,1_218,1_221,17_30,1_225,17_34,17_37,1_155,17_1,1_165,1_194,17_16,7_50,7_53,7_48,7_52,17_25,1_158,1_170,1_154,17_0,1_156,17_2,1_157,17_4,1_159,1_160,1_162,1_176,1_163,17_7,1_169,1_164,17_9,1_202,1_172,1_173,17_22,17_23,1_171,1_175,17_35,1_177,6_12,17_36,15_1,1_140,1_147,1_148,1_142,1_141,1_143,1_144,1_145,1_146,15_0,15_14,15_15,20_0,1_149,5_5,5_4,17_32"><input type="hidden" name="DXCss" id="DXCss" value="/IL6/Content/images/IntraLogis_fav.ico,/IL6/Content/bootstrap.css,/IL6/Content/reset.css,/IL6/Content/jquery-ui.css,/IL6/Content/style.css,/IL6/Content/animate.css,/IL6/Content/main.css,/IL6/Content/footer.css,1_29,1_33,1_35,1_3,1_17,1_18,1_16,1_22,1_21,1_19,7_1,7_2,7_0,6_1,6_2,6_0,1_4,1_9,1_5,15_2,15_4,5_1,5_0"></form>
+		</div>
+	</div>
+</div><div id="pcModalMode_LoginView_DXPWMB-1" class="dxpcModalBackLite" style="z-index:9999;">
+
+</div><script id="dxss_1923451341" type="text/javascript">
+<!--
+ASPx.AddHoverItems('pcModalMode_LoginView',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new MVCxClientPopupControl('pcModalMode_LoginView');
+dxo.InitGlobalVariable('pcModalMode_LoginView');
+dxo.CloseUp.AddHandler(function(s, e){ ASPxClientEdit.ClearEditorsInContainer(null, '', true); });
+dxo.enableAnimation=false;
+dxo.closeAction='CloseButton';
+dxo.closeOnEscape=true;
+dxo.popupHorizontalAlign='WindowCenter';
+dxo.popupVerticalAlign='WindowCenter';
+dxo.allowDragging=true;
+dxo.width=100;
+dxo.widthFromServer=true;
+dxo.AfterCreate();
+
+//-->
+</script>
+
+    <input type="hidden" name="pcModalMode2State" id="pcModalMode2_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="pcModalMode2_PW-1" class="dxpcLite dxpclW dxpc-mainDiv dxpc-shadow" style="width:200px;font-size:12px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-header" style="cursor:move;-webkit-user-select:none;" id="pcModalMode2_PWH-1">
+		<div class="dxpc-headerContent">
+			<span class="dxpc-headerText dx-vam" id="pcModalMode2_PWH-1T">Header</span>
+		</div><b class="dx-clear"></b>
+	</div><div class="dxpc-contentWrapper">
+		<div class="dxpc-content" id="pcModalMode2_PWC-1">
+			<form action="/IL6/WMS/Common/PcLogout" class="edit_form" id="popupForm2" method="post"><div style="text-align:center;"><div class="dxbButton dxbButtonSys dxbTSys" id="btnUpdate2" style="width:80px;margin-right:5px;-webkit-user-select:none;">
+	<div class="dxb" id="btnUpdate2_CD">
+		<div class="dxb-hbc">
+			<input id="btnUpdate2_I" class="dxb-hb" value="확인" type="submit" name="btnUpdate2">
+		</div><span class="dx-vam">확인</span>
+	</div>
+</div><script id="dxss_642501396" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnUpdate2',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnUpdate2',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnUpdate2',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnUpdate2');
+dxo.InitGlobalVariable('btnUpdate2');
+dxo.autoPostBack = true;
+dxo.Click.AddHandler(function(s, e) { setTimeout("window.close();", 3000);});
+ASPx.AddSelectedItems('btnUpdate2',[[['dxbf'],[''],['CD']]]);
+dxo.AfterCreate();
+
+//-->
+</script></div><b class="Clear"></b><input type="hidden" name="DXScript" id="DXScript" value="1_231,1_168,1_134,1_131,1_206,1_219,1_213,1_216,1_133,17_39,17_3,1_212,1_137,17_8,1_224,1_150,17_10,1_214,1_152,1_151,17_11,1_166,1_174,1_229,1_193,1_195,1_230,1_178,17_12,1_223,1_222,1_205,17_38,1_138,1_179,1_217,1_215,1_153,1_226,1_192,1_190,1_196,17_15,17_17,1_198,1_199,17_19,1_200,1_201,17_20,17_21,1_180,17_14,1_203,1_207,17_24,1_220,17_26,1_218,1_221,17_30,1_225,17_34,17_37,1_155,17_1,1_165,1_194,17_16,7_50,7_53,7_48,7_52,17_25,1_158,1_170,1_154,17_0,1_156,17_2,1_157,17_4,1_159,1_160,1_162,1_176,1_163,17_7,1_169,1_164,17_9,1_202,1_172,1_173,17_22,17_23,1_171,1_175,17_35,1_177,6_12,17_36,15_1,1_140,1_147,1_148,1_142,1_141,1_143,1_144,1_145,1_146,15_0,15_14,15_15,20_0,1_149,5_5,5_4,17_32"><input type="hidden" name="DXCss" id="DXCss" value="/IL6/Content/images/IntraLogis_fav.ico,/IL6/Content/bootstrap.css,/IL6/Content/reset.css,/IL6/Content/jquery-ui.css,/IL6/Content/style.css,/IL6/Content/animate.css,/IL6/Content/main.css,/IL6/Content/footer.css,1_29,1_33,1_35,1_3,1_17,1_18,1_16,1_22,1_21,1_19,7_1,7_2,7_0,6_1,6_2,6_0,1_4,1_9,1_5,15_2,15_4,5_1,5_0"></form>
+		</div>
+	</div>
+</div><div id="pcModalMode2_DXPWMB-1" class="dxpcModalBackLite" style="z-index:9999;">
+
+</div><script id="dxss_841967714" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientPopupControl('pcModalMode2');
+dxo.InitGlobalVariable('pcModalMode2');
+dxo.enableAnimation=false;
+dxo.popupAction='None';
+dxo.closeAction='None';
+dxo.popupHorizontalAlign='WindowCenter';
+dxo.popupVerticalAlign='WindowCenter';
+dxo.allowDragging=true;
+dxo.AfterCreate();
+
+//-->
+</script>
+
+    <input type="hidden" name="pcModalMode3State" id="pcModalMode3_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="pcModalMode3_PW-1" class="dxpcLite dxpclW dxpc-mainDiv dxpc-shadow" style="width:200px;font-size:12px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-header" style="cursor:move;-webkit-user-select:none;" id="pcModalMode3_PWH-1">
+		<div class="dxpc-headerContent">
+			<span class="dxpc-headerText dx-vam" id="pcModalMode3_PWH-1T">Header</span>
+		</div><b class="dx-clear"></b>
+	</div><div class="dxpc-contentWrapper">
+		<div class="dxpc-content" id="pcModalMode3_PWC-1">
+			<div style="text-align:center;"><div class="dxbButton dxbButtonSys dxbTSys" id="btnUpdate3" style="width:80px;margin-right:5px;-webkit-user-select:none;">
+	<div class="dxb" id="btnUpdate3_CD">
+		<div class="dxb-hbc">
+			<input id="btnUpdate3_I" class="dxb-hb" value="확인" type="submit" name="btnUpdate3">
+		</div><span class="dx-vam">확인</span>
+	</div>
+</div><script id="dxss_180011468" type="text/javascript">
+<!--
+ASPx.AddHoverItems('btnUpdate3',[[['dxbButtonHover'],[''],[''],['','TC']]]);
+ASPx.AddPressedItems('btnUpdate3',[[['dxbButtonPressed'],[''],[''],['','TC']]]);
+ASPx.AddDisabledItems('btnUpdate3',[[['dxbDisabled'],[''],[''],['','TC']]]);
+
+var dxo = new MVCxClientButton('btnUpdate3');
+dxo.InitGlobalVariable('btnUpdate3');
+dxo.autoPostBack = true;
+dxo.Click.AddHandler(function(s, e) { setTimeout("window.close();", 3000);});
+ASPx.AddSelectedItems('btnUpdate3',[[['dxbf'],[''],['CD']]]);
+dxo.AfterCreate();
+
+//-->
+</script></div><b class="Clear"></b>
+		</div>
+	</div>
+</div><div id="pcModalMode3_DXPWMB-1" class="dxpcModalBackLite" style="z-index:9999;">
+
+</div><script id="dxss_1353975262" type="text/javascript">
+<!--
+
+var dxo = new MVCxClientPopupControl('pcModalMode3');
+dxo.InitGlobalVariable('pcModalMode3');
+dxo.enableAnimation=false;
+dxo.popupAction='None';
+dxo.closeAction='None';
+dxo.popupHorizontalAlign='WindowCenter';
+dxo.popupVerticalAlign='WindowCenter';
+dxo.allowDragging=true;
+dxo.AfterCreate();
+
+//-->
+</script>
+
+    <input type="hidden" name="DotNetHelpModalState" id="DotNetHelpModal_State" value="{&amp;quot;windowsState&amp;quot;:&amp;quot;0:0:-1:0:0:0:-10000:-10000:1:0:0:0&amp;quot;}"><div id="DotNetHelpModal_PW-1" class="dxpcLite dxpclW dxpc-mainDiv dxpc-shadow" style="height:450px;width:730px;cursor:default;z-index:10000;display:none;visibility:hidden;">
+	<div class="dxpc-header dxpc-withBtn" style="cursor:move;-webkit-user-select:none;" id="DotNetHelpModal_PWH-1">
+		<div class="dxpc-closeBtn" id="DotNetHelpModal_HCB-1">
+			<img class="dxWeb_pcCloseButton" src="/IL6/DXR.axd?r=1_37-ZR47u" alt="[Close]">
+		</div><div class="dxpc-headerContent">
+			<span class="dxpc-headerText dx-vam" id="DotNetHelpModal_PWH-1T">시스템 접속 및 초기 설정방법</span>
+		</div><b class="dx-clear"></b>
+	</div><div class="dxpc-contentWrapper">
+		<div class="dxpc-content" style="overflow:auto;" id="DotNetHelpModal_PWC-1">
+			
+
+<script type="text/javascript">
+    function DoNotShowChecked() {
+
+        var ILWEB6_SITECODE = "WMS";
+
+        var chkYN = chkDoNotShow.GetValue();
+        if (chkYN) {
+            setCookie(ILWEB6_SITECODE + "_DisableInstallNotice", true, 999);
+        }
+        else {
+            setCookie(ILWEB6_SITECODE + "_DisableInstallNotice", "", -1);
+        }
+
+    }
+
+    function setCookie(name, value, days) {
+        var expires;
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toGMTString();
+        }
+        else {
+            expires = "";
+        }
+        document.cookie = name + "=" + value + expires + "; path=/IL6";
+    }
+</script>
+<section class="help ta_c">
+    <h4 class="helpTitle mb10">시스템 접속 및 초기 설정방법</h4>
+    <p class="helpSubTitle">.NET Framework4.5 설치 과정(운영체제 Vista, Windows7, Windows10)</p>
+    <p class="closeBtn">
+        </p><table class="dxeBase fr dxeTAR" id="chkDoNotShow">
+	<tbody><tr>
+		<td class="dxichCellSys"><span class="dxWeb_edtCheckBoxUnchecked dxICheckBox dxichSys" id="chkDoNotShow_S_D"><span class="dxKBSW"><input id="chkDoNotShow_S" name="chkDoNotShow" value="I" type="text" readonly="readonly" style="opacity:0;width:0;height:0;position:relative;background-color:transparent;display:block;margin:0;padding:0;border-width:0;font-size:0pt;"></span></span></td><td class="dxichTextCellSys"><label>다시보지않기</label></td>
+	</tr>
+</tbody></table><script id="dxss_523159933" type="text/javascript">
+<!--
+ASPx.AddDisabledItems('chkDoNotShow',[[['dxeDisabled'],[''],['']]]);
+
+var dxo = new ASPxClientCheckBox('chkDoNotShow');
+dxo.InitGlobalVariable('chkDoNotShow');
+dxo.CheckedChanged.AddHandler(DoNotShowChecked);
+dxo.imageProperties = {'4':['dxWeb_edtCheckBoxChecked','dxWeb_edtCheckBoxUnchecked'],'8':['dxWeb_edtCheckBoxCheckedDisabled','dxWeb_edtCheckBoxUncheckedDisabled']};
+dxo.icbFocusedStyle = ['dxICBFocused',''];
+dxo.AfterCreate();
+
+//-->
+</script>
+    <p></p>
+    <div class="pt15 pb15">
+        <a id="BootstrapperSection" target="_blank" href="http://www.microsoft.com/ko-kr/download/details.aspx?id=30653" title="Click!! DownLoad">
+            <span class="helpLinkTitle">- .Net Framework 4.5 DownLoad -</span>
+            <img src="../Content/images/LoginHelp/LoginHelp08.png" alt="...">
+        </a>
+    </div>
+    <div class="helpContents">
+        <ul class="helpList ta_l">
+            <li>1. . NET Framework 4.5 링크를 클릭한 뒤 언어를 한국어로 선택한 수 다운로드 버튼 클릭</li>
+            <li>2. '다음사항을 제안..' 창에서 '건너뛰고 다음 단계 진행' 클릭</li>
+            <li>3. 실행 및 저장 단계에서 실행 버튼 클릭</li>
+            <li>4. 사용약관 동의함에 체크표시한 후 설치 버튼 클릭</li>
+            <li>5. 그러면 자동으로 설치가 진행됩니다.</li>
+            <li>6. IntraLogis Deploy 과정 완료</li>
+        </ul>
+        <p class="helpRemarks ta_l mt15 mb20">
+            '제어판'의 '프로그램 추가/제거'에서 Microsoft .NET Framework 4.5 설치여부 확인 설치가 안되어 있을 경우,<br>
+            Microsoft사의 홈페이지 '다운로드 센터'에서 Microsoft .NET Framework 4.5를 찾아 다운로드 후 설치할 수 있음.
+        </p>
+    </div>
+</section>
+		</div>
+	</div>
+</div><div id="DotNetHelpModal_DXPWMB-1" class="dxpcModalBackLite" style="z-index:9999;">
+
+</div><script id="dxss_1036790141" type="text/javascript">
+<!--
+ASPx.AddHoverItems('DotNetHelpModal',[[['dxpc-closeBtnHover'],[''],['HCB-1']]]);
+
+var dxo = new MVCxClientPopupControl('DotNetHelpModal');
+dxo.InitGlobalVariable('DotNetHelpModal');
+dxo.enableAnimation=false;
+dxo.closeAction='CloseButton';
+dxo.closeOnEscape=true;
+dxo.popupHorizontalAlign='WindowCenter';
+dxo.popupVerticalAlign='WindowCenter';
+dxo.allowDragging=true;
+dxo.width=730;
+dxo.widthFromServer=true;
+dxo.height=450;
+dxo.contentOverflowX="Auto";
+dxo.contentOverflowY="Auto";
+dxo.AfterCreate();
+
+//-->
+</script>
+
+    <div id="dialog-confirm-save" title="저장하시겠습니까?">
+        <p><span style="float:left; margin:4px 12px 10px 0;"></span><input type="checkbox" id="ChkHiddenSaveLayer" class="mb3"> 오늘 하루 보이지 않음</p>
+    </div>
+
+    <div id="dialog-confirm-new" title="저장하시겠습니까?">
+        <p><span style="float:left; margin:4px 12px 10px 0;"></span><input type="checkbox" id="ChkHiddenNewLayer"> 오늘 하루 보이지 않음</p>
+    </div>
+
+
+<div class="dx-gesture-cover" style="pointer-events: none;"></div></body></html>
