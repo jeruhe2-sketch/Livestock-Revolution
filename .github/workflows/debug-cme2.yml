@@ -33,4 +33,5 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh issue create --title "debug: CME 계약월 티커 확인" --body-file /tmp/cme2.log --repo "${{ github.repository }}"
+        run: |
+          gh issue create --title "debug: CME 계약월 티커 확인" --body-file /tmp/cme2.log --repo "${{ github.repository }}"
