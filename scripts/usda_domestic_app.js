@@ -17,6 +17,11 @@ window.UsdaDomesticApp = (function () {
     { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
     { key: "1/4 Trim Butt VAC", label: "목전지", color: "#2f6f96" }
   ];
+  const CUTOUT_DEFS = [
+    { key: "pork", label: "돈육 컷아웃", color: "#b96a2e" },
+    { key: "beefChoice", label: "소고기 Choice 컷아웃", color: "#a34a3f" },
+    { key: "beefSelect", label: "소고기 Select 컷아웃", color: "#8a5a30" }
+  ];
   const KG_PER_LB = 0.45359237;
   const lbToKg = (v) => v == null || !isFinite(v) ? null : v / KG_PER_LB;
   const GRANULARITY_OPTIONS = [["day", "일별"], ["month", "월별"], ["year", "연도별"]];
@@ -172,19 +177,23 @@ window.UsdaDomesticApp = (function () {
 
   function UsdaDomesticApp() {
     const [db, setDb] = useState(null);
+    const [cutout, setCutout] = useState(null);
     const [err, setErr] = useState(null);
     useEffect(() => {
-      fetch("./data/usda_pork_domestic.json", { cache: "no-store" }).then((r) => {
-        if (!r.ok) throw new Error(`데이터 파일을 불러오지 못했습니다 (${r.status})`);
-        return r.json();
-      }).then(setDb).catch((e) => setErr(e.message));
+      Promise.all([
+        fetch("./data/usda_pork_domestic.json", { cache: "no-store" }).then((r) => {
+          if (!r.ok) throw new Error(`데이터 파일을 불러오지 못했습니다 (${r.status})`);
+          return r.json();
+        }),
+        fetch("./data/usda_cutout.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ]).then(([dbData, cutoutData]) => { setDb(dbData); setCutout(cutoutData); }).catch((e) => setErr(e.message));
     }, []);
     if (err) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.rust, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 } }, err);
     if (!db) return React.createElement("div", { style: { background: COLORS.bg, color: COLORS.mute, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 } }, "데이터를 불러오는 중...");
-    return React.createElement(Dashboard, { db });
+    return React.createElement(Dashboard, { db, cutout });
   }
 
-  function Dashboard({ db }) {
+  function Dashboard({ db, cutout }) {
     useEffect(() => {
       const onDocClick = (e) => {
         document.querySelectorAll("details[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
@@ -214,6 +223,7 @@ window.UsdaDomesticApp = (function () {
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "overlay"]));
     const [smoothed, setSmoothed] = useState(() => p("sm", "0") === "1");
     const [overlayItem, setOverlayItem] = useState(() => pOneOf("oi", ITEMS[0].key, ITEMS.map((i) => i.key)));
+    const [cutoutSel, setCutoutSel] = useState(["pork", "beefChoice"]);
 
     // 기간선택: 검역/EU/USDA 수출현황과 동일하게 "연월 범위 + 월별(계절) 범위" 방식.
     const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
@@ -227,6 +237,34 @@ window.UsdaDomesticApp = (function () {
 
     const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? (cur.length > 1 ? cur.filter((k) => k !== key) : cur) : [...cur, key]);
     const visibleItems = useMemo(() => ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
+
+    // 컷아웃(종합가) - 위와 같은 기간 필터(ymStart~ymEnd, monthFrom~monthTo)를 그대로 재사용해서
+    // 부위별 가격 차트 바로 아래에 이어붙임 (별도 탭 안 만들고 스크롤만 하면 되게).
+    const cutoutRows = useMemo(() => {
+      if (!cutout) return [];
+      const byDate = {};
+      (cutout.pork?.data || []).forEach((r) => { (byDate[r.date] = byDate[r.date] || {}).pork = r.value; });
+      (cutout.beef?.data || []).forEach((r) => { (byDate[r.date] = byDate[r.date] || {}); byDate[r.date].beefChoice = r.choice; byDate[r.date].beefSelect = r.select; });
+      return Object.entries(byDate).map(([date, v]) => ({ date, ...v })).sort((a, b) => a.date.localeCompare(b.date));
+    }, [cutout]);
+    const cutoutFiltered = useMemo(() => cutoutRows.filter((r) => {
+      const [y, m] = r.date.split("-").map(Number);
+      const ym = y * 100 + m;
+      if (ymStart != null && ym < ymStart) return false;
+      if (ymEnd != null && ym > ymEnd) return false;
+      if (m < monthFrom || m > monthTo) return false;
+      return true;
+    }), [cutoutRows, ymStart, ymEnd, monthFrom, monthTo]);
+    const cutoutCategories = useMemo(() => cutoutFiltered.map((r) => dateLabel(r.date)), [cutoutFiltered]);
+    const cutoutSeries = useMemo(() => CUTOUT_DEFS.filter((d) => cutoutSel.includes(d.key)).map((d) => ({
+      name: d.label, color: d.color, data: cutoutFiltered.map((r) => r[d.key] ?? null)
+    })), [cutoutFiltered, cutoutSel]);
+    const toggleCutout = (key) => setCutoutSel((cur) => cur.includes(key) ? (cur.length > 1 ? cur.filter((k) => k !== key) : cur) : [...cur, key]);
+    const exportCutoutXlsx = () => {
+      const header = ["날짜", ...CUTOUT_DEFS.map((d) => d.label + " ($/cwt)")];
+      const rows = cutoutFiltered.map((r) => [r.date, ...CUTOUT_DEFS.map((d) => r[d.key] ?? "")]);
+      downloadXlsx([header, ...rows], "미국_컷아웃.xlsx", "컷아웃");
+    };
 
     const periodRows = useMemo(() => {
       return ROWS.filter((r) => {
@@ -485,6 +523,21 @@ window.UsdaDomesticApp = (function () {
               )
             )
           )
+        ),
+
+        React.createElement("h2", { style: { fontSize: 16, fontWeight: 800, color: COLORS.cream, margin: "28px 0 8px" } }, "컷아웃(종합가) 현황"),
+        React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "부위별 협상가가 아닌 전체 물량 가중평균 종합가 · 위 기간 필터와 동일하게 적용됨 · 단위 $/cwt(100lb)"),
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+          CUTOUT_DEFS.map((d) => React.createElement(ToggleBtn, { key: d.key, active: cutoutSel.includes(d.key), onClick: () => toggleCutout(d.key), label: d.label, activeColor: d.color })),
+          React.createElement("button", { onClick: exportCutoutXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
+        ),
+        React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } },
+          cutoutSeries.length && cutout
+            ? React.createElement(React.Fragment, null,
+                React.createElement(SvgLineChart, { categories: cutoutCategories, series: cutoutSeries, height: 300, formatValue: (v) => v == null ? "—" : `$${v.toFixed(2)}` }),
+                React.createElement(ChartLegend, { series: cutoutSeries })
+              )
+            : React.createElement("div", { style: { padding: 40, textAlign: "center", color: COLORS.mute } }, cutout ? "표시할 항목을 하나 이상 선택하세요." : "컷아웃 데이터를 불러오지 못했습니다.")
         )
       )
     );
