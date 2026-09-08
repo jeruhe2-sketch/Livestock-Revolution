@@ -1,26 +1,16 @@
 /* 축산레이더 · 주요지표
-   이미 사이트에 있는 데이터 파일들(EU돈가/환율/호주EYCI/미국돈육)을 한 화면에 모아
-   요약해서 보여주는 롤업 배너. 새로운 원자료 수집은 없고, 이미 각자 탭에서
-   자동 갱신되는 JSON들을 프론트에서 한 번 더 읽어 요약만 함 (LLM/수동작업 없음).
-
-   CME Live Cattle 선물, Steiner 90CL 지표는 유료/구독 데이터라 자동화된 무료 API가
-   없어서 여기 포함하지 않음 (수입육 시황 브리핑 스킬이 계속 수동 확인). */
+   이미 사이트에 있는 데이터 파일들(EU돈가/환율/호주EYCI·90CL/미국돈육)을 한 화면에
+   요약 카드로 모아 보여주는 대시보드. 차트 없이 숫자 위주 (요청에 따라 차트 제거,
+   상세 추이는 각 탭에서 확인). 새로운 원자료 수집은 없고, 이미 각자 탭에서
+   자동 갱신되는 JSON들을 프론트에서 한 번 더 읽어 요약만 함 (LLM/수동작업 없음). */
 window.KeyIndicatorsApp = (function () {
-  const { useState, useEffect, useMemo, useRef } = React;
+  const { useState, useEffect, useMemo } = React;
 
   const COLORS = {
     bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
     amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
     sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
   };
-  const PALETTE = ["#3a6ea5", "#b96a2e", "#2e7d4f", "#a34a3f", "#6b5ca5"];
-  const SERIES_DEFS = [
-    { key: "fx", name: "USD/KRW", hash: null },
-    { key: "eu", name: "EU 돈가(S+E)", hash: "#eupigmeatprice" },
-    { key: "eyci", name: "EYCI(호주)", hash: "#mladomestic" },
-    { key: "usda", name: "미국 돈육 목전지", hash: "#usdedomestic" },
-    { key: "cl90", name: "90CL 수입육", hash: "#mladomestic" },
-  ];
 
   function fmtUpdatedAt(iso) {
     if (!iso) return null;
@@ -31,12 +21,6 @@ window.KeyIndicatorsApp = (function () {
   function fetchJson(path) {
     return fetch(path, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   }
-  function downloadXlsx(aoa, filename, sheetName) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
-    XLSX.writeFile(wb, filename);
-  }
   // ISO 8601 주차 키 (예: "2026-W35"). fx_history.json의 weekly 키 포맷과 동일.
   function isoWeekKey(d) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -46,117 +30,6 @@ window.KeyIndicatorsApp = (function () {
     const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
     return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
   }
-
-  function Toggle({ active, onClick, children, color }) {
-    return React.createElement("button", {
-      onClick, style: {
-        padding: "5px 12px", borderRadius: 999, fontSize: 12, cursor: "pointer",
-        border: `1px solid ${active ? (color || COLORS.amber) : COLORS.panelBorder}`,
-        background: active ? (color || COLORS.amber) : COLORS.panel,
-        color: active ? "#ffffff" : COLORS.mute, fontWeight: 700, whiteSpace: "nowrap"
-      }
-    }, children);
-  }
-
-  function SvgLineChart({ categories, series, height = 280 }) {
-    const width = 900;
-    const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 40 : 26, left: 48 };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
-    const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
-    const maxVal = allVals.length ? Math.max(...allVals) : 1;
-    const minVal = allVals.length ? Math.min(...allVals) * 0.97 : 0;
-    const span = Math.max(0.01, maxVal * 1.03 - minVal);
-    const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
-    const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
-    const xFor = (i) => padding.left + i * stepX;
-    const gridLines = 4;
-    const labelEvery = Math.max(1, Math.ceil(categories.length / 10));
-    const containerRef = useRef(null);
-    const [hoverIdx, setHoverIdx] = useState(null);
-    const handleMove = (e) => {
-      if (!containerRef.current || categories.length === 0) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const frac = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-      setHoverIdx(Math.round(frac * (categories.length - 1)));
-    };
-    const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    return React.createElement("div", { ref: containerRef, style: { position: "relative" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null) },
-      React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        Array.from({ length: gridLines + 1 }).map((_, i) => {
-          const y = padding.top + innerH / gridLines * i;
-          const val = maxVal * 1.03 - (maxVal * 1.03 - minVal) / gridLines * i;
-          return React.createElement("g", { key: i },
-            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 6, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, val.toFixed(0))
-          );
-        }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - (manyLabels ? 22 : 8), textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
-        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
-        series.map((s) => {
-          const segs = []; let cur = [];
-          s.data.forEach((v, i) => {
-            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
-            cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
-          });
-          if (cur.length) segs.push(cur);
-          return React.createElement("g", { key: s.name },
-            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: "2.2" })),
-            categories.length <= 60 && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 1.6, fill: s.color }))
-          );
-        })
-      ),
-      hoverIdx !== null && React.createElement("div", {
-        style: {
-          position: "absolute", left: `${tooltipLeftPct}%`, top: 6,
-          transform: `translateX(${tooltipLeftPct > 70 ? "-100%" : tooltipLeftPct < 5 ? "0%" : "-50%"})`,
-          background: COLORS.cream, color: "#f7f8f5", borderRadius: 8, padding: "8px 10px",
-          fontSize: 12, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 10px rgba(0,0,0,.18)", zIndex: 5
-        }
-      },
-        React.createElement("div", { style: { fontWeight: 700, marginBottom: 4 } }, categories[hoverIdx]),
-        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", justifyContent: "space-between", gap: 10 } },
-          React.createElement("span", { style: { color: s.color } }, "\u25CF " + s.name),
-          React.createElement("span", null, s.data[hoverIdx] != null ? s.data[hoverIdx].toFixed(1) : "—")
-        ))
-      )
-    );
-  }
-  function ChartLegend({ series }) {
-    return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 4 } },
-      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: COLORS.cream } },
-        React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" } }), s.name
-      ))
-    );
-  }
-
-  function Card({ label, value, unit, sub, subColor, asOf, source, onClick, pending }) {
-    return React.createElement("div", {
-      onClick,
-      style: {
-        background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12,
-        padding: "16px 18px", cursor: onClick ? "pointer" : "default", minWidth: 200, flex: "1 1 200px",
-        opacity: pending ? 0.55 : 1
-      }
-    },
-      React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 8, fontWeight: 700 } }, label),
-      React.createElement("div", { style: { fontSize: 26, fontWeight: 800, color: COLORS.cream, lineHeight: 1.1 } },
-        value, unit && React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: COLORS.mute, marginLeft: 5 } }, unit)
-      ),
-      sub && React.createElement("div", { style: { fontSize: 13, color: subColor || COLORS.mute, marginTop: 6, fontWeight: 700 } }, sub),
-      (asOf || source) && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginTop: 8 } }, [asOf, source].filter(Boolean).join(" · "))
-    );
-  }
-
-  function PendingCard({ label, note }) {
-    return React.createElement("div", { style: { background: COLORS.head, border: `1px dashed ${COLORS.panelBorder2}`, borderRadius: 12, padding: "16px 18px", minWidth: 200, flex: "1 1 200px" } },
-      React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 8, fontWeight: 700 } }, label),
-      React.createElement("div", { style: { fontSize: 15, color: COLORS.mute, fontWeight: 700 } }, "\u26A0 자동화 불가"),
-      React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 6, lineHeight: 1.5 } }, note)
-    );
-  }
-
   // 일별 시계열을 ISO 주차별로 리샘플(그 주의 마지막 값 사용)
   function resampleWeekly(rows, dateKey, valueKey) {
     const byWeek = {};
@@ -169,7 +42,6 @@ window.KeyIndicatorsApp = (function () {
     }
     return byWeek;
   }
-
   // 카드용 WoW/YoY: 소스마다 최신 발표 주차가 다를 수 있어서(예: EYCI는 이번주까지,
   // EU 돈가는 2주 전까지) 공통 주차 목록이 아니라 "그 소스 자신의" 최신 주차를 기준으로 계산.
   function wowYoy(weeklyMap) {
@@ -189,8 +61,30 @@ window.KeyIndicatorsApp = (function () {
     };
   }
 
+  function Card({ label, value, unit, sub, subColor, asOf, onClick }) {
+    return React.createElement("div", {
+      onClick,
+      style: {
+        background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12,
+        padding: "16px 18px", cursor: onClick ? "pointer" : "default", minWidth: 200, flex: "1 1 200px"
+      }
+    },
+      React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 8, fontWeight: 700 } }, label),
+      React.createElement("div", { style: { fontSize: 26, fontWeight: 800, color: COLORS.cream, lineHeight: 1.1 } },
+        value, unit && React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: COLORS.mute, marginLeft: 5 } }, unit)
+      ),
+      sub && React.createElement("div", { style: { fontSize: 13, color: subColor || COLORS.mute, marginTop: 6, fontWeight: 700 } }, sub),
+      asOf && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, marginTop: 8 } }, asOf)
+    );
+  }
 
-  const PERIOD_OPTIONS = [["26", "6개월"], ["52", "1년"], ["104", "2년"], ["99999", "전체"]];
+  function PendingCard({ label, note }) {
+    return React.createElement("div", { style: { background: COLORS.head, border: `1px dashed ${COLORS.panelBorder2}`, borderRadius: 12, padding: "16px 18px", minWidth: 200, flex: "1 1 200px" } },
+      React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 8, fontWeight: 700 } }, label),
+      React.createElement("div", { style: { fontSize: 15, color: COLORS.mute, fontWeight: 700 } }, "\u26A0 자동화 불가"),
+      React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 6, lineHeight: 1.5 } }, note)
+    );
+  }
 
   return function KeyIndicatorsApp() {
     const [eu, setEu] = useState(null);
@@ -199,8 +93,6 @@ window.KeyIndicatorsApp = (function () {
     const [mla, setMla] = useState(null);
     const [usda, setUsda] = useState(null);
     const [loaded, setLoaded] = useState(false);
-    const [periodWeeks, setPeriodWeeks] = useState(104);
-    const [visible, setVisible] = useState({ fx: true, eu: true, eyci: true, usda: true, cl90: true });
 
     useEffect(() => {
       Promise.all([
@@ -214,8 +106,8 @@ window.KeyIndicatorsApp = (function () {
       });
     }, []);
 
-    // 4개 소스를 전부 "주차 -> 값" 맵으로 통일 (단위가 다르므로 절대값 비교엔 안 쓰고,
-    // 카드의 WoW/YoY 계산과 아래 정규화 차트의 원자료로만 씀)
+    // 4개 소스를 전부 "주차 -> 값" 맵으로 통일해서 카드의 WoW/YoY 계산에만 사용
+    // (단위가 다 달라서 차트로 겹쳐그리지 않음 - 카드 숫자만 보여주는 대시보드)
     const weekly = useMemo(() => {
       const out = { fx: {}, eu: {}, eyci: {}, usda: {}, cl90: {} };
       if (fxHist?.weekly) {
@@ -247,12 +139,6 @@ window.KeyIndicatorsApp = (function () {
       return out;
     }, [eu, fxHist, mla, usda]);
 
-    const weekKeys = useMemo(() => {
-      const set = new Set();
-      Object.values(weekly).forEach((m) => Object.keys(m).forEach((k) => set.add(k)));
-      return [...set].sort();
-    }, [weekly]);
-
     const cardStats = useMemo(() => ({
       fx: wowYoy(weekly.fx),
       eu: wowYoy(weekly.eu),
@@ -262,28 +148,6 @@ window.KeyIndicatorsApp = (function () {
     }), [weekly]);
 
     const goto = (hash) => { window.location.hash = hash; };
-
-    // 정규화(기준=100) 겹쳐보기 차트용 시리즈
-    const chart = useMemo(() => {
-      const keys = periodWeeks >= 99999 ? weekKeys : weekKeys.slice(-periodWeeks);
-      const series = SERIES_DEFS.filter((d) => visible[d.key]).map((d, i) => {
-        const map = weekly[d.key] || {};
-        const raw = keys.map((k) => (map[k] ? map[k].value : null));
-        const base = raw.find((v) => v != null && v !== 0);
-        const data = base ? raw.map((v) => (v == null ? null : v / base * 100)) : raw;
-        return { key: d.key, name: d.name, color: PALETTE[i % PALETTE.length], data };
-      });
-      return { categories: keys, series };
-    }, [weekly, weekKeys, periodWeeks, visible]);
-
-    const exportXlsx = () => {
-      const keys = chart.categories;
-      const header = ["주차", ...SERIES_DEFS.map((d) => d.name)];
-      const rows = keys.map((k) => [k, ...SERIES_DEFS.map((d) => (weekly[d.key]?.[k] ? Math.round(weekly[d.key][k].value * 100) / 100 : ""))]);
-      downloadXlsx([header, ...rows], "주요지표_원자료.xlsx", "주요지표");
-    };
-
-    const toggleSeries = (key) => setVisible((v) => ({ ...v, [key]: !v[key] }));
 
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1040 } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "주요지표"),
@@ -331,25 +195,6 @@ window.KeyIndicatorsApp = (function () {
           })
         ),
 
-        React.createElement("h2", { style: { fontSize: 15, fontWeight: 800, color: COLORS.cream, margin: "0 0 4px" } }, "추이 비교 (지수화, 기준=100)"),
-        React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
-          "단위가 서로 다른 지표(환율/€/c-kg/$-lb)를 같이 비교하려고 각 기간 첫 값을 100으로 맞춘 지수입니다. 실제 값은 위 카드나 엑셀에서 확인하세요."
-        ),
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
-          SERIES_DEFS.map((d, i) => React.createElement(Toggle, { key: d.key, active: visible[d.key], onClick: () => toggleSeries(d.key), color: PALETTE[i % PALETTE.length] }, d.name)),
-          React.createElement("div", { style: { flex: 1 } }),
-          PERIOD_OPTIONS.map(([w, l]) => React.createElement(Toggle, { key: w, active: periodWeeks === +w, onClick: () => setPeriodWeeks(+w), color: COLORS.sage }, l)),
-          React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 원자료 엑셀")
-        ),
-        React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16, marginBottom: 24 } },
-          chart.series.length
-            ? React.createElement(React.Fragment, null,
-                React.createElement(SvgLineChart, { categories: chart.categories, series: chart.series }),
-                React.createElement(ChartLegend, { series: chart.series })
-              )
-            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
-        ),
-
         React.createElement("h2", { style: { fontSize: 14, fontWeight: 800, color: COLORS.mute, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" } }, "자동화 안 되는 지표 (수동 확인 필요)"),
         React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
           React.createElement(PendingCard, { label: "CME Live Cattle 선물", note: "CME 실시간/지연 시세는 유료 라이선스 필요. 무료 API 없음." }),
@@ -358,7 +203,7 @@ window.KeyIndicatorsApp = (function () {
       ),
 
       React.createElement("p", { style: { fontSize: 12, color: COLORS.mute, marginTop: 20, lineHeight: 1.6 } },
-        "이 화면은 새로 데이터를 수집하지 않고, 각 탭이 이미 자동 갱신한 파일을 한 번 더 읽어 보여줍니다. 상세 내역/차트는 각 탭에서 확인하세요."
+        "이 화면은 새로 데이터를 수집하지 않고, 각 탭이 이미 자동 갱신한 파일을 한 번 더 읽어 보여줍니다. 상세 추이/차트는 각 탭에서 확인하세요."
       )
     );
   };
