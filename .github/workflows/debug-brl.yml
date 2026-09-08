@@ -1,0 +1,38 @@
+name: debug-brl
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          python3 - <<'PYEOF' > /tmp/brl.log 2>&1
+          import requests
+          UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+          for host in ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]:
+              url = f"https://{host}/v8/finance/chart/BRLKRW=X"
+              r = requests.get(url, params={"range":"1y","interval":"1d"}, headers={"User-Agent":UA}, timeout=15)
+              print(host, "status", r.status_code)
+              j = r.json()
+              result = j["chart"]["result"][0]
+              print("meta keys:", list(result["meta"].keys()))
+              print("timestamp count:", len(result.get("timestamp") or []))
+              print("close count:", len(result["indicators"]["quote"][0].get("close") or []))
+              print("first 3 closes:", (result["indicators"]["quote"][0].get("close") or [])[:3])
+              print("regularMarketPrice:", result["meta"].get("regularMarketPrice"))
+              print("tradeable:", result["meta"].get("tradeable"))
+              print("instrumentType:", result["meta"].get("instrumentType"))
+          PYEOF
+          cat /tmp/brl.log
+      - name: post
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --title "debug: BRLKRW 이력 확인" --body-file /tmp/brl.log --repo "${{ github.repository }}"
