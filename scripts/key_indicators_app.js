@@ -124,13 +124,6 @@ window.KeyIndicatorsApp = (function () {
     );
   }
 
-  function PendingCard({ label, note }) {
-    return React.createElement("div", { style: { background: COLORS.head, border: `1px dashed ${COLORS.panelBorder2}`, borderRadius: 12, padding: "16px 18px", minWidth: 200, flex: "1 1 200px" } },
-      React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 8, fontWeight: 700 } }, label),
-      React.createElement("div", { style: { fontSize: 15, color: COLORS.mute, fontWeight: 700 } }, "\u26A0 자동화 불가"),
-      React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 6, lineHeight: 1.5 } }, note)
-    );
-  }
 
   return function KeyIndicatorsApp() {
     const [eu, setEu] = useState(null);
@@ -296,16 +289,7 @@ window.KeyIndicatorsApp = (function () {
             sub: subText(cardStats.leanHog), subColor: subColorOf(cardStats.leanHog),
             asOf: cme?.leanHog?.isStale ? "CME (야후) · \u26A0 데이터 지연" : "CME (야후)"
           })
-        ),
-
-        React.createElement("h2", { style: { fontSize: 14, fontWeight: 800, color: COLORS.mute, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" } }, "자동화 안 되는 지표"),
-        React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
-          React.createElement(PendingCard, { label: "미국 소 도축(주간 두수)", note: "NASS API 키 등록 필요." })
         )
-      ),
-
-      React.createElement("p", { style: { fontSize: 12, color: COLORS.mute, marginTop: 20, lineHeight: 1.6 } },
-        "각 탭에서 자동 갱신된 데이터를 요약한 화면입니다. 상세 추이는 각 탭에서 확인하세요."
       )
     );
   };
