@@ -7,7 +7,12 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: repo-main-git-write  # 저장소 전체 워크플로우가 공유하는 잠금 (git push 충돌 방지)
+  # 다른 무거운 워크플로우(창고/호주 등)와 잠금을 공유하면 대기열에서 밀려
+  # "실행조차 못하고 취소"될 수 있음(이 경우 워크플로우 내부 어떤 단계도 안 돌아서
+  # 실패 알림도 못 보냄 - 2026-09-06/07 이틀 연속 이렇게 놓친 적 있음).
+  # 환율 갱신은 파일 하나만 건드리고 자체 재시도+rebase 로직이 있어서
+  # 독립된 그룹으로 분리해 항상 즉시 실행되게 함.
+  group: exchange-rate-update-own-lock
   cancel-in-progress: false
 
 permissions:
@@ -67,8 +72,8 @@ jobs:
         if: steps.run.outcome == 'failure'
         run: exit 1
 
-      - name: 실패 시 텔레그램 알림
-        if: failure()
+      - name: 실패/취소 시 텔레그램 알림
+        if: failure() || cancelled()
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
