@@ -49,7 +49,9 @@ INDICATOR_IDS = [0, 4, 13, 7, 11]
 STATES = ["NSW", "SA", "VIC", "QLD", "WA", "TAS"]
 SPECIES = ["Cattle", "Sheep"]
 
-START_DATE = "2020-01-01"
+START_DATE = "2020-01-01"  # 최초 백필(과거 기록용, 이제 평소 실행에선 안 씀 - 아래 FETCH_WINDOW_DAYS 참고)
+FETCH_WINDOW_DAYS = 183  # 매 실행마다 새로 받아오는 범위: 최근 약 6개월치만. 그 이전 과거값은
+                         # 안 바뀌므로 기존 파일에 이미 저장된 걸 그대로 유지(병합)한다.
 MAX_RETRIES = 4
 RETRY_BACKOFF_SEC = 5
 RETRY_BACKOFF_CAP_SEC = 20
@@ -172,6 +174,32 @@ def fetch_us_imported_meat(from_date, to_date):
     return out
 
 
+def load_existing():
+    """이전에 저장된 파일을 읽어온다. 없으면(최초 실행) 빈 구조 반환."""
+    if not os.path.exists(OUTPUT_PATH):
+        return {"indicators": {}, "slaughter": {}, "usImported90cl": []}
+    try:
+        with open(OUTPUT_PATH, encoding="utf-8") as f:
+            old = json.load(f)
+        return {
+            "indicators": old.get("indicators", {}),
+            "slaughter": old.get("slaughter", {}),
+            "usImported90cl": old.get("usImported90cl", []),
+        }
+    except Exception as e:
+        print(f"기존 파일 읽기 실패({e!r}), 빈 상태로 시작", file=sys.stderr)
+        return {"indicators": {}, "slaughter": {}, "usImported90cl": []}
+
+
+def merge_by_date(old_rows, new_rows, date_key="date"):
+    """날짜 기준 병합. 겹치는 날짜는 새 값으로 덮어씀(정정된 값 반영), 나머지는 유지."""
+    by_date = {r[date_key]: r for r in old_rows if date_key in r}
+    for r in new_rows:
+        by_date[r[date_key]] = r
+    return [by_date[d] for d in sorted(by_date.keys())]
+
+
+
 def main():
     today = date.today()
     # report/5, report/9도 toDate가 "오늘"이면 500 "Please provide date range before today!"
@@ -179,23 +207,34 @@ def main():
     safe_to_iso = (today - timedelta(days=1)).isoformat()
     # report/10은 "오늘로부터 7일 이전"까지만 허용 -> 여유있게 10일 전으로 자름
     slaughter_to = (today - timedelta(days=10)).isoformat()
+    # 매번 2020년부터 전부 다시 받으면 지표 5개 x 6년치 페이지네이션으로 실행시간이
+    # 몇 분~10분씩 걸려서 다른 워크플로우들과 공유하는 락을 오래 붙잡는 문제가 있었음.
+    # 최근 6개월만 새로 받고, 그보다 오래된 값은 기존 파일에 이미 저장된 걸 그대로 유지.
+    window_from = (today - timedelta(days=FETCH_WINDOW_DAYS)).isoformat()
+
+    existing = load_existing()
 
     names = fetch_indicator_names()
     print("지표 레퍼런스 수집 완료:", {k: v["desc"] for k, v in names.items() if int(k) in INDICATOR_IDS})
 
     indicators = {}
     for iid in INDICATOR_IDS:
-        series = fetch_indicator_series(iid, START_DATE, safe_to_iso)
-        indicators[str(iid)] = series
-        print(f"  indicator {iid} ({names.get(str(iid), {}).get('desc')}): {len(series)}건")
+        new_series = fetch_indicator_series(iid, window_from, safe_to_iso)
+        merged = merge_by_date(existing["indicators"].get(str(iid), []), new_series)
+        indicators[str(iid)] = merged
+        print(f"  indicator {iid} ({names.get(str(iid), {}).get('desc')}): 신규 {len(new_series)}건 / 누적 {len(merged)}건")
         time.sleep(1)
 
-    slaughter = fetch_slaughter(START_DATE, slaughter_to)
-    for sp, series in slaughter.items():
-        print(f"  slaughter {sp}: {len(series)}주")
+    new_slaughter = fetch_slaughter(window_from, slaughter_to)
+    slaughter = {}
+    for sp in SPECIES:
+        merged = merge_by_date(existing["slaughter"].get(sp, []), new_slaughter.get(sp, []))
+        slaughter[sp] = merged
+        print(f"  slaughter {sp}: 신규 {len(new_slaughter.get(sp, []))}주 / 누적 {len(merged)}주")
 
-    us_imported_90cl = fetch_us_imported_meat(START_DATE, safe_to_iso)
-    print(f"  us_imported_90cl: {len(us_imported_90cl)}건")
+    new_90cl = fetch_us_imported_meat(window_from, safe_to_iso)
+    us_imported_90cl = merge_by_date(existing["usImported90cl"], new_90cl)
+    print(f"  us_imported_90cl: 신규 {len(new_90cl)}건 / 누적 {len(us_imported_90cl)}건")
 
     all_dates = (
         [r["date"] for s in indicators.values() for r in s]
