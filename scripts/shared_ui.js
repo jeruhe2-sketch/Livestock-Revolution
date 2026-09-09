@@ -112,9 +112,11 @@ window.RadarUI = (function () {
     const xFor = (i) => padding.left + i * stepX;
     // x축도 같은 방식: 실제 라벨 글자 길이 기준으로 몇 개나 겹치지 않게 들어가는지 역산.
     const longestXLabelLen = categories.reduce((m, c) => Math.max(m, String(c).length), 1);
-    const estLabelPx = charW * longestXLabelLen + 16;
+    // 라벨끼리 절대 안 겹치는 걸 최우선으로 - 여유 폭을 넉넉하게 잡아서, 겹칠 바엔
+    // 개수를 더 줄여서라도 깔끔하게 정자로 보이게 함.
+    const estLabelPx = (charW * longestXLabelLen + 20) * 1.4;
     const maxLabelsFit = Math.max(2, Math.floor(W / estLabelPx));
-    const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 10 : 8)));
+    const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 7 : 6)));
     const [hoverIdx, setHoverIdx] = useState(null);
     const handleMove = (e) => {
       if (!containerRef.current || categories.length === 0) return;
