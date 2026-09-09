@@ -42,17 +42,20 @@ window.UsdaDomesticApp = (function () {
     return out;
   }
 
-  function Card({ item, cur, prev, week }) {
-    const v = cur?.[item.key]?.usdPerLb;
+  function Card({ item, latestRow, latestDate, isStale, prevVal, weekVal }) {
+    const v = latestRow?.[item.key]?.usdPerLb;
     return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "14px 16px" } },
       React.createElement("div", { style: { fontSize: 14, color: COLORS.mute, display: "flex", alignItems: "center", gap: 6 } },
         React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" } }), item.label
       ),
       React.createElement("div", { style: { fontSize: "clamp(20px,5vw,28px)", fontWeight: 800, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", marginTop: 6 } }, v == null ? "—" : `${money(v)}/lb`),
-      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 3 } }, v == null ? "데이터 없음" : `${money(lbToKg(v))}/kg 환산 · Wtd Avg`),
+      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 3 } },
+        v == null ? "데이터 없음" : `${money(lbToKg(v))}/kg 환산 · Wtd Avg`,
+        isStale && v != null && React.createElement("span", { style: { color: COLORS.rust, fontWeight: 700 } }, ` · ${dateLabel(latestDate)} 기준`)
+      ),
       React.createElement("div", { style: { display: "flex", gap: 12, marginTop: 9, fontSize: 12.5 } },
-        React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && prev?.[item.key]?.usdPerLb ? (v - prev[item.key].usdPerLb) / prev[item.key].usdPerLb * 100 : null))),
-        React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && week?.[item.key]?.usdPerLb ? (v - week[item.key].usdPerLb) / week[item.key].usdPerLb * 100 : null)))
+        React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && prevVal ? (v - prevVal) / prevVal * 100 : null))),
+        React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && weekVal ? (v - weekVal) / weekVal * 100 : null)))
       )
     );
   }
@@ -292,7 +295,26 @@ window.UsdaDomesticApp = (function () {
       navigator.clipboard.writeText(window.location.href).then(() => { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1600); }).catch(() => {});
     }
 
-    const cur = ROWS[ROWS.length - 1], prev = ROWS[ROWS.length - 2], weekAgo = ROWS[Math.max(0, ROWS.length - 6)];
+    const cur = ROWS[ROWS.length - 1];
+    // 품목마다 실제 발표 주기가 달라서(돼지고기 부위는 매일, 소고기 컷아웃은 주간 리포트라 며칠 지연됨)
+    // 전체 중 "가장 최근 날짜" 한 곳만 보고 카드를 채우면 늦게 발표되는 품목은 항상 빈 값으로 보임.
+    // 품목별로 자기 자신의 값이 실제로 있는 가장 최근 지점을 따로 찾아서 보여줌.
+    function findLatest(key) {
+      for (let idx = ROWS.length - 1; idx >= 0; idx--) {
+        if (ROWS[idx]?.[key]?.usdPerLb != null) {
+          let prevVal = null, weekVal = null, steps = 0;
+          for (let j = idx - 1; j >= 0 && steps < 20; j--) {
+            const val = ROWS[j]?.[key]?.usdPerLb;
+            if (val == null) continue;
+            steps++;
+            if (prevVal == null) prevVal = val;
+            if (steps === 7) { weekVal = val; break; }
+          }
+          return { row: ROWS[idx], date: ROWS[idx].date, prevVal, weekVal };
+        }
+      }
+      return { row: null, date: null, prevVal: null, weekVal: null };
+    }
 
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
@@ -301,7 +323,14 @@ window.UsdaDomesticApp = (function () {
         fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\uD83D\uDD52 ${fmtUpdatedAt(db.collectedAt)} 기준`),
 
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))`, gap: 8, marginBottom: 12 } },
-          visibleItems.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
+          visibleItems.map((i) => {
+            const latest = findLatest(i.key);
+            return React.createElement(Card, {
+              key: i.key, item: i, latestRow: latest.row, latestDate: latest.date,
+              isStale: latest.date != null && latest.date !== cur?.date,
+              prevVal: latest.prevVal, weekVal: latest.weekVal
+            });
+          })
         ),
 
         React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
