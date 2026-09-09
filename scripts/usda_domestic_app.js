@@ -23,6 +23,21 @@ window.UsdaDomesticApp = (function () {
 
   function money(v) { return v == null || !isFinite(v) ? "—" : `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
   function dateLabel(s) { return s ? String(s).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1.$2.$3") : "—"; }
+  const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
+  // 일별 표/카드에서 "2026-09-08"만 보고는 무슨 요일인지 감이 안 왔던 것 보정.
+  // "9월 8일 (화)" 처럼 사람이 바로 읽히는 형태로. 연도가 올해와 다를 때만 연도를 붙임.
+  const THIS_YEAR = new Date().getFullYear();
+  function dayLabel(iso) {
+    if (!iso) return "—";
+    const [y, m, d] = iso.split("-").map(Number);
+    const wd = WEEKDAY_KO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return `${y !== THIS_YEAR ? y + "년 " : ""}${m}월 ${d}일 (${wd})`;
+  }
+  function monthGroupLabel(iso) {
+    const [y, m] = iso.split("-").map(Number);
+    return `${y}년 ${m}월`;
+  }
+
   function readParams() { return new URLSearchParams(window.location.search); }
 
   /* ── EU/USDA 앱과 동일한 라인차트(호버 툴팁 포함) ── */
@@ -44,18 +59,20 @@ window.UsdaDomesticApp = (function () {
 
   function Card({ item, latestRow, latestDate, isStale, prevVal, weekVal }) {
     const v = latestRow?.[item.key]?.usdPerLb;
-    return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "14px 16px" } },
-      React.createElement("div", { style: { fontSize: 14, color: COLORS.mute, display: "flex", alignItems: "center", gap: 6 } },
-        React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" } }), item.label
-      ),
-      React.createElement("div", { style: { fontSize: "clamp(20px,5vw,28px)", fontWeight: 800, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", marginTop: 6 } }, v == null ? "—" : `${money(v)}/lb`),
-      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 3 } },
-        v == null ? "데이터 없음" : `${money(lbToKg(v))}/kg 환산 · Wtd Avg`,
+    const dayChg = v != null && prevVal ? (v - prevVal) / prevVal * 100 : null;
+    const weekChg = v != null && weekVal ? (v - weekVal) / weekVal * 100 : null;
+    const arrow = (chg) => chg == null ? "" : chg > 0 ? "▲ " : chg < 0 ? "▼ " : "";
+    const chgColor = (chg) => chg == null ? COLORS.mute : chg > 0 ? COLORS.rust : chg < 0 ? "#3a6ea5" : COLORS.mute;
+    return React.createElement("div", { style: { background: COLORS.panel, borderLeft: `3px solid ${item.color}`, borderRadius: "4px 10px 10px 4px", padding: "13px 16px", boxShadow: "0 1px 3px rgba(31,36,32,0.06)" } },
+      React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: COLORS.mute } }, item.label),
+      React.createElement("div", { style: { fontSize: "clamp(21px,5.5vw,29px)", fontWeight: 800, color: COLORS.cream, fontFamily: "ui-monospace,monospace", marginTop: 4, letterSpacing: "-0.01em" } }, v == null ? "—" : `${money(v)}/lb`),
+      React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 2 } },
+        v == null ? "데이터 없음" : `${money(lbToKg(v))}/kg · Wtd Avg`,
         isStale && v != null && React.createElement("span", { style: { color: COLORS.rust, fontWeight: 700 } }, ` · ${dateLabel(latestDate)} 기준`)
       ),
-      React.createElement("div", { style: { display: "flex", gap: 12, marginTop: 9, fontSize: 12.5 } },
-        React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && prevVal ? (v - prevVal) / prevVal * 100 : null))),
-        React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: COLORS.cream } }, pctFmt(v != null && weekVal ? (v - weekVal) / weekVal * 100 : null)))
+      React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 8, fontSize: 12.5 } },
+        React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: chgColor(dayChg) } }, arrow(dayChg), pctFmt(dayChg))),
+        React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: chgColor(weekChg) } }, arrow(weekChg), pctFmt(weekChg)))
       )
     );
   }
@@ -176,7 +193,7 @@ window.UsdaDomesticApp = (function () {
 
     /* ── 표: 일/월/연 집계 ── */
     const tableRows = useMemo(() => {
-      if (granularity === "day") return periodRows.map((r) => ({ label: r.date, sortKey: r.date, vals: ITEMS.reduce((o, i) => (o[i.key] = r[i.key]?.usdPerLb ?? null, o), {}) }));
+      if (granularity === "day") return periodRows.map((r) => ({ label: dayLabel(r.date), sortKey: r.date, vals: ITEMS.reduce((o, i) => (o[i.key] = r[i.key]?.usdPerLb ?? null, o), {}) }));
       const buckets = new Map();
       periodRows.forEach((r) => {
         const key = granularity === "month" ? r.date.slice(0, 7) : r.date.slice(0, 4);
@@ -320,7 +337,7 @@ window.UsdaDomesticApp = (function () {
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "미국 축산물 내수현황"),
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
-        fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\uD83D\uDD52 ${fmtUpdatedAt(db.collectedAt)} 기준`),
+        fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\u25CF ${fmtUpdatedAt(db.collectedAt)} 기준`),
 
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))`, gap: 8, marginBottom: 12 } },
           visibleItems.map((i) => {
@@ -363,7 +380,7 @@ window.UsdaDomesticApp = (function () {
             (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : "",
             ` · 표시 품목 ${visibleItems.length}개`
           ),
-          React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사")
+          React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "이 화면 링크 복사")
         ),
 
         React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
@@ -413,10 +430,28 @@ window.UsdaDomesticApp = (function () {
           ),
           isMobile ? React.createElement(React.Fragment, null,
             React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 8 } }, "최신 날짜가 맨 위입니다."),
-            displayIdxs.map((idx, rowPos) => React.createElement(MobileTableCard, {
-              key: tableRows[idx].sortKey, row: tableRows[idx], idx, visibleItems, isLatest: rowPos === 0,
-              cellDisplay, lbToKg, money, displayMode
-            })),
+            (() => {
+              const out = [];
+              let lastMonth = null;
+              displayIdxs.forEach((idx, rowPos) => {
+                const row = tableRows[idx];
+                if (granularity === "day") {
+                  const ym = row.sortKey.slice(0, 7);
+                  if (ym !== lastMonth) {
+                    out.push(React.createElement("div", {
+                      key: "grp-" + ym,
+                      style: { fontSize: 12.5, fontWeight: 700, color: COLORS.amberSoft, margin: rowPos === 0 ? "0 0 6px 2px" : "16px 0 6px 2px" }
+                    }, monthGroupLabel(row.sortKey)));
+                    lastMonth = ym;
+                  }
+                }
+                out.push(React.createElement(MobileTableCard, {
+                  key: row.sortKey, row, idx, visibleItems, isLatest: rowPos === 0,
+                  cellDisplay, lbToKg, money, displayMode
+                }));
+              });
+              return out;
+            })(),
             React.createElement("div", { style: { background: "#ede4d8", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 12, padding: "12px 14px", marginTop: 4 } },
               React.createElement("div", { style: { fontSize: 13.5, fontWeight: 800, color: COLORS.cream, marginBottom: 8 } }, "기간평균"),
               React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
