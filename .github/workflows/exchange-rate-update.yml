@@ -46,6 +46,23 @@ jobs:
           done
           cat /tmp/exrate.log
           exit $code
+      - name: 대한제당 주가 갱신 (실패해도 환율 갱신 자체는 이미 끝났으니 워크플로우 전체는 안 죽임)
+        id: run_stock
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3; do
+            python scripts/fetch_daehan_jetang_stock.py > /tmp/stock.log 2>&1
+            code=$?
+            if [ $code -eq 0 ]; then
+              break
+            fi
+            echo "시도 $attempt 실패" >> /tmp/stock.log
+            if [ $attempt -lt 3 ]; then
+              sleep 60
+            fi
+          done
+          cat /tmp/stock.log
+          exit $code
 
       - name: 변경사항 커밋 및 푸시
         if: always()
@@ -53,12 +70,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4 5 6 7 8; do
-            git add data/exchange_rates.json
+            git add data/exchange_rates.json data/daehan_jetang_stock.json
             if git diff --cached --quiet; then
               echo "변경 없음"
               break
             fi
-            git commit -m "chore: 환율 자동 갱신 $(date -u +%Y-%m-%d)"
+            git commit -m "chore: 환율·대한제당 주가 자동 갱신 $(date -u +%Y-%m-%d)"
             if git push; then
               echo "push 성공"
               break

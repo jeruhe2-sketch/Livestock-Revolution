@@ -257,6 +257,7 @@ window.KeyIndicatorsApp = (function () {
     const [usda, setUsda] = useState(null);
     const [usdaCutout, setUsdaCutout] = useState(null);
     const [cme, setCme] = useState(null);
+    const [stock, setStock] = useState(null);
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
@@ -267,8 +268,9 @@ window.KeyIndicatorsApp = (function () {
         fetchJson("./data/usda_pork_domestic.json"),
         fetchJson("./data/usda_cutout.json"),
         fetchJson("./data/cme_futures.json"),
-      ]).then(([euD, fxD, mlaD, usdaD, usdaCutoutD, cmeD]) => {
-        setEu(euD); setFx(fxD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setCme(cmeD); setLoaded(true);
+        fetchJson("./data/daehan_jetang_stock.json"),
+      ]).then(([euD, fxD, mlaD, usdaD, usdaCutoutD, cmeD, stockD]) => {
+        setEu(euD); setFx(fxD); setMla(mlaD); setUsda(usdaD); setUsdaCutout(usdaCutoutD); setCme(cmeD); setStock(stockD); setLoaded(true);
       });
     }, []);
 
@@ -312,8 +314,9 @@ window.KeyIndicatorsApp = (function () {
         liveCattle: cmeStat(cme?.liveCattle),
         feederCattle: cmeStat(cme?.feederCattle),
         leanHog: cmeStat(cme?.leanHog),
+        daehanJetang: cmeStat(stock),
       };
-    }, [weekly, mla, usda, fx, usdaCutout, cme]);
+    }, [weekly, mla, usda, fx, usdaCutout, cme, stock]);
 
     const goto = (hash) => {
       const viewName = hash.replace(/^#/, "");
@@ -329,6 +332,7 @@ window.KeyIndicatorsApp = (function () {
     const mlaUpdatedAt = mla?.collectedAt;
     const usdaUpdatedAt = usda?.collectedAt;
     const usdaCutoutUpdatedAt = usdaCutout?.collectedAt;
+    const stockUpdatedAt = stock?.updatedAt;
 
     // 데스크톱 카드그리드/모바일 리스트가 같은 데이터를 쓰게 항목을 배열로 뽑아둠
     const entries = [
@@ -336,6 +340,7 @@ window.KeyIndicatorsApp = (function () {
       { section: "fx", label: "EUR/KRW", value: fx?.eurKrw != null ? fx.eurKrw.toLocaleString() : "—", unit: "원", stats: cardStats.eurFx, accent: ACCENT.fx, updatedAt: fxUpdatedAt },
       { section: "fx", label: "AUD/KRW", value: fx?.audKrw != null ? fx.audKrw.toLocaleString() : "—", unit: "원", stats: cardStats.audFx, accent: ACCENT.fx, updatedAt: fxUpdatedAt },
       { section: "fx", label: "BRL/KRW", value: fx?.brlKrw != null ? fx.brlKrw.toLocaleString() : "—", unit: "원", stats: cardStats.brlFx, accent: ACCENT.fx, updatedAt: fxUpdatedAt },
+      { section: "fx", label: "대한제당", value: stock?.price != null ? stock.price.toLocaleString() : "—", unit: "원", stats: cardStats.daehanJetang, accent: ACCENT.fx, updatedAt: stockUpdatedAt },
       { section: "meat", label: "EU 돈가 (S+E 평균)", value: cardStats.eu.latest != null ? cardStats.eu.latest.toFixed(2) : "—", unit: "\u20AC/100kg", stats: cardStats.eu, accent: ACCENT.meat, onClick: () => goto("#eupigmeatprice"), krwPerKg: approxKrwPerKg(cardStats.eu.latest, "eur_per_100kg", fx), updatedAt: euUpdatedAt },
       { section: "meat", label: "EYCI (호주 소값)", value: cardStats.eyci.latest != null ? cardStats.eyci.latest.toFixed(1) : "—", unit: "c/kg cwt", stats: cardStats.eyci, accent: ACCENT.meat, onClick: () => goto("#mladomestic"), krwPerKg: approxKrwPerKg(cardStats.eyci.latest, "aud_cents_per_kg", fx), updatedAt: mlaUpdatedAt },
       { section: "meat", label: "미국 돈육 목전지", value: cardStats.usda.latest != null ? cardStats.usda.latest.toFixed(2) : "—", unit: "$/lb", stats: cardStats.usda, accent: ACCENT.meat, onClick: () => goto("#usdedomestic"), krwPerKg: approxKrwPerKg(cardStats.usda.latest, "usd_per_lb", fx), updatedAt: usdaUpdatedAt },
