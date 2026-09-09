@@ -1155,6 +1155,13 @@ function Dashboard({ db }) {
 
   const [mainTab, setMainTab] = useState(() => pOneOf("tab", "table", ["table", "chart"]));
   const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["group", "trend", "overlay", "shift"]));
+  const [shiftMonths, setShiftMonths] = useState(() => pOneOf("shm", "3", ["3", "6", "12"]));
+  const [shiftCompare, setShiftCompare] = useState(() => pOneOf("shc", "prev", ["prev", "yoy"]));
+  const [valueKey, setValueKey] = useState(() => pOneOf("vk", "weeklyExports", ["weeklyExports", "outstandingSales", "accumulatedExports"]));
+  const [countryFilter, setCountryFilter] = useState(() => pList("c"));
+  const [yearFilter, setYearFilter] = useState(() => pList("yr").filter((v) => YEARS_ALL.includes(v)));
+  const [ymStart, setYmStart] = useState(() => pInt("ys", YM_MIN));
+  const [ymEnd, setYmEnd] = useState(() => pInt("ye", YM_MAX));
   const [monthFrom, setMonthFrom] = useState(() => pInt("ms", 1));
   const [monthTo, setMonthTo] = useState(() => pInt("me", 12));
   const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
