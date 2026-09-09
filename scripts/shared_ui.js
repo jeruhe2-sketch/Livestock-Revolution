@@ -115,28 +115,46 @@ window.RadarUI = (function () {
       setHoverIdx(Math.round(frac * (categories.length - 1)));
     };
     const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
+    const gradId = "radar-chart-fade-" + Math.abs(series.map((s) => s.name).join("|").split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7));
     return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
       React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
+        React.createElement("defs", null,
+          React.createElement("linearGradient", { id: gradId, x1: "0", y1: "0", x2: "0", y2: "1" },
+            React.createElement("stop", { offset: "0%", stopColor: series[0]?.color || COLORS.amber, stopOpacity: 0.22 }),
+            React.createElement("stop", { offset: "100%", stopColor: series[0]?.color || COLORS.amber, stopOpacity: 0 })
+          )
+        ),
         Array.from({ length: gridLines + 1 }).map((_, i) => {
           const y = padding.top + innerH / gridLines * i;
           const val = topVal - (topVal - minVal) / gridLines * i;
           return React.createElement("g", { key: i },
-            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: axisFontPx, fill: COLORS.mute }, fmtAxis(val))
+            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: "#e7e9e3", strokeWidth: 1 }),
+            React.createElement("text", { x: padding.left - 10, y: y + axisFontPx * 0.32, textAnchor: "end", fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace" }, fmtAxis(val))
           );
         }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: axisFontPx, fill: COLORS.mute }, c)),
-        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
-        series.map((s) => {
-          const segs = []; let cur = [];
+        // 뚜렷한 바닥선(x축) - 위의 옅은 격자선들과 구분되게 살짝 진하게
+        React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: padding.top + innerH, y2: padding.top + innerH, stroke: COLORS.panelBorder2, strokeWidth: 1.2 }),
+        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - (axisFontPx > 16 ? 6 : 8), textAnchor: i === 0 ? "start" : (i + labelEvery > categories.length - 1 ? "end" : "middle"), fontSize: axisFontPx, fill: "#8a9086" }, c)),
+        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.6 }),
+        series.map((s, sIdx) => {
+          const segs = []; let cur = []; let curPts = []; const segPts = [];
           s.data.forEach((v, i) => {
-            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
+            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); segPts.push(curPts); cur = []; curPts = []; } return; }
             cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
+            curPts.push([xFor(i), yFor(v)]);
           });
-          if (cur.length) segs.push(cur);
+          if (cur.length) { segs.push(cur); segPts.push(curPts); }
+          // 첫 번째 시리즈 아래로만 은은한 그라데이션 채움 (여러 개 겹치면 지저분해지니 하나만)
+          const baseline = padding.top + innerH;
+          const areaPath = sIdx === 0 && segPts.length ? segPts.map((pts, si) =>
+            `${segs[si].join(" ")} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z`
+          ).join(" ") : null;
           return React.createElement("g", { key: s.name },
-            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: "2.2", strokeDasharray: s.dashed ? "5 4" : undefined })),
-            categories.length <= maxDots && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 2, fill: s.color, opacity: s.dashed ? 0.6 : 1 }))
+            areaPath && React.createElement("path", { d: areaPath, fill: `url(#${gradId})`, stroke: "none" }),
+            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round", strokeDasharray: s.dashed ? "5 4" : undefined })),
+            categories.length <= maxDots && s.data.map((v, i) => v != null && isFinite(v) && i !== hoverIdx && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: 2, fill: s.color, opacity: s.dashed ? 0.6 : 1 })),
+            // 호버 중인 지점은 데이터 개수와 무관하게 항상 표시 (흰 테두리로 살짝 도드라지게)
+            hoverIdx !== null && s.data[hoverIdx] != null && isFinite(s.data[hoverIdx]) && React.createElement("circle", { cx: xFor(hoverIdx), cy: yFor(s.data[hoverIdx]), r: 4.5, fill: s.color, stroke: "#fff", strokeWidth: 1.5 })
           );
         })
       ),
