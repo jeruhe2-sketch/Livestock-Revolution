@@ -310,12 +310,12 @@ window.CepeaDomesticApp = (function () {
           visibleItems.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
         ),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "표시 품목"),
           ITEMS.map((i) => React.createElement(ToggleBtn, { key: i.key, active: itemFilter.includes(i.key), onClick: () => toggleItem(i.key), label: i.label, activeColor: i.color }))
         ),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
+        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
           React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
@@ -355,7 +355,7 @@ window.CepeaDomesticApp = (function () {
             React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "연도별 겹쳐보기" })
           ),
           chartSub === "trend" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "일별 원자료" }),
               React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "7일 이동평균" }),
               React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
@@ -368,7 +368,7 @@ window.CepeaDomesticApp = (function () {
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 10 } }, "※ US$/kg은 참고환산 값입니다 — 계육은 CEPEA 원자료의 US$ 컬럼을 그대로 쓰고, 돈육은 그날 계육의 R$/US$ 비율(환율)을 역산해 곱한 근사치입니다(환율 변동을 반영해 R$ 추이와는 별도로 움직일 수 있음).")
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement(HoverAxisPicker, { label: "품목", value: overlayItem, onChange: setOverlayItem, options: ITEMS.map((i) => [i.key, i.label]) }),
               React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
             ),
@@ -381,7 +381,7 @@ window.CepeaDomesticApp = (function () {
         ),
 
         mainTab === "table" && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
             React.createElement(HoverAxisPicker, { label: "단위", value: granularity, onChange: setGranularity, options: GRANULARITY_OPTIONS }),
             React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } },
               React.createElement(ToggleBtn, { active: displayMode === "abs", onClick: () => setDisplayMode("abs"), label: "실수치(R$/kg)" }),

@@ -315,7 +315,7 @@ window.EuPigmeatPriceApp = (function () {
           }, "필터 초기화")
         ),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
+        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
           [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
             key: m, active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
@@ -351,7 +351,7 @@ window.EuPigmeatPriceApp = (function () {
         ),
 
         mainTab === "table" && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
             React.createElement(HoverAxisPicker, { label: "행", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }),
             React.createElement(HoverAxisPicker, { label: "열", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }),
             React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } },
@@ -407,7 +407,7 @@ window.EuPigmeatPriceApp = (function () {
             )
           ),
           chartSub === "trend" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement(HoverAxisPicker, { label: "기준", value: trendDim, onChange: setTrendDim, options: [["ms", "국가"], ["cls", "등급"]] }),
               React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "원자료" }),
               React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" }),
@@ -422,7 +422,7 @@ window.EuPigmeatPriceApp = (function () {
             )
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
               React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 엑셀 다운로드")
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다 (현재 필터된 국가/등급 평균)."),

@@ -365,7 +365,7 @@ window.AusTradeApp = (function () {
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")
         ),
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
+        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
           [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
             key: m,
@@ -407,7 +407,7 @@ window.AusTradeApp = (function () {
         ),
 
         mainTab === "table" && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
             React.createElement(HoverAxisPicker, { label: "행", value: rowDim, onChange: onRowDimChange, options: DIM_OPTIONS }),
             React.createElement(HoverAxisPicker, { label: "열", value: colDim, onChange: onColDimChange, options: DIM_OPTIONS }),
             React.createElement("div", { style: { display: "flex", gap: 4, marginLeft: "auto" } },
@@ -467,7 +467,7 @@ window.AusTradeApp = (function () {
             )
           ),
           chartSub === "trend" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement(ToggleBtn, { active: !smoothed, onClick: () => setSmoothed(false), label: "월별 원자료" }),
               React.createElement(ToggleBtn, { active: smoothed, onClick: () => setSmoothed(true), label: "3개월 이동평균" }),
               React.createElement("button", { onClick: exportTrendXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "⬇ 엑셀 다운로드")
@@ -481,7 +481,7 @@ window.AusTradeApp = (function () {
             )
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
               React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } },
@@ -493,7 +493,7 @@ window.AusTradeApp = (function () {
             )
           ),
           chartSub === "shift" && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
               React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "비교 구간"),
               ["3", "6", "12"].map((m) => React.createElement(ToggleBtn, { key: m, active: shiftMonths === m, onClick: () => setShiftMonths(m), label: `${m}개월` })),
               React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "비교 대상"),
