@@ -103,8 +103,9 @@ window.RadarUI = (function () {
     // 좁은 화면에서는 글자가 커진 만큼 라벨 사이 간격도 넓혀야 서로 안 겹침.
     // 실제 렌더 폭 기준으로 "라벨 하나당 필요한 최소 폭(대략 7px * 글자수 근사)"을 역산해서
     // 몇 번째 라벨마다 하나씩만 보여줄지 계산.
-    const estLabelPx = axisFontPx * 4.5;
-    const maxLabelsFit = Math.max(3, Math.floor(actualWidth / estLabelPx));
+    const longestLabelLen = categories.reduce((m, c) => Math.max(m, String(c).length), 1);
+    const estLabelPx = axisFontPx * 0.62 * longestLabelLen + 14;
+    const maxLabelsFit = Math.max(2, Math.floor(actualWidth / estLabelPx));
     const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 12 : 10)));
     const [hoverIdx, setHoverIdx] = useState(null);
     const handleMove = (e) => {
@@ -115,15 +116,8 @@ window.RadarUI = (function () {
       setHoverIdx(Math.round(frac * (categories.length - 1)));
     };
     const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    const gradId = "radar-chart-fade-" + Math.abs(series.map((s) => s.name).join("|").split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7));
     return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
       React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        React.createElement("defs", null,
-          React.createElement("linearGradient", { id: gradId, x1: "0", y1: "0", x2: "0", y2: "1" },
-            React.createElement("stop", { offset: "0%", stopColor: series[0]?.color || COLORS.amber, stopOpacity: 0.22 }),
-            React.createElement("stop", { offset: "100%", stopColor: series[0]?.color || COLORS.amber, stopOpacity: 0 })
-          )
-        ),
         Array.from({ length: gridLines + 1 }).map((_, i) => {
           const y = padding.top + innerH / gridLines * i;
           const val = topVal - (topVal - minVal) / gridLines * i;
@@ -137,20 +131,13 @@ window.RadarUI = (function () {
         categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - (axisFontPx > 16 ? 6 : 8), textAnchor: i === 0 ? "start" : (i + labelEvery > categories.length - 1 ? "end" : "middle"), fontSize: axisFontPx, fill: "#8a9086" }, c)),
         hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.6 }),
         series.map((s, sIdx) => {
-          const segs = []; let cur = []; let curPts = []; const segPts = [];
+          const segs = []; let cur = [];
           s.data.forEach((v, i) => {
-            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); segPts.push(curPts); cur = []; curPts = []; } return; }
+            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
             cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
-            curPts.push([xFor(i), yFor(v)]);
           });
-          if (cur.length) { segs.push(cur); segPts.push(curPts); }
-          // 첫 번째 시리즈 아래로만 은은한 그라데이션 채움 (여러 개 겹치면 지저분해지니 하나만)
-          const baseline = padding.top + innerH;
-          const areaPath = sIdx === 0 && segPts.length ? segPts.map((pts, si) =>
-            `${segs[si].join(" ")} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z`
-          ).join(" ") : null;
+          if (cur.length) segs.push(cur);
           return React.createElement("g", { key: s.name },
-            areaPath && React.createElement("path", { d: areaPath, fill: `url(#${gradId})`, stroke: "none" }),
             segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round", strokeDasharray: s.dashed ? "5 4" : undefined })),
             categories.length <= maxDots && s.data.map((v, i) => v != null && isFinite(v) && i !== hoverIdx && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: 2, fill: s.color, opacity: s.dashed ? 0.6 : 1 })),
             // 호버 중인 지점은 데이터 개수와 무관하게 항상 표시 (흰 테두리로 살짝 도드라지게)
