@@ -287,7 +287,7 @@ window.EuPigmeatPriceApp = (function () {
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU 27개 회원국 + EU 평균"),
-        fmtUpdatedAt(raw.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\uD83D\uDD52 ${fmtUpdatedAt(raw.collectedAt)} 기준`),
+        fmtUpdatedAt(raw.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\u25CF ${fmtUpdatedAt(raw.collectedAt)} 기준`),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 내수현황"),
 
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
@@ -332,15 +332,15 @@ window.EuPigmeatPriceApp = (function () {
             style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
         ),
 
-        React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
+        React.createElement("div", { style: { background: COLORS.panel, borderLeft: `3px solid ${COLORS.amber}`, borderRadius: "4px 10px 10px 4px", boxShadow: "0 1px 3px rgba(31,36,32,0.06)", padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
           React.createElement("div", { style: { fontSize: 13, color: COLORS.mute } },
             "EU 돈가", msFilter.length ? ` · 국가 ${msFilter.length}개` : "", clsFilter !== "ALL" ? ` · ${clsFilter}등급` : "",
             yearFilter.length ? ` · 연도 ${yearFilter.length}개` : "", ymStart != null ? ` · ${ymLabel(ymStart)}~${ymLabel(ymEnd)}` : "",
             (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : ""
           ),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-            React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "\u2713 복사됨" : "\u{1F517} 이 화면 링크 복사"),
-            React.createElement("div", { style: { fontSize: 20, fontWeight: 800, color: COLORS.amber, fontFamily: "ui-monospace,monospace" } }, "평균 ", fmtEur(grandAvgAll))
+            React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "\u2713 복사됨" : "이 화면 링크 복사"),
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: COLORS.cream, fontFamily: "ui-monospace,monospace" } }, "평균 ", fmtEur(grandAvgAll))
           )
         ),
         React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 14, textAlign: "right" } }, raw.sourceMostRecentData ? `집행위 Agri-food Data Portal 주간 자료 · ${raw.sourceMostRecentData} 기준` : ""),
