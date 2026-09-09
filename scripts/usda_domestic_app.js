@@ -6,7 +6,7 @@
    원자재 가격 특성에 맞게 [추이(이동평균)] / [연도별 겹쳐보기(계절성)] 두 축으로 구성함. */
 window.UsdaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile } = window.RadarUI;
   const ITEMS = [
     { key: "Bnls CC Strap-off", label: "등심", color: COLORS.amber },
     { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
@@ -57,6 +57,32 @@ window.UsdaDomesticApp = (function () {
     );
   }
 
+  // 모바일용: 가로로 12개+ 열이 늘어서는 표 대신, 날짜 하나당 카드 하나로 세로 나열.
+  // 각 카드 안에서 품목별로 한 줄씩 - lb 단가를 크게, kg 환산은 옅게 보조로만.
+  function MobileTableCard({ row, idx, visibleItems, isLatest, cellDisplay, lbToKg, money, displayMode }) {
+    return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${isLatest ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 } },
+      React.createElement("div", { style: { fontSize: 13.5, fontWeight: 800, color: isLatest ? COLORS.amberSoft : COLORS.cream, marginBottom: 8 } }, row.label, isLatest ? " · 최신" : ""),
+      React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
+        visibleItems.map((i) => {
+          const { text, raw } = cellDisplay(idx, i.key);
+          const color = displayMode === "chg" ? (raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute) : COLORS.cream;
+          const v = row.vals[i.key];
+          const kgText = displayMode === "abs" ? money(lbToKg(v)) : null;
+          return React.createElement("div", { key: i.key, style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.mute, minWidth: 0 } },
+              React.createElement("span", { style: { width: 7, height: 7, borderRadius: 2, background: i.color, display: "inline-block", flexShrink: 0 } }),
+              React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, i.label)
+            ),
+            React.createElement("div", { style: { textAlign: "right", flexShrink: 0 } },
+              React.createElement("div", { style: { fontSize: 14.5, fontWeight: 700, fontFamily: "ui-monospace,monospace", color } }, text),
+              kgText && React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, fontFamily: "ui-monospace,monospace" } }, kgText, "/kg")
+            )
+          );
+        })
+      )
+    );
+  }
+
   function UsdaDomesticApp() {
     const [db, setDb] = useState(null);
     const [err, setErr] = useState(null);
@@ -91,6 +117,7 @@ window.UsdaDomesticApp = (function () {
   }
 
   function Dashboard({ db }) {
+    const isMobile = useIsMobile();
     useEffect(() => {
       const onDocClick = (e) => {
         document.querySelectorAll("details[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
@@ -273,7 +300,7 @@ window.UsdaDomesticApp = (function () {
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
         fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\uD83D\uDD52 ${fmtUpdatedAt(db.collectedAt)} 기준`),
 
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${Math.max(1, visibleItems.length)},minmax(0,1fr))`, gap: 8, marginBottom: 12 } },
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))`, gap: 8, marginBottom: 12 } },
           visibleItems.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
         ),
 
@@ -355,7 +382,27 @@ window.UsdaDomesticApp = (function () {
               React.createElement("button", { onClick: exportTableXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "⬇ 엑셀 다운로드")
             )
           ),
-          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } },
+          isMobile ? React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 8 } }, "최신 날짜가 맨 위입니다."),
+            displayIdxs.map((idx, rowPos) => React.createElement(MobileTableCard, {
+              key: tableRows[idx].sortKey, row: tableRows[idx], idx, visibleItems, isLatest: rowPos === 0,
+              cellDisplay, lbToKg, money, displayMode
+            })),
+            React.createElement("div", { style: { background: "#ede4d8", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 12, padding: "12px 14px", marginTop: 4 } },
+              React.createElement("div", { style: { fontSize: 13.5, fontWeight: 800, color: COLORS.cream, marginBottom: 8 } }, "기간평균"),
+              React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
+                visibleItems.map((i) => React.createElement("div", { key: i.key, style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 } },
+                  React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: COLORS.mute } },
+                    React.createElement("span", { style: { width: 7, height: 7, borderRadius: 2, background: i.color, display: "inline-block" } }), i.label
+                  ),
+                  React.createElement("div", { style: { textAlign: "right" } },
+                    React.createElement("div", { style: { fontSize: 14.5, fontWeight: 800, fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft } }, money(tableAvg[i.key])),
+                    React.createElement("div", { style: { fontSize: 11, color: COLORS.mute, fontFamily: "ui-monospace,monospace" } }, money(lbToKg(tableAvg[i.key])), "/kg")
+                  )
+                ))
+              )
+            )
+          ) : React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, overflow: "hidden" } },
             React.createElement("div", { style: { overflowX: "auto", maxHeight: 560, overflowY: "auto" } },
               React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 14.5, width: "100%" } },
                 React.createElement("thead", null, React.createElement("tr", null,
