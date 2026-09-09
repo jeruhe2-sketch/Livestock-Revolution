@@ -1,0 +1,2 @@
+ls: cannot access 'data/warehouse_stock.json': No such file or directory
+-rw-r--r-- 1 runner runner 38503 Sep  9 03:38 data/warehouse_history.json
