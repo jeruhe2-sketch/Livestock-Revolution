@@ -15,7 +15,7 @@
    LLM/수동작업 없음. scripts/fetch_eu_pigmeat_price.py 참고) */
 window.EuPigmeatPriceApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, FilterPanel } = window.RadarUI;
+  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
   const pct = window.RadarUI.pctFmt;
   const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
   const DIM_LABEL = { ms: "국가", cls: "등급", year: "연도", month: "월", yearMonth: "연월", week: "주차" };
@@ -290,10 +290,7 @@ window.EuPigmeatPriceApp = (function () {
         fmtUpdatedAt(raw.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\u25CF ${fmtUpdatedAt(raw.collectedAt)} 기준`),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 내수현황"),
 
-        React.createElement(FilterPanel, {
-          defaultOpen: !(msFilter.length === 0 && clsFilter === "ALL" && yearFilter.length === 0 && ymStart === YM_MIN && ymEnd === YM_MAX && monthFrom === 1 && monthTo === 12),
-          activeSummary: [msFilter.length && `국가 ${msFilter.length}`, clsFilter !== "ALL" && clsFilter, yearFilter.length && `연도 ${yearFilter.length}`].filter(Boolean).join(" · ") || "전체"
-        },
+        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
           React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "등급"),
             React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },

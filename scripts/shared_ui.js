@@ -359,32 +359,11 @@ window.RadarUI = (function () {
     );
   }
 
-  // 필터들을 한 패널에 묶고, 헤더를 눌러 펼치고/접을 수 있게 하는 공용 래퍼.
-  // activeSummary를 주면 접혀있을 때도 "적용된 필터 몇 개" 정도는 한눈에 보이게 함.
-  function FilterPanel({ defaultOpen = true, activeSummary, children }) {
-    const [open, setOpen] = useState(defaultOpen);
-    return React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, marginBottom: 14, overflow: "hidden" } },
-      React.createElement("div", {
-        onClick: () => setOpen((o) => !o),
-        style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 16px", cursor: "pointer" }
-      },
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-          React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: COLORS.cream } }, "필터"),
-          !open && activeSummary && React.createElement("span", { style: { fontSize: 12.5, color: COLORS.mute } }, activeSummary)
-        ),
-        React.createElement("span", { style: { fontSize: 13, color: COLORS.amberSoft, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 } },
-          open ? "접기" : "펼치기", React.createElement("span", { style: { fontSize: 11, transform: open ? "rotate(180deg)" : "none", display: "inline-block", transition: "transform .15s" } }, "\u25BE")
-        )
-      ),
-      open && React.createElement("div", { style: { padding: "0 16px 14px 16px", display: "flex", flexDirection: "column", gap: 12 } }, children)
-    );
-  }
-
   return {
     COLORS, thStyle, tdStyle,
     fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile,
     SvgLineChart, ChartLegend, BarRanking, ShiftRanking,
     SheetTab, SubTab, ToggleBtn, PillToggle,
-    HoverAxisPicker, HoverMultiPicker, ChipGroup, FilterPanel,
+    HoverAxisPicker, HoverMultiPicker, ChipGroup,
   };
 })();
