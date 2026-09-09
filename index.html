@@ -46,11 +46,11 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./scripts/shared_ui.js?v=11"></script>
+<script src="./scripts/shared_ui.js?v=12"></script>
 <script src="./scripts/usda_domestic_app.js?v=39"></script>
 <script src="./scripts/cepea_domestic_app.js?v=32"></script>
-<script src="./scripts/aus_trade_app.js?v=26"></script>
-<script src="./scripts/eu_pigmeat_price_app.js?v=11"></script>
+<script src="./scripts/aus_trade_app.js?v=27"></script>
+<script src="./scripts/eu_pigmeat_price_app.js?v=12"></script>
 <script src="./scripts/mla_domestic_app.js?v=14"></script>
 <script src="./scripts/key_indicators_app.js?v=22"></script>
 <style>
@@ -459,7 +459,7 @@ const tdStyle = { padding: "9px 10px", color: "#1f2420" };
 
 window.EuTradeApp = (function() {
 const { useState, useEffect, useMemo, useRef } = React;
-const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx, FilterPanel } = window.RadarUI;
 const pct = window.RadarUI.pctFmt;
 const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 function n(v) { return Math.round(v).toLocaleString(); }
@@ -862,7 +862,10 @@ function Dashboard({ db, exRates, fxHistory }) {
       React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU → 한국 · 미국 · 영국 · 중국 · 일본 · 필리핀"),
       fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\u25CF ${fmtUpdatedAt(db.collectedAt)} 기준`),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 수출현황"),
-      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+      React.createElement(FilterPanel, {
+        defaultOpen: !(msFilter.length === 0 && partnerFilter.length === 0 && yearFilter.length === 0 && valueKey === "kg" && ymStart === YM_MIN && ymEnd === YM_MAX && monthFrom === 1 && monthTo === 12),
+        activeSummary: [msFilter.length && `수출국 ${msFilter.length}`, partnerFilter.length && `수입국 ${partnerFilter.length}`, yearFilter.length && `연도 ${yearFilter.length}`].filter(Boolean).join(" · ") || "전체"
+      },
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "단위"),
           React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
@@ -1067,7 +1070,7 @@ return EuTradeApp;
 
 window.UsdaTradeApp = (function() {
 const { useState, useEffect, useMemo, useRef } = React;
-const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx, FilterPanel } = window.RadarUI;
 const pct = window.RadarUI.pctFmt;
 const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 function n(v) { return Math.round(v).toLocaleString(); }
@@ -1424,7 +1427,10 @@ function Dashboard({ db }) {
     React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
       React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "미국 → 한국 · 중국 · 영국 · 일본 · 필리핀 등"),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "미국 축산물 수출현황"),
-      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+      React.createElement(FilterPanel, {
+        defaultOpen: !(commodity === 1702 && countryFilter.length === 0 && yearFilter.length === 0 && valueKey === "weeklyExports" && ymStart === YM_MIN && ymEnd === YM_MAX && monthFrom === 1 && monthTo === 12),
+        activeSummary: [COMMODITY_LABEL[commodity], countryFilter.length && `수입국 ${countryFilter.length}`, yearFilter.length && `연도 ${yearFilter.length}`].filter(Boolean).join(" · ")
+      },
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "품목"),
           React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },

@@ -5,7 +5,7 @@
    이 파일은 index.html의 인라인 스크립트보다 먼저 로드되므로 자체 구현. */
 window.AusTradeApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx, FilterPanel } = window.RadarUI;
   const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 
   const DEST_LABEL_KO = {
@@ -328,7 +328,10 @@ window.AusTradeApp = (function () {
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 16개국"),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "호주 축산물 수출현황"),
 
-        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+        React.createElement(FilterPanel, {
+          defaultOpen: !(species === "beef" && form === "total" && destFilter.length === 0 && yearFilter.length === 0 && ymStart === YM_MIN && ymEnd === YM_MAX && monthFrom === 1 && monthTo === 12),
+          activeSummary: [`${SPECIES_LABEL_KO[species]}(${FORM_LABEL[form]})`, destFilter.length && `목적지 ${destFilter.length}`, yearFilter.length && `연도 ${yearFilter.length}`].filter(Boolean).join(" · ")
+        },
           React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "축종 · 형태"),
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" } },
