@@ -290,46 +290,56 @@ window.EuPigmeatPriceApp = (function () {
         fmtUpdatedAt(raw.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\u25CF ${fmtUpdatedAt(raw.collectedAt)} 기준`),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 내수현황"),
 
-        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
-          ["ALL", "S", "E"].map((k) => React.createElement("button", {
-            key: k, onClick: () => setClsFilter(k),
-            style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
-              border: `1px solid ${k === clsFilter ? COLORS.amber : COLORS.panelBorder}`,
-              background: k === clsFilter ? "rgba(217,139,63,0.14)" : COLORS.panel,
-              color: k === clsFilter ? COLORS.amber : COLORS.mute }
-          }, k === "ALL" ? "전체 등급" : k === "S" ? "S(최상급)" : "E(우수)"))
-        ),
+        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "등급"),
+            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+              ["ALL", "S", "E"].map((k) => React.createElement("button", {
+                key: k, onClick: () => setClsFilter(k),
+                style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
+                  border: `1px solid ${k === clsFilter ? COLORS.amber : COLORS.panelBorder}`,
+                  background: k === clsFilter ? "rgba(217,139,63,0.14)" : COLORS.panel,
+                  color: k === clsFilter ? COLORS.amber : COLORS.mute }
+              }, k === "ALL" ? "전체 등급" : k === "S" ? "S(최상급)" : "E(우수)"))
+            )
+          ),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
-          React.createElement(HoverMultiPicker, { label: "국가", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
-          React.createElement(HoverMultiPicker, { label: "연도", options: [...new Set(ROWS.map((r) => String(r.year)))].sort().reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...new Set(ROWS.map((r) => String(r.year)))]), onClear: () => setYearFilter([]) }),
-          (mainTab !== "table" || chartSub !== "trend" || msFilter.length > 0 || clsFilter !== "ALL" || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "ms" || colDim !== "year" || displayMode !== "abs" || groupBy !== "ms" || !sortDesc || smoothed || trendDim !== "ms") && React.createElement("button", {
-            onClick: () => {
-              setMainTab("table"); setChartSub("trend");
-              setMsFilter([]); setClsFilter("ALL"); setYearFilter([]);
-              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12);
-              setRowDim("ms"); setColDim("year"); setDisplayMode("abs"); setGroupBy("ms");
-              setSortDesc(true); setSmoothed(false); setTrendDim("ms");
-            },
-            style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
-          }, "필터 초기화")
-        ),
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "국가 · 연도"),
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
+              React.createElement(HoverMultiPicker, { label: "국가", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
+              React.createElement(HoverMultiPicker, { label: "연도", options: [...new Set(ROWS.map((r) => String(r.year)))].sort().reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...new Set(ROWS.map((r) => String(r.year)))]), onClear: () => setYearFilter([]) }),
+              (mainTab !== "table" || chartSub !== "trend" || msFilter.length > 0 || clsFilter !== "ALL" || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "ms" || colDim !== "year" || displayMode !== "abs" || groupBy !== "ms" || !sortDesc || smoothed || trendDim !== "ms") && React.createElement("button", {
+                onClick: () => {
+                  setMainTab("table"); setChartSub("trend");
+                  setMsFilter([]); setClsFilter("ALL"); setYearFilter([]);
+                  setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12);
+                  setRowDim("ms"); setColDim("year"); setDisplayMode("abs"); setGroupBy("ms");
+                  setSortDesc(true); setSmoothed(false); setTrendDim("ms");
+                },
+                style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
+              }, "필터 초기화")
+            )
+          ),
 
-        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
-          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
-          [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
-            key: m, active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
-            onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); }, label: lbl
-          })),
-          ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-          ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "월별"),
-          React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-          React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
-            style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
+              [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
+                key: m, active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
+                onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); }, label: lbl
+              })),
+              ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+              React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+              ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+              React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "월별"),
+              React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+              React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+              React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+              (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+                style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+            )
+          )
         ),
 
         React.createElement("div", { style: { background: COLORS.panel, borderLeft: `3px solid ${COLORS.amber}`, borderRadius: "4px 10px 10px 4px", boxShadow: "0 1px 3px rgba(31,36,32,0.06)", padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
