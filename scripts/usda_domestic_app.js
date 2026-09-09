@@ -114,7 +114,7 @@ window.UsdaDomesticApp = (function () {
     const pInt = (k, f) => { const v = initParams.get(k); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : f; };
 
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["table", "chart"]));
-    const [itemFilter, setItemFilter] = useState(() => pList("it", ITEMS.map((i) => i.key)).filter((k) => ITEMS.some((i) => i.key === k)));
+    const [itemFilter, setItemFilter] = useState(() => pList("it").filter((k) => ITEMS.some((i) => i.key === k)));
     const [granularity, setGranularity] = useState(() => pOneOf("gr", "day", ["day", "month", "year"]));
     const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "chg"]));
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "overlay"]));
@@ -131,8 +131,8 @@ window.UsdaDomesticApp = (function () {
     const onMonthFrom = (v) => { const val = +v; setMonthFrom(val); if (val > monthTo) setMonthTo(val); };
     const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
-    const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? (cur.length > 1 ? cur.filter((k) => k !== key) : cur) : [...cur, key]);
-    const visibleItems = useMemo(() => ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
+    const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
+    const visibleItems = useMemo(() => itemFilter.length === 0 ? ITEMS : ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
 
     const periodRows = useMemo(() => {
       return ROWS.filter((r) => {
@@ -203,13 +203,13 @@ window.UsdaDomesticApp = (function () {
     const trendCategories = useMemo(() => periodRows.map((r) => r.date), [periodRows]);
     const trendSeries = useMemo(() => {
       const out = [];
-      ITEMS.filter((i) => itemFilter.includes(i.key)).forEach((i) => {
+      visibleItems.forEach((i) => {
         const raw = periodRows.map((r) => r[i.key]?.usdPerLb ?? null);
         if (smoothed) out.push({ name: `${i.label} (7일 이동평균)`, color: i.color, data: movingAvg(raw, 7) });
         else out.push({ name: i.label, color: i.color, data: raw });
       });
       return out;
-    }, [periodRows, itemFilter, smoothed]);
+    }, [periodRows, visibleItems, smoothed]);
     function exportTrendXlsx() {
       const header = ["발표일", ...trendSeries.map((s) => s.name)];
       const body = trendCategories.map((c, i) => [c, ...trendSeries.map((s) => s.data[i] != null ? Math.round(s.data[i] * 10000) / 10000 : "")]);
@@ -247,7 +247,7 @@ window.UsdaDomesticApp = (function () {
       if (ymEnd !== YM_MAX) sp.set("ye", ymEnd);
       if (monthFrom !== 1) sp.set("ms", monthFrom);
       if (monthTo !== 12) sp.set("me", monthTo);
-      if (itemFilter.length !== ITEMS.length) sp.set("it", itemFilter.join(","));
+      if (itemFilter.length !== 0) sp.set("it", itemFilter.join(","));
       if (mainTab === "table") {
         if (granularity !== "day") sp.set("gr", granularity);
         if (displayMode !== "abs") sp.set("dm", displayMode);
@@ -291,11 +291,11 @@ window.UsdaDomesticApp = (function () {
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          (mainTab !== "chart" || chartSub !== "trend" || granularity !== "day" || displayMode !== "abs" || smoothed || overlayItem !== ITEMS[0].key || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || itemFilter.length !== ITEMS.length) && React.createElement("button", {
+          (mainTab !== "chart" || chartSub !== "trend" || granularity !== "day" || displayMode !== "abs" || smoothed || overlayItem !== ITEMS[0].key || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || itemFilter.length !== 0) && React.createElement("button", {
             onClick: () => {
               setMainTab("chart"); setChartSub("trend"); setGranularity("day"); setDisplayMode("abs");
               setSmoothed(false); setOverlayItem(ITEMS[0].key);
-              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); setItemFilter(ITEMS.map((i) => i.key));
+              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); setItemFilter([]);
             },
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")
@@ -305,7 +305,7 @@ window.UsdaDomesticApp = (function () {
           React.createElement("div", { style: { fontSize: 13, color: COLORS.mute } },
             `최근 발표 ${dateLabel(cur?.date)} · 데이터 ${dateLabel(db.period?.start)} ~ ${dateLabel(db.period?.end)} · ${ymLabel(ymStart)}~${ymLabel(ymEnd)}`,
             (monthFrom !== 1 || monthTo !== 12) ? ` · ${monthFrom}월~${monthTo}월만` : "",
-            ` · 표시 품목 ${itemFilter.length}개`
+            ` · 표시 품목 ${visibleItems.length}개`
           ),
           React.createElement("button", { onClick: copyShareLink, style: { fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute, background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer" } }, linkCopied ? "✓ 복사됨" : "🔗 이 화면 링크 복사")
         ),
