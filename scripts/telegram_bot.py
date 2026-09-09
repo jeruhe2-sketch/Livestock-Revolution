@@ -119,8 +119,7 @@ def build_stats_message(api_key: str) -> str:
             day_label = datetime.strptime(day, "%Y-%m-%d").strftime("%m/%d")
         except ValueError:
             day_label = day
-        bar = "■" * min(count, 20)
-        daily_lines.append(f"{day_label} {bar} {count}")
+        daily_lines.append(f"{day_label}: {count:,}명")
 
     refs = top_referrers(api_key, week_start_utc, now_utc, limit=3)
     if refs:
