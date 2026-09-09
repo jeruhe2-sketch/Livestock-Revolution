@@ -166,7 +166,14 @@ window.UsdaDomesticApp = (function () {
     const pInt = (k, f) => { const v = initParams.get(k); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : f; };
 
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["table", "chart"]));
-    const [itemFilter, setItemFilter] = useState(() => pList("it", []).filter((k) => ITEMS.some((i) => i.key === k)));
+    // 기본값을 "전부 다"로 두면 돼지고기 부위($1~1.5대)랑 소고기 컷아웃($3~4대)이
+    // 스케일이 완전히 달라서 한 차트에 겹쳐 그리면 알아보기 힘든 뒤죽박죽이 됨.
+    // 처음엔 등심 하나만 보여주고, 비교하고 싶은 품목은 사용자가 직접 추가하게 함.
+    const [itemFilter, setItemFilter] = useState(() => {
+      const fromUrl = pList("it", null);
+      if (fromUrl) return fromUrl.filter((k) => ITEMS.some((i) => i.key === k));
+      return [ITEMS[0].key];
+    });
     const [granularity, setGranularity] = useState(() => pOneOf("gr", "day", ["day", "month", "year"]));
     const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "chg"]));
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "overlay"]));
@@ -184,7 +191,7 @@ window.UsdaDomesticApp = (function () {
     const onMonthTo = (v) => { const val = +v; setMonthTo(val); if (val < monthFrom) setMonthFrom(val); };
 
     const toggleItem = (key) => setItemFilter((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
-    const visibleItems = useMemo(() => itemFilter.length === 0 ? ITEMS : ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
+    const visibleItems = useMemo(() => ITEMS.filter((i) => itemFilter.includes(i.key)), [itemFilter]);
 
     const periodRows = useMemo(() => {
       return ROWS.filter((r) => {
@@ -299,7 +306,7 @@ window.UsdaDomesticApp = (function () {
       if (ymEnd !== YM_MAX) sp.set("ye", ymEnd);
       if (monthFrom !== 1) sp.set("ms", monthFrom);
       if (monthTo !== 12) sp.set("me", monthTo);
-      if (itemFilter.length !== 0) sp.set("it", itemFilter.join(","));
+      if (itemFilter.length !== 1 || itemFilter[0] !== ITEMS[0].key) sp.set("it", itemFilter.join(","));
       if (mainTab === "table") {
         if (granularity !== "day") sp.set("gr", granularity);
         if (displayMode !== "abs") sp.set("dm", displayMode);
@@ -379,11 +386,11 @@ window.UsdaDomesticApp = (function () {
           React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
           React.createElement("span", { style: { color: COLORS.mute } }, "–"),
           React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          (mainTab !== "chart" || chartSub !== "trend" || granularity !== "day" || displayMode !== "abs" || smoothed || overlayItem !== ITEMS[0].key || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || itemFilter.length !== 0) && React.createElement("button", {
+          (mainTab !== "chart" || chartSub !== "trend" || granularity !== "day" || displayMode !== "abs" || smoothed || overlayItem !== ITEMS[0].key || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || itemFilter.length !== 1 || itemFilter[0] !== ITEMS[0].key) && React.createElement("button", {
             onClick: () => {
               setMainTab("chart"); setChartSub("trend"); setGranularity("day"); setDisplayMode("abs");
               setSmoothed(false); setOverlayItem(ITEMS[0].key);
-              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); setItemFilter([]);
+              setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); setItemFilter([ITEMS[0].key]);
             },
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")

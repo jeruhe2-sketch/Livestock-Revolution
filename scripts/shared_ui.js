@@ -86,7 +86,7 @@ window.RadarUI = (function () {
     const scale = actualWidth > 0 ? actualWidth / width : 1;
     const axisFontPx = Math.max(9, Math.min(30, 11.5 / scale));
     const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: (manyLabels ? 40 : 26) + Math.max(0, axisFontPx - 11.5) * 1.3, left: Math.max(56, axisFontPx * 4.2) };
+    const padding = { top: 16 + Math.max(0, axisFontPx - 11.5) * 0.9, right: 16, bottom: (manyLabels ? 40 : 26) + Math.max(0, axisFontPx - 11.5) * 1.3, left: Math.max(56, axisFontPx * 4.2) };
     const innerW = width - padding.left - padding.right;
     const innerH = height - padding.top - padding.bottom;
     const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
