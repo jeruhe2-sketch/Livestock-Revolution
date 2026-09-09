@@ -15,12 +15,8 @@
    LLM/수동작업 없음. scripts/fetch_eu_pigmeat_price.py 참고) */
 window.EuPigmeatPriceApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-
-  const COLORS = {
-    bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
-    amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
-    sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
-  };
+  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+  const pct = window.RadarUI.pctFmt;
   const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
   const DIM_LABEL = { ms: "국가", cls: "등급", year: "연도", month: "월", yearMonth: "연월", week: "주차" };
   const DIM_OPTIONS = [["ms", "국가"], ["cls", "등급"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"], ["week", "주차"]];
@@ -29,11 +25,6 @@ window.EuPigmeatPriceApp = (function () {
   function n2(v) { return v == null || !isFinite(v) ? "—" : Math.round(v * 100) / 100; }
   function fmtEur(v) { return v == null || !isFinite(v) ? "—" : `€${Number(v).toFixed(2)}`; }
   function fmtShort(v) { return v == null || !isFinite(v) ? "—" : `€${Math.round(v)}`; }
-  function pct(v) {
-    if (v === null || v === undefined || !isFinite(v)) return "—";
-    const s = v > 0 ? "+" : "";
-    return `${s}${v.toFixed(1)}%`;
-  }
   function movingAvg(arr, win) {
     const out = new Array(arr.length).fill(null);
     let sum = 0, count = 0, buf = [];
@@ -53,18 +44,7 @@ window.EuPigmeatPriceApp = (function () {
     while (m < 1) { m += 12; y--; }
     return y * 100 + m;
   }
-  function downloadXlsx(aoa, filename, sheetName) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
-    XLSX.writeFile(wb, filename);
-  }
   function readParams() { return new URLSearchParams(window.location.search); }
-  function fmtUpdatedAt(iso) {
-    if (!iso) return null;
-    try { return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return null; }
-  }
   function isoWeek1Monday(year) {
     const jan4 = new Date(Date.UTC(year, 0, 4));
     const dow = jan4.getUTCDay() || 7;
@@ -84,141 +64,6 @@ window.EuPigmeatPriceApp = (function () {
   }
 
   /* ── EU 수출현황과 동일한 호버 툴팁 라인차트 ── */
-  function SvgLineChart({ categories, series, height = 260, formatValue }) {
-    const fmtAxis = formatValue || fmtShort;
-    const fmtTip = formatValue || fmtEur;
-    const width = 760;
-    const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 46 : 26, left: 50 };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
-    const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
-    const maxVal = allVals.length ? Math.max(...allVals) : 1;
-    const minVal = allVals.length ? Math.min(...allVals) * 0.97 : 0;
-    const span = Math.max(0.01, maxVal * 1.03 - minVal);
-    const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
-    const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
-    const xFor = (i) => padding.left + i * stepX;
-    const gridLines = 4;
-    const labelEvery = manyLabels ? Math.ceil(categories.length / 14) : 1;
-    const containerRef = useRef(null);
-    const [hoverIdx, setHoverIdx] = useState(null);
-    const handleMove = (e) => {
-      if (!containerRef.current || categories.length === 0) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const rect = containerRef.current.getBoundingClientRect();
-      const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      setHoverIdx(Math.round(frac * (categories.length - 1)));
-    };
-    const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
-      React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        Array.from({ length: gridLines + 1 }).map((_, i) => {
-          const y = padding.top + innerH / gridLines * i;
-          const val = maxVal * 1.03 - (maxVal * 1.03 - minVal) / gridLines * i;
-          return React.createElement("g", { key: i },
-            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 6, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, fmtAxis(val))
-          );
-        }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
-        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
-        series.map((s) => {
-          const segs = []; let cur = [];
-          s.data.forEach((v, i) => {
-            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
-            cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
-          });
-          if (cur.length) segs.push(cur);
-          return React.createElement("g", { key: s.name },
-            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: "2.2" })),
-            categories.length <= 40 && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 2.4, fill: s.color }))
-          );
-        })
-      ),
-      hoverIdx !== null && React.createElement("div", { style: {
-        position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-        background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
-        fontSize: 13, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
-      } },
-        React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
-        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 6 } },
-          React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: s.color, display: "inline-block", flexShrink: 0 } }),
-          series.length > 1 && React.createElement("span", { style: { color: COLORS.cream } }, s.name),
-          React.createElement("span", { style: { fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft, marginLeft: "auto" } }, fmtTip(s.data[hoverIdx]))
-        ))
-      )
-    );
-  }
-  function ChartLegend({ series }) {
-    if (series.length < 2) return null;
-    return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 10 } },
-      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: COLORS.cream } },
-        React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" } }), s.name
-      ))
-    );
-  }
-  function BarRanking({ items, formatValue }) {
-    const fmt = formatValue || fmtShort;
-    const capped = items.length > 40 ? items.slice(0, 40) : items;
-    const maxVal = Math.max(0.01, ...capped.map((i) => i.v));
-    return React.createElement(React.Fragment, null,
-      React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
-        capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
-          React.createElement("div", { style: { width: 90, fontSize: 13.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-          React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
-            React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
-          ),
-          React.createElement("div", { style: { width: 80, fontSize: 13.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmt(it.v))
-        ))
-      ),
-      items.length > 40 && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 10, textAlign: "center" } }, `상위 40개만 표시 중 (전체 ${items.length}개)`)
-    );
-  }
-  function SheetTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
-  }
-  function SubTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-  }
-  function ToggleBtn({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-  }
-  function HoverAxisPicker({ label, value, onChange, options }) {
-    const detailsRef = useRef(null);
-    const found = options.find(([v]) => v === value);
-    const currentLabel = found ? found[1] : value;
-    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
-        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
-        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
-        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
-      ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
-      )
-    );
-  }
-  function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-    return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
-        label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "\u25BE")),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
-          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
-          React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 13, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("button", { onClick: onClear, style: { fontSize: 13, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
-          )
-        ),
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
-          options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
-            style: { padding: "4px 9px", borderRadius: 6, fontSize: 13.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
-        )
-      )
-    );
-  }
 
   const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
   const tdStyle = { padding: "9px 10px", color: "#1f2420" };
@@ -442,6 +287,7 @@ window.EuPigmeatPriceApp = (function () {
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU 27개 회원국 + EU 평균"),
+        fmtUpdatedAt(raw.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\uD83D\uDD52 ${fmtUpdatedAt(raw.collectedAt)} 기준`),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 내수현황"),
 
         React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
@@ -571,7 +417,7 @@ window.EuPigmeatPriceApp = (function () {
               "* 전체 기간을 하나로 이어붙인 시계열입니다. 위쪽 ", DIM_LABEL[trendDim], " 필터에서 고른 항목이 그대로 표시됩니다", trendCandidates.length > 10 ? ` (평균가 상위 10개만 표시 중, 전체 ${trendCandidates.length}개)` : "", "."
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 340 }),
+              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 340, formatAxisValue: fmtShort, formatTooltipValue: fmtEur }),
               React.createElement(ChartLegend, { series: trendSeries })
             )
           ),
@@ -581,7 +427,7 @@ window.EuPigmeatPriceApp = (function () {
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다 (현재 필터된 국가/등급 평균)."),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }),
+              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340, formatAxisValue: fmtShort, formatTooltipValue: fmtEur }),
               React.createElement(ChartLegend, { series: overlaySeries })
             )
           )
