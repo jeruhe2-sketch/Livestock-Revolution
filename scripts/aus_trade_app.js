@@ -328,17 +328,20 @@ window.AusTradeApp = (function () {
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 16개국"),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "호주 축산물 수출현황"),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 10, alignItems: "center" } },
-          React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-            SPECIES_ORDER.map((sp) => React.createElement("button", {
-              key: sp, onClick: () => setSpecies(sp),
-              style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
-                border: `1px solid ${sp === species ? COLORS.amber : COLORS.panelBorder}`,
-                background: sp === species ? "rgba(217,139,63,0.14)" : COLORS.panel,
-                color: sp === species ? COLORS.amber : COLORS.mute }
-            }, SPECIES_LABEL_KO[sp]))
-          ),
-          React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "축종 · 형태"),
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" } },
+              React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+                SPECIES_ORDER.map((sp) => React.createElement("button", {
+                  key: sp, onClick: () => setSpecies(sp),
+                  style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
+                    border: `1px solid ${sp === species ? COLORS.amber : COLORS.panelBorder}`,
+                    background: sp === species ? "rgba(217,139,63,0.14)" : COLORS.panel,
+                    color: sp === species ? COLORS.amber : COLORS.mute }
+                }, SPECIES_LABEL_KO[sp]))
+              ),
+              React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
             ["total", "chilled", "frozen"].map((k) => React.createElement("button", {
               key: k, onClick: () => setForm(k),
               style: { padding: "7px 14px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer",
@@ -346,11 +349,14 @@ window.AusTradeApp = (function () {
                 background: k === form ? "rgba(111,148,130,0.16)" : COLORS.panel,
                 color: k === form ? COLORS.sage : COLORS.mute }
             }, FORM_LABEL[k]))
-          )
-        ),
-        porkNoBreakdown && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.rust, marginBottom: 10 } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
+              )
+            )
+          ),
+          porkNoBreakdown && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.rust } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
 
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } },
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "목적지 · 연도"),
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
           React.createElement(HoverMultiPicker, { label: "목적지", options: destOptions, selected: destFilter, onToggle: (v) => toggleFilter(destFilter, setDestFilter, v), onSelectAll: () => setDestFilter([...destOptions]), onClear: () => setDestFilter([]) }),
           React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
           (mainTab !== "table" || chartSub !== "trend" || shiftMonths !== "3" || shiftCompare !== "prev" || species !== "beef" || form !== "total" || destFilter.length > 0 || yearFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "dest" || colDim !== "year" || displayMode !== "abs" || groupBy !== "dest" || !sortDesc || smoothed) && React.createElement("button", {
@@ -364,24 +370,29 @@ window.AusTradeApp = (function () {
             },
             style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
           }, "필터 초기화")
-        ),
-        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } },
-          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "기간"),
-          [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
-            key: m,
-            active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
-            onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); },
-            label: lbl
-          })),
-          ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-          ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "월별"),
-          React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          React.createElement("span", { style: { color: COLORS.mute } }, "–"),
-          React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
-          (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
-            style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+            )
+          ),
+
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
+              [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
+                key: m,
+                active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
+                onClick: () => { setYmEnd(YM_MAX); setYmStart(addYm(YM_MAX, -(Number(m) - 1))); },
+                label: lbl
+              })),
+              ymStart != null && React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+              React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+              ymEnd != null && React.createElement(HoverAxisPicker, { label: "종료", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
+              React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "월별"),
+              React.createElement(HoverAxisPicker, { label: "시작월", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+              React.createElement("span", { style: { color: COLORS.mute } }, "–"),
+              React.createElement(HoverAxisPicker, { label: "종료월", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i) => [i + 1, `${i + 1}월`]) }),
+              (ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12) && React.createElement("button", { onClick: () => { setYmStart(YM_MIN); setYmEnd(YM_MAX); setMonthFrom(1); setMonthTo(12); },
+                style: { fontSize: 13, color: COLORS.mute, background: "none", border: `1px solid ${COLORS.panelBorder}`, borderRadius: 6, padding: "4px 8px", cursor: "pointer" } }, "전체기간")
+            )
+          )
         ),
 
         React.createElement("div", { style: { background: COLORS.panel, borderLeft: `3px solid ${COLORS.amber}`, borderRadius: "4px 10px 10px 4px", boxShadow: "0 1px 3px rgba(31,36,32,0.06)", padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } },
