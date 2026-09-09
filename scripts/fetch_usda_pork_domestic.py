@@ -32,13 +32,13 @@ MAX_RETRIES = 6
 ITEMS = {
     "Bnls CC Strap-off": "등심",
     "Picnic Cushion Meat Vac": "전지",
-    "1/4 Trim Butt VAC": "목전지",
+    "1/4 Trim Bnls Butt VAC": "목전지",
 }
 # 위 3개 품목이 실제로 위치하는 리포트 섹션 (usdampr 패키지 slugInfo로 확인됨)
 SECTIONS = {
     "Bnls CC Strap-off": "Loin Cuts",
     "Picnic Cushion Meat Vac": "Picnic Cuts",
-    "1/4 Trim Butt VAC": "Butt Cuts",
+    "1/4 Trim Bnls Butt VAC": "Butt Cuts",
 }
 
 
