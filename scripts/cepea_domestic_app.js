@@ -7,12 +7,7 @@
    시계열이라 USDA 내수현황과 같은 구조: [추이(이동평균)] / [연도별 겹쳐보기(계절성)] 두 축. */
 window.CepeaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-
-  const COLORS = {
-    bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
-    amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
-    sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
-  };
+  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx } = window.RadarUI;
   const ITEMS = [
     { key: "pork", field: "value", label: "돈육 카카스", color: COLORS.amber },
     { key: "chicken", field: "valueBRL", label: "계육 냉장", color: COLORS.sage }
@@ -24,121 +19,10 @@ window.CepeaDomesticApp = (function () {
   function itemUsd(row, item) { return row?.[item.key]?.valueUSD; }
 
   function money(v) { return v == null || !isFinite(v) ? "—" : `R$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
-  function pctFmt(v) { if (v === null || v === undefined || !isFinite(v)) return "—"; const s = v > 0 ? "+" : ""; return `${s}${v.toFixed(1)}%`; }
   function dateLabel(s) { return s ? String(s).replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1.$2.$3") : "—"; }
   function readParams() { return new URLSearchParams(window.location.search); }
-  function fmtUpdatedAt(iso) {
-    if (!iso) return null;
-    try { return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return null; }
-  }
-  function downloadXlsx(aoa, filename, sheetName) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
-    XLSX.writeFile(wb, filename);
-  }
 
   /* ── EU/USDA 앱과 동일한 라인차트(호버 툴팁 포함) ── */
-  function SvgLineChart({ categories, series, height = 260, formatValue }) {
-    const fmt = formatValue || ((v) => v == null ? "—" : `R$${v.toFixed(2)}`);
-    const width = 900;
-    const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 46 : 26, left: 52 };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
-    const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
-    const maxVal = allVals.length ? Math.max(...allVals) : 1;
-    const minVal = allVals.length ? Math.min(0, Math.min(...allVals) * 0.97) : 0;
-    const span = Math.max(0.01, maxVal * 1.05 - minVal);
-    const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
-    const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
-    const xFor = (i) => padding.left + i * stepX;
-    const gridLines = 4;
-    const labelEvery = manyLabels ? Math.ceil(categories.length / 12) : 1;
-    const containerRef = useRef(null);
-    const [hoverIdx, setHoverIdx] = useState(null);
-    const handleMove = (e) => {
-      if (!containerRef.current || categories.length === 0) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const rect = containerRef.current.getBoundingClientRect();
-      const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      setHoverIdx(Math.round(frac * (categories.length - 1)));
-    };
-    const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
-      React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        Array.from({ length: gridLines + 1 }).map((_, i) => {
-          const y = padding.top + innerH / gridLines * i;
-          const val = maxVal * 1.05 - (maxVal * 1.05 - minVal) / gridLines * i;
-          return React.createElement("g", { key: i },
-            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, `R$${val.toFixed(2)}`)
-          );
-        }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
-        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
-        series.map((s) => {
-          const segs = [];
-          let cur = [];
-          s.data.forEach((v, i) => {
-            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
-            cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
-          });
-          if (cur.length) segs.push(cur);
-          return React.createElement("g", { key: s.name },
-            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: "2.2", strokeDasharray: s.dashed ? "5 4" : undefined })),
-            categories.length <= 60 && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 2, fill: s.color }))
-          );
-        })
-      ),
-      hoverIdx !== null && React.createElement("div", { style: {
-        position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-        background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
-        fontSize: 13, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
-      } },
-        React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
-        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 6 } },
-          React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: s.color, display: "inline-block", flexShrink: 0, opacity: s.dashed ? 0.6 : 1 } }),
-          React.createElement("span", { style: { color: COLORS.cream } }, s.name),
-          React.createElement("span", { style: { fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft, marginLeft: "auto" } }, fmt(s.data[hoverIdx]))
-        ))
-      )
-    );
-  }
-  function ChartLegend({ series }) {
-    return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 14, marginTop: 8, paddingBottom: 4 } },
-      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: COLORS.cream } },
-        React.createElement("span", { style: { width: 10, height: 3, borderRadius: 2, background: s.color, display: "inline-block", opacity: s.dashed ? 0.6 : 1 } }), s.name
-      ))
-    );
-  }
-  function SheetTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
-  }
-  function SubTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-  }
-  function ToggleBtn({ active, onClick, label, activeColor }) {
-    const c = activeColor || COLORS.amber;
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? c : COLORS.panelBorder}`, background: active ? `${c}22` : COLORS.panel, color: active ? c : COLORS.mute } }, label);
-  }
-  function HoverAxisPicker({ label, value, onChange, options }) {
-    const detailsRef = useRef(null);
-    const found = options.find(([v]) => v === value);
-    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
-        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
-        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, found ? found[1] : value),
-        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "▾")
-      ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 110, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
-      )
-    );
-  }
-
   const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, whiteSpace: "nowrap" };
   const tdStyle = { padding: "9px 10px", color: COLORS.cream };
 
@@ -392,6 +276,7 @@ window.CepeaDomesticApp = (function () {
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "CEPEA/ESALQ · 브라질 상파울루 도매가 지표 (수동 갱신)"),
+        fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\uD83D\uDD52 ${fmtUpdatedAt(db.collectedAt)} 반영`),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "브라질 축산물 내수현황"),
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "카르카사 특급(돈육) · 냉장 계육 도매가 · 상파울루주(Grande São Paulo)"),
 
@@ -451,7 +336,7 @@ window.CepeaDomesticApp = (function () {
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } },
               trendSeries.length
-                ? React.createElement(React.Fragment, null, React.createElement(SvgLineChart, { categories: trendCategories, series: trendSeries, height: 340 }), React.createElement(ChartLegend, { series: trendSeries }))
+                ? React.createElement(React.Fragment, null, React.createElement(SvgLineChart, { categories: trendCategories, series: trendSeries, height: 340, formatValue: (v) => v == null ? "—" : `R$${v.toFixed(2)}` }), React.createElement(ChartLegend, { series: trendSeries }))
                 : React.createElement("div", { style: { padding: 40, textAlign: "center", color: COLORS.mute } }, "표시할 품목을 하나 이상 선택하세요.")
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 10 } }, "※ US$/kg은 참고환산 값입니다 — 계육은 CEPEA 원자료의 US$ 컬럼을 그대로 쓰고, 돈육은 그날 계육의 R$/US$ 비율(환율)을 역산해 곱한 근사치입니다(환율 변동을 반영해 R$ 추이와는 별도로 움직일 수 있음).")
@@ -463,7 +348,7 @@ window.CepeaDomesticApp = (function () {
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "* 위쪽 기간 필터 안에 포함된 연도들을 월별 평균으로 겹쳐서 계절 패턴과 연도별 가격 수준을 비교합니다."),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: 16 } },
-              React.createElement(SvgLineChart, { categories: overlayCategories, series: overlaySeries, height: 340 }),
+              React.createElement(SvgLineChart, { categories: overlayCategories, series: overlaySeries, height: 340, formatValue: (v) => v == null ? "—" : `R$${v.toFixed(2)}` }),
               React.createElement(ChartLegend, { series: overlaySeries })
             )
           )
