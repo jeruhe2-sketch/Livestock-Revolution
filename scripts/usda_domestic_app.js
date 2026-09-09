@@ -271,6 +271,7 @@ window.UsdaDomesticApp = (function () {
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "미국 축산물 내수현황"),
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
+        fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\uD83D\uDD52 ${fmtUpdatedAt(db.collectedAt)} 기준`),
 
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${Math.max(1, visibleItems.length)},minmax(0,1fr))`, gap: 8, marginBottom: 12 } },
           visibleItems.map((i) => React.createElement(Card, { key: i.key, item: i, cur, prev, week: weekAgo }))
