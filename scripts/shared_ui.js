@@ -243,6 +243,10 @@ window.RadarUI = (function () {
     const [open, setOpen] = useStateLocal(false);
     const closeTimer = useRefLocal(null);
     const rootRef = useRefLocal(null);
+    // 터치 전용 기기는 tap 한 번에 mouseenter(호버 시뮬레이션)와 click이 연달아 발생해서,
+    // 열렸다가(mouseenter) 바로 토글로 닫히는(click) 문제가 있었음. 진짜 마우스가 있는
+    // 기기에서만 hover로 열고닫게 하고, 터치 기기는 click 토글만 쓰게 분리.
+    const supportsHover = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(hover: hover)").matches;
     const clearTimer = () => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } };
     const openNow = () => { clearTimer(); setOpen(true); };
     const closeSoon = () => { clearTimer(); closeTimer.current = setTimeout(() => setOpen(false), 180); };
@@ -254,7 +258,12 @@ window.RadarUI = (function () {
       return () => document.removeEventListener("click", onDocClick);
     }, [open]);
     useEffectLocal(() => clearTimer, []);
-    return { open, setOpen, rootRef, onMouseEnter: openNow, onMouseLeave: closeSoon, onSummaryClick: toggleClick };
+    return {
+      open, setOpen, rootRef,
+      onMouseEnter: supportsHover ? openNow : undefined,
+      onMouseLeave: supportsHover ? closeSoon : undefined,
+      onSummaryClick: toggleClick
+    };
   }
 
   function HoverAxisPicker({ label, value, onChange, options }) {
