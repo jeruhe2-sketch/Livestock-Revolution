@@ -10,7 +10,7 @@ window.UsdaDomesticApp = (function () {
   const ITEMS = [
     { key: "Bnls CC Strap-off", label: "등심", color: COLORS.amber },
     { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
-    { key: "1/4 Trim Butt VAC", label: "목전지", color: "#2f6f96" },
+    { key: "1/4 Trim Bnls Butt VAC", label: "목전지", color: "#2f6f96" },
     { key: "PorkCutout", label: "돈육 컷아웃", color: "#8a5a30" },
     { key: "BeefChoiceCutout", label: "소고기 Choice 컷아웃", color: "#a34a3f" },
     { key: "BeefSelectCutout", label: "소고기 Select 컷아웃", color: "#6b5ca5" }

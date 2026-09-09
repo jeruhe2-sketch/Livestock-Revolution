@@ -296,7 +296,7 @@ window.KeyIndicatorsApp = (function () {
 
     const cardStats = useMemo(() => {
       const eyciRows = mla?.indicators?.["0"] || [];
-      const usdaRows = usda?.data ? usda.data.map((r) => ({ date: r.date, value: r["1/4 Trim Butt VAC"]?.usdPerLb })) : [];
+      const usdaRows = usda?.data ? usda.data.map((r) => ({ date: r.date, value: r["1/4 Trim Bnls Butt VAC"]?.usdPerLb })) : [];
       return {
         usdFx: fxStat(fx, "usd"),
         eurFx: fxStat(fx, "eur"),
