@@ -97,7 +97,7 @@ window.CepeaDomesticApp = (function () {
     const pInt = (k, f) => { const v = initParams.get(k); const n2 = parseInt(v, 10); return Number.isFinite(n2) ? n2 : f; };
 
     const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["table", "chart"]));
-    const [itemFilter, setItemFilter] = useState(() => pList("it").filter((k) => ITEMS.some((i) => i.key === k)));
+    const [itemFilter, setItemFilter] = useState(() => pList("it", []).filter((k) => ITEMS.some((i) => i.key === k)));
     const [granularity, setGranularity] = useState(() => pOneOf("gr", "day", ["day", "month", "year"]));
     const [displayMode, setDisplayMode] = useState(() => pOneOf("dm", "abs", ["abs", "chg"]));
     const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "overlay"]));

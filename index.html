@@ -47,8 +47,8 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./scripts/shared_ui.js?v=2"></script>
-<script src="./scripts/usda_domestic_app.js?v=31"></script>
-<script src="./scripts/cepea_domestic_app.js?v=28"></script>
+<script src="./scripts/usda_domestic_app.js?v=32"></script>
+<script src="./scripts/cepea_domestic_app.js?v=29"></script>
 <script src="./scripts/aus_trade_app.js?v=23"></script>
 <script src="./scripts/eu_pigmeat_price_app.js?v=8"></script>
 <script src="./scripts/mla_domestic_app.js?v=12"></script>
@@ -494,6 +494,11 @@ function addYm(ym, delta) {
   return y * 100 + m;
 }
 function readParams() { return new URLSearchParams(window.location.search); }
+const PARTNER_LIST = ["KR", "US", "GB", "CN", "JP", "PH", "VN", "MY", "CL", "TW"];
+const PARTNER_LABEL = { KR: "한국", US: "미국", GB: "영국", CN: "중국", JP: "일본", PH: "필리핀", VN: "베트남", MY: "말레이시아", CL: "칠레", TW: "대만" };
+const DIM_LABEL = { ms: "수출국", partner: "수입국", year: "연도", month: "월", yearMonth: "연월", week: "주차" };
+const DIM_OPTIONS = [["ms", "수출국"], ["partner", "수입국"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"], ["week", "주차"]];
+const GROUP_DIM_OPTIONS = [["ms", "수출국"], ["partner", "수입국"], ["year", "연도"], ["month", "월"]]; // 연월/주차는 항목이 너무 많아 막대비교엔 안 맞음(추이 탭이 담당)
 function EuTradeApp() {
   const [db, setDb] = useState(null);
   const [err, setErr] = useState(null);
@@ -1085,6 +1090,14 @@ function isoWeek(dateStr) {
   const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
   return Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
 }
+
+const COUNTRY_LIST = ["KR", "CN", "GB", "JP", "PH", "MX", "CA", "TW", "VN"];
+const COUNTRY_LABEL = { KR: "한국", CN: "중국", GB: "영국", JP: "일본", PH: "필리핀", MX: "멕시코", CA: "캐나다", TW: "대만", VN: "베트남" };
+const COMMODITY_LABEL = { 1701: "소고기", 1702: "돈육" };
+const VALUE_LABEL = { weeklyExports: "주간 수출량", outstandingSales: "미선적 계약량", accumulatedExports: "누적 수출량" };
+const DIM_LABEL = { country: "수입국", year: "연도", month: "월", yearMonth: "연월", week: "주차" };
+const DIM_OPTIONS = [["country", "수입국"], ["year", "연도"], ["month", "월"], ["yearMonth", "연월"], ["week", "주차"]];
+const GROUP_DIM_OPTIONS = [["country", "수입국"], ["year", "연도"], ["month", "월"]]; // 연월/주차는 항목이 너무 많아 막대비교엔 안 맞음(추이 탭이 담당)
 
 function UsdaTradeApp() {
   const [db, setDb] = useState(null);
