@@ -119,7 +119,7 @@ window.MlaDomesticApp = (function () {
       downloadXlsx([header, ...dateSet.map((d) => [d, cMap[d] ?? "", sMap[d] ?? ""])], "호주_주간도축량.xlsx", "도축량");
     };
 
-    return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 1040 } },
+    return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "호주 축산물 내수현황"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 18 } },
         "매일 자동 갱신 \u00B7 수동작업 없음"

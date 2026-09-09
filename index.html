@@ -46,12 +46,12 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./scripts/shared_ui.js?v=3"></script>
+<script src="./scripts/shared_ui.js?v=4"></script>
 <script src="./scripts/usda_domestic_app.js?v=33"></script>
 <script src="./scripts/cepea_domestic_app.js?v=29"></script>
 <script src="./scripts/aus_trade_app.js?v=23"></script>
 <script src="./scripts/eu_pigmeat_price_app.js?v=8"></script>
-<script src="./scripts/mla_domestic_app.js?v=12"></script>
+<script src="./scripts/mla_domestic_app.js?v=13"></script>
 <script src="./scripts/key_indicators_app.js?v=21"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
@@ -77,7 +77,7 @@
        (안 풀면 화면폭 대부분을 고정열이 차지해서 실제 데이터가 거의 안 보임) */
     .stick-r { position: static !important; right: auto !important; }
     /* 필터/토글/피커 버튼들이 손가락으로 누르기엔 너무 작았던 것 보정 */
-    button, summary { min-height: 36px; }
+    button, summary, .radar-picker-trigger { min-height: 36px; }
     table { font-size: 13px !important; }
   }
 </style>
