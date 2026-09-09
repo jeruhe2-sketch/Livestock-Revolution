@@ -234,19 +234,42 @@ window.RadarUI = (function () {
     }, children);
   }
 
+  // 데스크톱: 마우스 올리면 열리고 벗어나면 자동으로 닫힘.
+  // 터치 기기: 탭해서 열고, 다른 곳 탭하면 닫힘 (hover 이벤트가 없으니 클릭으로 대체).
+  // 둘 다 같은 컴포넌트로 처리 - 마우스가 있는 기기면 hover가 이미 다 해주니 클릭 핸들러는
+  // 방해되지 않고, 터치 기기에서는 hover 자체가 안 일어나니 클릭이 유일한 진입점이 됨.
+  function useHoverOrClick() {
+    const { useState: useStateLocal, useRef: useRefLocal, useEffect: useEffectLocal } = React;
+    const [open, setOpen] = useStateLocal(false);
+    const closeTimer = useRefLocal(null);
+    const rootRef = useRefLocal(null);
+    const clearTimer = () => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } };
+    const openNow = () => { clearTimer(); setOpen(true); };
+    const closeSoon = () => { clearTimer(); closeTimer.current = setTimeout(() => setOpen(false), 180); };
+    const toggleClick = (e) => { e.preventDefault(); setOpen((o) => !o); };
+    useEffectLocal(() => {
+      if (!open) return;
+      const onDocClick = (e) => { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); };
+      document.addEventListener("click", onDocClick);
+      return () => document.removeEventListener("click", onDocClick);
+    }, [open]);
+    useEffectLocal(() => clearTimer, []);
+    return { open, setOpen, rootRef, onMouseEnter: openNow, onMouseLeave: closeSoon, onSummaryClick: toggleClick };
+  }
+
   function HoverAxisPicker({ label, value, onChange, options }) {
-    const detailsRef = useRef(null);
+    const { open, setOpen, rootRef, onMouseEnter, onMouseLeave, onSummaryClick } = useHoverOrClick();
     const found = options.find(([v]) => v === value);
     const currentLabel = found ? found[1] : value;
-    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
+    return React.createElement("div", { ref: rootRef, style: { position: "relative", display: "inline-block" }, onMouseEnter, onMouseLeave },
+      React.createElement("div", { onClick: onSummaryClick, style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" } },
         React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
         React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
         React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
       ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      open && React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         options.map(([v, l]) => React.createElement("button", {
-          key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
+          key: v, onClick: () => { onChange(v); setOpen(false); },
           style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" }
         }, l))
       )
@@ -254,10 +277,11 @@ window.RadarUI = (function () {
   }
 
   function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-    return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
+    const { open, rootRef, onMouseEnter, onMouseLeave, onSummaryClick } = useHoverOrClick();
+    return React.createElement("div", { ref: rootRef, style: { position: "relative", display: "inline-block" }, onMouseEnter, onMouseLeave },
+      React.createElement("div", { onClick: onSummaryClick, style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer" } },
         label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "\u25BE")),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      open && React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
           React.createElement("div", { style: { display: "flex", gap: 8 } },
