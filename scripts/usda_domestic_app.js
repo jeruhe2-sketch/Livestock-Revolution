@@ -57,10 +57,14 @@ window.UsdaDomesticApp = (function () {
     return out;
   }
 
-  function Card({ item, latestRow, latestDate, isStale, prevVal, weekVal }) {
+  function Card({ item, latestRow, latestDate, isStale, prevVal, weekVal, monthVal, yearVal }) {
     const v = latestRow?.[item.key]?.usdPerLb;
-    const dayChg = v != null && prevVal ? (v - prevVal) / prevVal * 100 : null;
-    const weekChg = v != null && weekVal ? (v - weekVal) / weekVal * 100 : null;
+    const chgs = [
+      ["전일", v != null && prevVal ? (v - prevVal) / prevVal * 100 : null],
+      ["전주", v != null && weekVal ? (v - weekVal) / weekVal * 100 : null],
+      ["전월", v != null && monthVal ? (v - monthVal) / monthVal * 100 : null],
+      ["전년", v != null && yearVal ? (v - yearVal) / yearVal * 100 : null]
+    ];
     const arrow = (chg) => chg == null ? "" : chg > 0 ? "▲ " : chg < 0 ? "▼ " : "";
     const chgColor = (chg) => chg == null ? COLORS.mute : chg > 0 ? COLORS.rust : chg < 0 ? "#3a6ea5" : COLORS.mute;
     return React.createElement("div", { style: { background: COLORS.panel, borderLeft: `3px solid ${item.color}`, borderRadius: "4px 10px 10px 4px", padding: "13px 16px", boxShadow: "0 1px 3px rgba(31,36,32,0.06)" } },
@@ -70,9 +74,10 @@ window.UsdaDomesticApp = (function () {
         v == null ? "데이터 없음" : `${money(lbToKg(v))}/kg · Wtd Avg`,
         isStale && v != null && React.createElement("span", { style: { color: COLORS.rust, fontWeight: 700 } }, ` · ${dateLabel(latestDate)} 기준`)
       ),
-      React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 8, fontSize: 12.5 } },
-        React.createElement("span", { style: { color: COLORS.mute } }, "전일 ", React.createElement("b", { style: { color: chgColor(dayChg) } }, arrow(dayChg), pctFmt(dayChg))),
-        React.createElement("span", { style: { color: COLORS.mute } }, "전주 ", React.createElement("b", { style: { color: chgColor(weekChg) } }, arrow(weekChg), pctFmt(weekChg)))
+      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px 14px", marginTop: 9, fontSize: 12.5 } },
+        chgs.map(([label, chg]) => React.createElement("span", { key: label, style: { color: COLORS.mute } }, label + " ",
+          React.createElement("b", { style: { color: chgColor(chg) } }, arrow(chg), pctFmt(chg))
+        ))
       )
     );
   }
@@ -317,20 +322,30 @@ window.UsdaDomesticApp = (function () {
     // 전체 중 "가장 최근 날짜" 한 곳만 보고 카드를 채우면 늦게 발표되는 품목은 항상 빈 값으로 보임.
     // 품목별로 자기 자신의 값이 실제로 있는 가장 최근 지점을 따로 찾아서 보여줌.
     function findLatest(key) {
+      // 날짜 기준으로 "그날 또는 그 이전 중 가장 가까운" 값을 찾음 - 매일 발표 안 되는
+      // 품목(소고기 컷아웃 등)도 정확하게 몇 주/몇 달 전 값과 비교되게 함.
+      function valueNearDate(beforeIdx, daysAgo) {
+        const target = new Date(ROWS[beforeIdx].date + "T00:00:00Z");
+        target.setUTCDate(target.getUTCDate() - daysAgo);
+        const targetIso = target.toISOString().slice(0, 10);
+        for (let j = beforeIdx - 1; j >= 0; j--) {
+          if (ROWS[j].date <= targetIso && ROWS[j][key]?.usdPerLb != null) return ROWS[j][key].usdPerLb;
+        }
+        return null;
+      }
       for (let idx = ROWS.length - 1; idx >= 0; idx--) {
         if (ROWS[idx]?.[key]?.usdPerLb != null) {
-          let prevVal = null, weekVal = null, steps = 0;
-          for (let j = idx - 1; j >= 0 && steps < 20; j--) {
-            const val = ROWS[j]?.[key]?.usdPerLb;
-            if (val == null) continue;
-            steps++;
-            if (prevVal == null) prevVal = val;
-            if (steps === 7) { weekVal = val; break; }
+          let prevVal = null;
+          for (let j = idx - 1; j >= 0; j--) {
+            if (ROWS[j]?.[key]?.usdPerLb != null) { prevVal = ROWS[j][key].usdPerLb; break; }
           }
-          return { row: ROWS[idx], date: ROWS[idx].date, prevVal, weekVal };
+          return {
+            row: ROWS[idx], date: ROWS[idx].date, prevVal,
+            weekVal: valueNearDate(idx, 7), monthVal: valueNearDate(idx, 30), yearVal: valueNearDate(idx, 365)
+          };
         }
       }
-      return { row: null, date: null, prevVal: null, weekVal: null };
+      return { row: null, date: null, prevVal: null, weekVal: null, monthVal: null, yearVal: null };
     }
 
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
@@ -339,13 +354,13 @@ window.UsdaDomesticApp = (function () {
         React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
         fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\u25CF ${fmtUpdatedAt(db.collectedAt)} 기준`),
 
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))`, gap: 8, marginBottom: 12 } },
-          visibleItems.map((i) => {
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 8, marginBottom: 12 } },
+          ITEMS.map((i) => {
             const latest = findLatest(i.key);
             return React.createElement(Card, {
               key: i.key, item: i, latestRow: latest.row, latestDate: latest.date,
               isStale: latest.date != null && latest.date !== cur?.date,
-              prevVal: latest.prevVal, weekVal: latest.weekVal
+              prevVal: latest.prevVal, weekVal: latest.weekVal, monthVal: latest.monthVal, yearVal: latest.yearVal
             });
           })
         ),
