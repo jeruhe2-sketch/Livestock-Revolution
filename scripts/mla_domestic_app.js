@@ -8,12 +8,8 @@
    개인적 용도 및 내부 업무용으로만 사용. */
 window.MlaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
+  const { COLORS, SheetTab, HoverAxisPicker, PillToggle, SvgLineChart, fmtUpdatedAt, pctFmt, downloadXlsx } = window.RadarUI;
 
-  const COLORS = {
-    bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
-    amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
-    sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
-  };
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
   const IND_ORDER = ["0", "4", "13", "7", "11", "90cl"];
   const IND_SHORT = {
@@ -22,85 +18,6 @@ window.MlaDomesticApp = (function () {
   };
 
   function fmtVal(v, unit) { return v == null || !isFinite(v) ? "—" : `${Number(v).toFixed(1)}${unit ? " " + unit : ""}`; }
-  function pctFmt(v) { if (v === null || v === undefined || !isFinite(v)) return "—"; const s = v > 0 ? "+" : ""; return `${s}${v.toFixed(1)}%`; }
-  function fmtUpdatedAt(iso) {
-    if (!iso) return null;
-    try { return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return null; }
-  }
-  function downloadXlsx(aoa, filename, sheetName) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
-    XLSX.writeFile(wb, filename);
-  }
-
-  function SvgLineChart({ categories, series, height = 260 }) {
-    const width = 900;
-    const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 40 : 26, left: 56 };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
-    const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
-    const maxVal = allVals.length ? Math.max(...allVals) : 1;
-    const minVal = allVals.length ? Math.min(...allVals) * 0.95 : 0;
-    const span = Math.max(0.01, maxVal * 1.05 - minVal);
-    const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
-    const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
-    const xFor = (i) => padding.left + i * stepX;
-    const gridLines = 4;
-    const labelEvery = Math.max(1, Math.ceil(categories.length / 10));
-    const containerRef = useRef(null);
-    const [hoverIdx, setHoverIdx] = useState(null);
-    const handleMove = (e) => {
-      if (!containerRef.current || categories.length === 0) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const rect = containerRef.current.getBoundingClientRect();
-      const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      setHoverIdx(Math.round(frac * (categories.length - 1)));
-    };
-    const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
-      React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        Array.from({ length: gridLines + 1 }).map((_, i) => {
-          const y = padding.top + innerH / gridLines * i;
-          const val = maxVal * 1.05 - (maxVal * 1.05 - minVal) / gridLines * i;
-          return React.createElement("g", { key: i },
-            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, val.toFixed(0))
-          );
-        }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
-        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
-        series.map((s) => {
-          const segs = []; let cur = [];
-          s.data.forEach((v, i) => {
-            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
-            cur.push(`${cur.length ? "L" : "M"}${xFor(i)},${yFor(v)}`);
-          });
-          if (cur.length) segs.push(cur);
-          return React.createElement("g", { key: s.name },
-            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: "2.2" })),
-            categories.length <= 60 && s.data.map((v, i) => v != null && isFinite(v) && React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 1.8, fill: s.color }))
-          );
-        })
-      ),
-      hoverIdx !== null && React.createElement("div", {
-        style: {
-          position: "absolute", left: `${tooltipLeftPct}%`, top: 6,
-          transform: `translateX(${tooltipLeftPct > 70 ? "-100%" : tooltipLeftPct < 5 ? "0%" : "-50%"})`,
-          background: COLORS.cream, color: "#f7f8f5", borderRadius: 8, padding: "8px 10px",
-          fontSize: 12, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 10px rgba(0,0,0,.18)", zIndex: 5
-        }
-      },
-        React.createElement("div", { style: { fontWeight: 700, marginBottom: 4 } }, categories[hoverIdx]),
-        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", justifyContent: "space-between", gap: 10 } },
-          React.createElement("span", { style: { color: s.color } }, "\u25CF " + s.name),
-          React.createElement("span", null, s.data[hoverIdx] != null ? s.data[hoverIdx].toFixed(1) : "—")
-        ))
-      )
-    );
-  }
 
   function Tile({ label, value, sub, color }) {
     return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 150, flex: "1 1 150px" } },
@@ -109,47 +26,9 @@ window.MlaDomesticApp = (function () {
       sub && React.createElement("div", { style: { fontSize: 12, color, marginTop: 4 } }, sub)
     );
   }
-  function Toggle({ active, onClick, children, color }) {
-    return React.createElement("button", {
-      onClick, style: {
-        padding: "5px 12px", borderRadius: 999, fontSize: 12, cursor: "pointer",
-        border: `1px solid ${active ? (color || COLORS.amber) : COLORS.panelBorder}`,
-        background: active ? (color || COLORS.amber) : COLORS.panel,
-        color: active ? "#ffffff" : COLORS.mute, fontWeight: 700, whiteSpace: "nowrap"
-      }
-    }, children);
-  }
-  function SheetTab({ active, onClick, label }) {
-    return React.createElement("button", {
-      onClick, style: {
-        padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none",
-        borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent",
-        color: active ? COLORS.amber : COLORS.mute, marginBottom: -1
-      }
-    }, label);
-  }
+  const Toggle = PillToggle;
   const thStyle = { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, whiteSpace: "nowrap" };
   const tdStyle = { padding: "8px 10px", color: COLORS.cream, fontFamily: "ui-monospace,monospace" };
-
-  // EU 수출현황과 동일한 패턴의 월 단위 정밀 선택 드롭다운
-  function HoverAxisPicker({ label, value, onChange, options }) {
-    const detailsRef = useRef(null);
-    const found = options.find(([v]) => v === value);
-    const currentLabel = found ? found[1] : value;
-    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
-        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
-        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
-        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
-      ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        options.map(([v, l]) => React.createElement("button", {
-          key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" }
-        }, l))
-      )
-    );
-  }
 
   return function MlaDomesticApp() {
     const [raw, setRaw] = useState(null);
@@ -299,7 +178,7 @@ window.MlaDomesticApp = (function () {
       ),
 
       mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
-        chartCategories.series.length ? React.createElement(SvgLineChart, { categories: chartCategories.categories, series: chartCategories.series })
+        chartCategories.series.length ? React.createElement(SvgLineChart, { categories: chartCategories.categories, series: chartCategories.series, formatAxisValue: (v) => v.toFixed(0) })
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
       ),
 
@@ -337,7 +216,8 @@ window.MlaDomesticApp = (function () {
           series: [
             { name: "소(천두)", color: PALETTE[0], data: (raw.slaughter?.Cattle || []).slice(-52).map((r) => r.headCount / 1000) },
             { name: "양(천두)", color: PALETTE[1], data: (raw.slaughter?.Sheep || []).slice(-52).map((r) => r.headCount / 1000) }
-          ]
+          ],
+          formatAxisValue: (v) => v.toFixed(0)
         })
       ),
 
