@@ -88,19 +88,7 @@
 
 window.QuarantineApp = (function() {
 const { useState, useEffect, useMemo, useRef } = React;
-const COLORS = {
-  bg: "#f4f5f2",
-  panel: "#ffffff",
-  panelBorder: "#d7dad4",
-  panelBorder2: "#b9bdb4",
-  amber: "#b96a2e",
-  amberSoft: "#8a5a30",
-  cream: "#1f2420",
-  mute: "#5b615c",
-  sage: "#2e7d4f",
-  rust: "#a34a3f",
-  head: "#eef0ec"
-};
+const { COLORS, SheetTab, SubTab, ToggleBtn, ChipGroup, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt } = window.RadarUI;
 const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 const TREND_DIM_OPTIONS = [["\uCC3D\uACE0\uBA85", "\uCC3D\uACE0"], ["\uCD95\uC885", "\uCD95\uC885"]];
 function n(v) {
@@ -122,73 +110,8 @@ function downloadXlsx(aoa, filename, sheetName) {
   XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
   XLSX.writeFile(wb, filename);
 }
-function SvgLineChart({ categories, series, height = 260 }) {
-  const width = 760;
-  const manyLabels = categories.length > 16;
-  const padding = { top: 16, right: 16, bottom: manyLabels ? 46 : 26, left: 46 };
-  const innerW = width - padding.left - padding.right;
-  const innerH = height - padding.top - padding.bottom;
-  const maxVal = Math.max(1, ...series.flatMap((s) => s.data));
-  const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
-  const yFor = (v) => padding.top + innerH - v / maxVal * innerH;
-  const xFor = (i) => padding.left + i * stepX;
-  const gridLines = 4;
-  const labelEvery = manyLabels ? Math.ceil(categories.length / 14) : 1;
-  const containerRef = useRef(null);
-  const [hoverIdx, setHoverIdx] = useState(null);
-  const handleMove = (e) => {
-    if (!containerRef.current || categories.length === 0) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const rect = containerRef.current.getBoundingClientRect();
-    const relX = clientX - rect.left;
-    const frac = Math.min(1, Math.max(0, relX / rect.width));
-    const idx = Math.round(frac * (categories.length - 1));
-    setHoverIdx(idx);
-  };
-  const handleLeave = () => setHoverIdx(null);
-  const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-  return /* @__PURE__ */ React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: handleLeave, onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: handleLeave }, /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" }, Array.from({ length: gridLines + 1 }).map((_, i) => {
-    const y = padding.top + innerH / gridLines * i;
-    const val = Math.round(maxVal - maxVal / gridLines * i);
-    return /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }), /* @__PURE__ */ React.createElement("text", { x: padding.left - 6, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, fmtShort(val)));
-  }), categories.map((c, i) => i % labelEvery === 0 && /* @__PURE__ */ React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)), hoverIdx !== null && /* @__PURE__ */ React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }), series.map((s) => {
-    const points = s.data.map((v, i) => `${xFor(i)},${yFor(v)}`).join(" ");
-    return /* @__PURE__ */ React.createElement("g", { key: s.name }, /* @__PURE__ */ React.createElement("polyline", { points, fill: "none", stroke: s.color, strokeWidth: "2.2" }), categories.length <= 40 && s.data.map((v, i) => /* @__PURE__ */ React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v), r: i === hoverIdx ? 4 : 2.4, fill: s.color })));
-  })), hoverIdx !== null && /* @__PURE__ */ React.createElement("div", { style: {
-    position: "absolute",
-    left: `${tooltipLeftPct}%`,
-    top: 6,
-    transform: "translateX(-50%)",
-    background: "#e5e7e2",
-    border: `1px solid ${COLORS.panelBorder2}`,
-    borderRadius: 8,
-    padding: "7px 10px",
-    fontSize: 13,
-    pointerEvents: "none",
-    whiteSpace: "nowrap",
-    zIndex: 5,
-    boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
-  } }, /* @__PURE__ */ React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]), series.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: s.color, display: "inline-block", flexShrink: 0 } }), series.length > 1 && /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.cream } }, s.name), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft, marginLeft: "auto" } }, n(s.data[hoverIdx]), " \uD1A4")))));
-}
-function ChartLegend({ series }) {
-  if (series.length < 2) return null;
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 10 } }, series.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: COLORS.cream } }, /* @__PURE__ */ React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" } }), s.name)));
-}
-function BarRanking({ items }) {
-  const maxVal = Math.max(1, ...items.map((i) => i.v));
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } }, items.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 76, fontSize: 13.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })), /* @__PURE__ */ React.createElement("div", { style: { width: 74, fontSize: 13.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v)))));
-}
 function readParams() {
   return new URLSearchParams(window.location.search);
-}
-function fmtUpdatedAt(iso) {
-  if (!iso) return null;
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-  } catch (e) {
-    return null;
-  }
 }
 function QuarantineApp() {
   const [db, setDb] = useState(null);
@@ -502,7 +425,7 @@ function Dashboard({ db }) {
     const { text, raw } = cellDisplay(rl, cl, ci);
     const color = displayMode === "yoy" ? raw === null ? COLORS.mute : raw > 0 ? COLORS.sage : raw < 0 ? COLORS.rust : COLORS.mute : COLORS.cream;
     return /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", color } }, text);
-  }), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 96, background: "#ede4d8" } }, n(rowTotals[rl])), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(colLabels.length ? rowTotals[rl] / colLabels.length : 0))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 96, background: "#ede4d8" } }, n(grandTotal)), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(colLabels.length ? grandTotal / colLabels.length : 0)))))))), mainTab === "chart" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } }, /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "\uADF8\uB8F9 \uBE44\uAD50" }), /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "\uACB9\uCCD0\uBCF4\uAE30" })), chartSub === "group" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uAE30\uC900", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, !isTimeGroup && /* @__PURE__ */ React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 13.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "\u21C5 ", sortDesc ? "\uB0B4\uB9BC\uCC28\uC21C" : "\uC624\uB984\uCC28\uC21C"), /* @__PURE__ */ React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC"))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, isTimeGroup ? /* @__PURE__ */ React.createElement(SvgLineChart, { categories: grouped.map((g) => g.key), series: groupSeries, height: 320 }) : /* @__PURE__ */ React.createElement(BarRanking, { items: grouped }))), chartSub === "overlay" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uBE44\uAD50\uAE30\uC900", value: overlayDim, onChange: (v) => {
+  }), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 96, background: "#ede4d8" } }, n(rowTotals[rl])), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 700, color: COLORS.amberSoft, position: "sticky", right: 0, background: "#ede4d8" } }, n(colLabels.length ? rowTotals[rl] / colLabels.length : 0))))), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } }, /* @__PURE__ */ React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"), colLabels.map((cl) => /* @__PURE__ */ React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amberSoft } }, n(colTotals[cl] || 0))), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 96, background: "#ede4d8" } }, n(grandTotal)), /* @__PURE__ */ React.createElement("td", { className: "stick-r", style: { ...tdStyle, textAlign: "right", fontFamily: "ui-monospace,monospace", fontWeight: 800, color: COLORS.amber, position: "sticky", right: 0, background: "#ede4d8" } }, n(colLabels.length ? grandTotal / colLabels.length : 0)))))))), mainTab === "chart" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } }, /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "\uADF8\uB8F9 \uBE44\uAD50" }), /* @__PURE__ */ React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "\uACB9\uCCD0\uBCF4\uAE30" })), chartSub === "group" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uAE30\uC900", value: groupBy, onChange: setGroupBy, options: DIM_OPTIONS }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, !isTimeGroup && /* @__PURE__ */ React.createElement("button", { onClick: () => setSortDesc(!sortDesc), style: { fontSize: 13.5, color: COLORS.mute, background: "none", border: "none", cursor: "pointer" } }, "\u21C5 ", sortDesc ? "\uB0B4\uB9BC\uCC28\uC21C" : "\uC624\uB984\uCC28\uC21C"), /* @__PURE__ */ React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC"))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, isTimeGroup ? /* @__PURE__ */ React.createElement(SvgLineChart, { categories: grouped.map((g) => g.key), series: groupSeries, height: 320, width: 760, maxDots: 40, formatAxisValue: fmtShort, formatTooltipValue: (v) => n(v) + " \uD1A4" }) : /* @__PURE__ */ React.createElement(BarRanking, { items: grouped, formatValue: fmtShort }))), chartSub === "overlay" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uBE44\uAD50\uAE30\uC900", value: overlayDim, onChange: (v) => {
     setOverlayDim(v);
     setOverlaySel({ dim: v, list: [] });
   }, options: [["year", "\uC5F0\uB3C4"], ["country", "\uAD6D\uAC00"], ["part", "\uBD80\uC704"]] }), overlayDim !== "year" && /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "X\uCD95", value: overlayXAxis, onChange: setOverlayXAxis, options: [["month", "\uC6D4\uBCC4"], ["year", "\uC5F0\uB3C4\uBCC4"]] }), overlayDim !== "year" && effectiveXAxis === "month" && /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uAE30\uC900\uC5F0\uB3C4", value: overlayYearCtx, onChange: setOverlayYearCtx, options: [...years].reverse().map((y) => [y, `${y}\uB144`]) }), /* @__PURE__ */ React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, marginLeft: "auto" } }, "\u2B07 \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uACB9\uCCD0\uBCFC ", DIM_LABEL[overlayDim], " \uC120\uD0DD:"), /* @__PURE__ */ React.createElement("button", { onClick: selectAllOverlay, style: { fontSize: 13, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.panelBorder2 } }, "|"), /* @__PURE__ */ React.createElement("button", { onClick: clearOverlay, style: { fontSize: 13, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uD574\uC81C")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 } }, overlayCandidates.map((v) => /* @__PURE__ */ React.createElement(
@@ -522,51 +445,10 @@ function Dashboard({ db }) {
       }
     },
     v
-  ))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, /* @__PURE__ */ React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }), /* @__PURE__ */ React.createElement(ChartLegend, { series: overlaySeries })))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "\uC790\uB8CC: \uC2DD\uC57D\uCC98 \uC218\uC785\uC2DD\uD488\uC815\uBCF4\uB9C8\uB8E8 \uD788\uC2A4\uD1A0\uB9AC + \uACF5\uACF5\uB370\uC774\uD130\uD3EC\uD138 \uC2E4\uC2DC\uAC04 API \uBCD1\uD569. \uB2E8\uC704 kg \u2192 \uD1A4. \uB9E4\uC77C \uC790\uB3D9 \uAC31\uC2E0\uB429\uB2C8\uB2E4.")));
+  ))), /* @__PURE__ */ React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } }, /* @__PURE__ */ React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340, width: 760, maxDots: 40, formatAxisValue: fmtShort, formatTooltipValue: (v) => n(v) + " \uD1A4" }), /* @__PURE__ */ React.createElement(ChartLegend, { series: overlaySeries })))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 14, lineHeight: 1.6 } }, "\uC790\uB8CC: \uC2DD\uC57D\uCC98 \uC218\uC785\uC2DD\uD488\uC815\uBCF4\uB9C8\uB8E8 \uD788\uC2A4\uD1A0\uB9AC + \uACF5\uACF5\uB370\uC774\uD130\uD3EC\uD138 \uC2E4\uC2DC\uAC04 API \uBCD1\uD569. \uB2E8\uC704 kg \u2192 \uD1A4. \uB9E4\uC77C \uC790\uB3D9 \uAC31\uC2E0\uB429\uB2C8\uB2E4.")));
 }
 const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
 const tdStyle = { padding: "9px 10px", color: "#1f2420" };
-function SheetTab({ active, onClick, label }) {
-  return /* @__PURE__ */ React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
-}
-function SubTab({ active, onClick, label }) {
-  return /* @__PURE__ */ React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-}
-function ToggleBtn({ active, onClick, label }) {
-  return /* @__PURE__ */ React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-}
-function ChipGroup({ label, options, value, onChange }) {
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 8px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, paddingLeft: 4 } }, label), options.map((o) => /* @__PURE__ */ React.createElement("button", { key: o, onClick: () => onChange(o), style: { padding: "4px 10px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", border: "none", background: o === value ? COLORS.amber : "transparent", color: o === value ? "#f7f8f5" : COLORS.mute } }, o)));
-}
-function HoverAxisPicker({ label, value, onChange, options }) {
-  const [open, setOpen] = useState(false);
-  const timer = useRef(null);
-  const enter = () => {
-    if (timer.current) clearTimeout(timer.current);
-    setOpen(true);
-  };
-  const leave = () => {
-    timer.current = setTimeout(() => setOpen(false), 150);
-  };
-  const found = options.find(([v]) => v === value);
-  const currentLabel = found ? found[1] : value;
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, options.map(([v, l]) => /* @__PURE__ */ React.createElement("button", { key: v, onClick: () => {
-    onChange(v);
-    setOpen(false);
-  }, style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))));
-}
-function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-  const [open, setOpen] = useState(false);
-  const timer = useRef(null);
-  const enter = () => {
-    if (timer.current) clearTimeout(timer.current);
-    setOpen(true);
-  };
-  const leave = () => {
-    timer.current = setTimeout(() => setOpen(false), 150);
-  };
-  return /* @__PURE__ */ React.createElement("div", { onMouseEnter: enter, onMouseLeave: leave, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600 } }, label, " ", selected.length ? `(${selected.length})` : "\uC804\uCCB4", " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12 } }, "\u25BE")), open && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "\uAC1C \uC635\uC158"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: onSelectAll, style: { fontSize: 13, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uC804\uCCB4 \uC120\uD0DD"), /* @__PURE__ */ React.createElement("button", { onClick: onClear, style: { fontSize: 13, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "\uCD08\uAE30\uD654"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } }, options.map((o) => /* @__PURE__ */ React.createElement("button", { key: o, onClick: () => onToggle(o), style: { padding: "4px 9px", borderRadius: 6, fontSize: 13.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o)))));
-}
   return QuarantineApp;
 })();
 
