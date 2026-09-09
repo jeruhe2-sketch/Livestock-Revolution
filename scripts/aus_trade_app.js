@@ -5,12 +5,7 @@
    이 파일은 index.html의 인라인 스크립트보다 먼저 로드되므로 자체 구현. */
 window.AusTradeApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-
-  const COLORS = {
-    bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
-    amber: "#b96a2e", amberSoft: "#8a5a30", cream: "#1f2420", mute: "#5b615c",
-    sage: "#2e7d4f", rust: "#a34a3f", head: "#eef0ec"
-  };
+  const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, HoverMultiPicker, SvgLineChart, ChartLegend, BarRanking, ShiftRanking, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
   const SERIES_PALETTE = ["#b96a2e", "#3f7d64", "#2f6f96", "#8a7d3a", "#7d4f79", "#a34a3f", "#6b5a8f", "#3f8768", "#b8763e", "#5580a8"];
 
   const DEST_LABEL_KO = {
@@ -31,24 +26,8 @@ window.AusTradeApp = (function () {
     if (v == null || !isFinite(v)) return "—";
     return Math.abs(v) >= 1e4 ? (v / 1e4).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "만" : Math.round(v).toLocaleString();
   }
-  function pct(v) {
-    if (v === null) return "—";
-    const s = v > 0 ? "+" : "";
-    return `${s}${v.toFixed(1)}%`;
-  }
+  const pct = window.RadarUI.pctFmt;
   function readParams() { return new URLSearchParams(window.location.search); }
-  function fmtUpdatedAt(iso) {
-    if (!iso) return null;
-    try { return new Date(iso).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-    catch (e) { return null; }
-  }
-  function downloadXlsx(aoa, filename, sheetName) {
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Sheet1");
-    XLSX.writeFile(wb, filename);
-  }
-
   function movingAvg(arr, win) {
     const out = new Array(arr.length).fill(null);
     let sum = 0, count = 0, buf = [];
@@ -63,130 +42,6 @@ window.AusTradeApp = (function () {
   }
 
   /* ---- EU/USDA 탭과 동일한 공용 위젯들 (자체 구현) ---- */
-  function SvgLineChart({ categories, series, height = 260 }) {
-    const width = 760;
-    const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 46 : 26, left: 46 };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
-    const maxVal = Math.max(1, ...series.flatMap((s) => s.data));
-    const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
-    const yFor = (v) => padding.top + innerH - v / maxVal * innerH;
-    const xFor = (i) => padding.left + i * stepX;
-    const gridLines = 4;
-    const labelEvery = manyLabels ? Math.ceil(categories.length / 14) : 1;
-    const containerRef = useRef(null);
-    const [hoverIdx, setHoverIdx] = useState(null);
-    const handleMove = (e) => {
-      if (!containerRef.current || categories.length === 0) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const rect = containerRef.current.getBoundingClientRect();
-      const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      setHoverIdx(Math.round(frac * (categories.length - 1)));
-    };
-    const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
-    return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
-      React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        Array.from({ length: gridLines + 1 }).map((_, i) => {
-          const y = padding.top + innerH / gridLines * i;
-          const val = Math.round(maxVal - maxVal / gridLines * i);
-          return React.createElement("g", { key: i },
-            React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 6, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, fmtShort(val))
-          );
-        }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
-        hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
-        series.map((s) => {
-          const points = s.data.map((v, i) => `${xFor(i)},${yFor(v || 0)}`).join(" ");
-          return React.createElement("g", { key: s.name },
-            React.createElement("polyline", { points, fill: "none", stroke: s.color, strokeWidth: "2.2" }),
-            categories.length <= 40 && s.data.map((v, i) => React.createElement("circle", { key: i, cx: xFor(i), cy: yFor(v || 0), r: i === hoverIdx ? 4 : 2.4, fill: s.color }))
-          );
-        })
-      ),
-      hoverIdx !== null && React.createElement("div", { style: {
-        position: "absolute", left: `${tooltipLeftPct}%`, top: 6, transform: "translateX(-50%)",
-        background: "#e5e7e2", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 8, padding: "7px 10px",
-        fontSize: 13, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 5, boxShadow: "0 6px 18px rgba(0,0,0,0.4)"
-      } },
-        React.createElement("div", { style: { color: COLORS.mute, marginBottom: 4, fontWeight: 700 } }, categories[hoverIdx]),
-        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 6 } },
-          React.createElement("span", { style: { width: 8, height: 8, borderRadius: 2, background: s.color, display: "inline-block", flexShrink: 0 } }),
-          series.length > 1 && React.createElement("span", { style: { color: COLORS.cream } }, s.name),
-          React.createElement("span", { style: { fontFamily: "ui-monospace,monospace", color: COLORS.amberSoft, marginLeft: "auto" } }, n(s.data[hoverIdx]))
-        ))
-      )
-    );
-  }
-  function ChartLegend({ series }) {
-    if (series.length < 2) return null;
-    return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 10 } },
-      series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, color: COLORS.cream } },
-        React.createElement("span", { style: { width: 10, height: 10, borderRadius: 3, background: s.color, display: "inline-block" } }), s.name
-      ))
-    );
-  }
-  function BarRanking({ items }) {
-    const capped = items.length > 40 ? items.slice(0, 40) : items;
-    const maxVal = Math.max(1, ...capped.map((i) => i.v));
-    return React.createElement(React.Fragment, null,
-      React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 7 } },
-        capped.map((it, idx) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
-          React.createElement("div", { style: { width: 90, fontSize: 13.5, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-          React.createElement("div", { style: { flex: 1, background: "#e5e7e2", borderRadius: 5, height: 20, position: "relative", overflow: "hidden" } },
-            React.createElement("div", { style: { width: `${it.v / maxVal * 100}%`, height: "100%", background: SERIES_PALETTE[idx % SERIES_PALETTE.length], borderRadius: 5 } })
-          ),
-          React.createElement("div", { style: { width: 90, fontSize: 13.5, color: COLORS.amberSoft, fontFamily: "ui-monospace,monospace", flexShrink: 0 } }, fmtShort(it.v))
-        ))
-      ),
-      items.length > 40 && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginTop: 10, textAlign: "center" } }, `상위 40개만 표시 중 (전체 ${items.length}개)`)
-    );
-  }
-  function SheetTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "9px 18px", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "none", border: "none", borderBottom: active ? `2px solid ${COLORS.amber}` : "2px solid transparent", color: active ? COLORS.amber : COLORS.mute, marginBottom: -1 } }, label);
-  }
-  function SubTab({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-  }
-  function ToggleBtn({ active, onClick, label }) {
-    return React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${active ? COLORS.amber : COLORS.panelBorder}`, background: active ? "rgba(217,139,63,0.14)" : COLORS.panel, color: active ? COLORS.amber : COLORS.mute } }, label);
-  }
-  function HoverAxisPicker({ label, value, onChange, options }) {
-    const detailsRef = useRef(null);
-    const found = options.find(([v]) => v === value);
-    const currentLabel = found ? found[1] : value;
-    return React.createElement("details", { ref: detailsRef, style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", listStyle: "none" } },
-        React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, label),
-        React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
-        React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "▾")
-      ),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        options.map(([v, l]) => React.createElement("button", { key: v, onClick: () => { onChange(v); if (detailsRef.current) detailsRef.current.open = false; },
-          style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" } }, l))
-      )
-    );
-  }
-  function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-    return React.createElement("details", { style: { position: "relative", display: "inline-block" } },
-      React.createElement("summary", { style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer", listStyle: "none" } },
-        label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "▾")),
-      React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
-          React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
-          React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("button", { onClick: onSelectAll, style: { fontSize: 13, color: COLORS.sage, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "전체 선택"),
-            React.createElement("button", { onClick: onClear, style: { fontSize: 13, color: COLORS.rust, background: "none", border: "none", cursor: "pointer", fontWeight: 700 } }, "초기화")
-          )
-        ),
-        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5 } },
-          options.map((o) => React.createElement("button", { key: o, onClick: () => onToggle(o),
-            style: { padding: "4px 9px", borderRadius: 6, fontSize: 13.5, cursor: "pointer", border: `1px solid ${selected.includes(o) ? COLORS.amber : COLORS.panelBorder2}`, background: selected.includes(o) ? "rgba(217,139,63,0.18)" : "transparent", color: selected.includes(o) ? COLORS.amberSoft : COLORS.mute } }, o))
-        )
-      )
-    );
-  }
   const thStyle = { textAlign: "left", padding: "10px 10px", fontSize: 12.5, color: "#5b615c", fontWeight: 700, borderBottom: "1px solid #d7dad4", whiteSpace: "nowrap" };
   const tdStyle = { padding: "9px 10px", color: "#1f2420" };
 
@@ -197,28 +52,6 @@ window.AusTradeApp = (function () {
     while (m < 1) { m += 12; y--; }
     return y * 100 + m;
   }
-  function ShiftRanking({ items }) {
-    const maxAbs = Math.max(1, ...items.map((i) => Math.abs(i.delta)));
-    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 9 } },
-      items.map((it) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
-        React.createElement("div", { style: { width: 100, fontSize: 13, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-        React.createElement("div", { style: { flex: 1, position: "relative", height: 22, background: "#e5e7e2", borderRadius: 5 } },
-          React.createElement("div", { style: {
-            position: "absolute", top: 0, bottom: 0,
-            left: it.delta >= 0 ? "50%" : `${50 - Math.abs(it.delta) / maxAbs * 50}%`,
-            width: `${Math.abs(it.delta) / maxAbs * 50}%`,
-            background: it.delta >= 0 ? COLORS.sage : COLORS.rust, borderRadius: 4
-          } }),
-          React.createElement("div", { style: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#b9bdb4" } })
-        ),
-        React.createElement("div", { style: { width: 165, fontSize: 13, textAlign: "right", flexShrink: 0, fontFamily: "ui-monospace,monospace" } },
-          React.createElement("span", { style: { color: it.delta >= 0 ? COLORS.sage : COLORS.rust, fontWeight: 700 } }, (it.delta >= 0 ? "+" : "") + n(it.delta)),
-          " ", React.createElement("span", { style: { color: COLORS.mute, fontSize: 11.5 } }, it.pct != null ? `(${it.pct >= 0 ? "+" : ""}${it.pct.toFixed(1)}%)` : "(신규)")
-        )
-      ))
-    );
-  }
-
   /* ---- 메인 앱 ---- */
   function AusTradeApp() {
     const [db, setDb] = useState(null);
@@ -630,7 +463,7 @@ window.AusTradeApp = (function () {
             ),
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "각 ", DIM_LABEL[groupBy], "의 총합을 비교합니다."),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(BarRanking, { items: grouped })
+              React.createElement(BarRanking, { items: grouped, formatValue: fmtShort })
             )
           ),
           chartSub === "trend" && React.createElement(React.Fragment, null,
@@ -643,7 +476,7 @@ window.AusTradeApp = (function () {
               "* 전체 기간을 하나로 이어붙인 시계열입니다. 위쪽 목적지 필터에서 고른 항목이 그대로 표시됩니다", trendCandidates.length > 10 ? ` (상위 10개만 표시 중, 전체 ${trendCandidates.length}개)` : "", "."
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 340 }),
+              React.createElement(SvgLineChart, { categories: trendXLabels, series: trendSeries, height: 340, width: 760, maxDots: 40, formatAxisValue: fmtShort, formatTooltipValue: n }),
               React.createElement(ChartLegend, { series: trendSeries })
             )
           ),
@@ -655,7 +488,7 @@ window.AusTradeApp = (function () {
               "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다", years.length > 10 ? ` (최근 연도 순 상위 10개 표시)` : "", "."
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340 }),
+              React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340, width: 760, maxDots: 40, formatAxisValue: fmtShort, formatTooltipValue: n }),
               React.createElement(ChartLegend, { series: overlaySeries })
             )
           ),
@@ -672,7 +505,7 @@ window.AusTradeApp = (function () {
               `* 최근 ${shiftN}개월(${ymLabel(shiftRecentStart)}~${ymLabel(shiftRecentEnd)}) vs ${shiftCompare === "yoy" ? "전년 동기" : "직전"} ${shiftN}개월(${ymLabel(shiftPrevStart)}~${ymLabel(shiftPrevEnd)}) 비교, 변화량 절대값 순 상위 15개 목적지.`
             ),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
-              shiftData.length ? React.createElement(ShiftRanking, { items: shiftData }) : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 20 } }, "비교할 데이터가 부족합니다.")
+              shiftData.length ? React.createElement(ShiftRanking, { items: shiftData, formatValue: n }) : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 20 } }, "비교할 데이터가 부족합니다.")
             )
           )
         ),

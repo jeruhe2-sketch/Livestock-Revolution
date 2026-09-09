@@ -165,14 +165,27 @@ window.RadarUI = (function () {
     );
   }
 
-  // 전기간 대비 순위변동 랭킹 (EU/미국 수출현황의 "재배분" 탭에서 씀)
+  // 전기간 대비 순위변동 랭킹 (호주/EU 수출현황의 "재배분" 탭에서 씀).
+  // items: [{ key, delta, pct }] - delta는 절대량 변화, pct는 증감률(%, 신규면 null)
   function ShiftRanking({ items, formatValue }) {
-    const fmt = formatValue || ((v) => v == null ? "—" : Math.round(v).toLocaleString());
-    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
-      items.map((it) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: `1px solid ${COLORS.panelBorder}` } },
-        React.createElement("div", { style: { width: 110, fontSize: 13.5, color: COLORS.cream, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
-        React.createElement("div", { style: { flex: 1, fontSize: 13, color: COLORS.mute, fontFamily: "ui-monospace,monospace" } }, `${fmt(it.prev)} → ${fmt(it.curr)}`),
-        React.createElement("div", { style: { width: 70, textAlign: "right", fontSize: 13.5, fontWeight: 700, color: it.pct > 0 ? COLORS.rust : it.pct < 0 ? "#3a6ea5" : COLORS.mute } }, pctFmt(it.pct))
+    const fmt = formatValue || ((v) => v == null || !isFinite(v) ? "—" : Math.round(v).toLocaleString());
+    const maxAbs = Math.max(1, ...items.map((i) => Math.abs(i.delta)));
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 9 } },
+      items.map((it) => React.createElement("div", { key: it.key, style: { display: "flex", alignItems: "center", gap: 8 } },
+        React.createElement("div", { style: { width: 100, fontSize: 13, color: COLORS.cream, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, it.key),
+        React.createElement("div", { style: { flex: 1, position: "relative", height: 22, background: "#e5e7e2", borderRadius: 5 } },
+          React.createElement("div", { style: {
+            position: "absolute", top: 0, bottom: 0,
+            left: it.delta >= 0 ? "50%" : `${50 - Math.abs(it.delta) / maxAbs * 50}%`,
+            width: `${Math.abs(it.delta) / maxAbs * 50}%`,
+            background: it.delta >= 0 ? COLORS.sage : COLORS.rust, borderRadius: 4
+          } }),
+          React.createElement("div", { style: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#b9bdb4" } })
+        ),
+        React.createElement("div", { style: { width: 165, fontSize: 13, textAlign: "right", flexShrink: 0, fontFamily: "ui-monospace,monospace" } },
+          React.createElement("span", { style: { color: it.delta >= 0 ? COLORS.sage : COLORS.rust, fontWeight: 700 } }, (it.delta >= 0 ? "+" : "") + fmt(it.delta)),
+          " ", React.createElement("span", { style: { color: COLORS.mute, fontSize: 11.5 } }, it.pct != null ? `(${it.pct >= 0 ? "+" : ""}${it.pct.toFixed(1)}%)` : "(신규)")
+        )
       ))
     );
   }
