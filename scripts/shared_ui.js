@@ -68,10 +68,10 @@ window.RadarUI = (function () {
     const fmtTip = formatTooltipValue || formatValue || defaultNumFmt;
     const containerRef = useRef(null);
     // SVG는 viewBox 좌표계 안에서 고정 크기로 그려진 뒤 화면폭에 맞춰 통째로 축소/확대됨.
-    // 그래서 글자 크기를 고정값(예: 9)으로 박아두면, 화면이 좁을수록(모바일) 실제 픽셀 크기가
-    // 같이 줄어들어서 글씨가 찌그러져 보임. 실제 렌더된 폭을 측정해서 그 반대로 글자 크기를
-    // 키워주면(scale이 작을수록 svg 단위 폰트를 크게) 화면 크기와 무관하게 항상 비슷한
-    // 실제 픽셀 크기로 보이게 됨.
+    // 실제 렌더 폭을 측정해서 화면이 좁을수록 svg 단위 폰트를 약간 키워 실제 픽셀 크기를
+    // 어느 정도 맞춰주되, 정갈함이 우선이라 크기 자체는 보수적으로만 키움(최대 16).
+    // 큰 글씨를 억지로 다 맞추려다 여백/간격이 깨지는 것보다, 살짝 작더라도 안 겹치고
+    // 안 잘리는 쪽이 축 역할(기준)에 훨씬 중요함.
     const { useState: useStateLocal2, useEffect: useEffectLocal2 } = React;
     const [actualWidth, setActualWidth] = useStateLocal2(width);
     useEffectLocal2(() => {
@@ -84,29 +84,38 @@ window.RadarUI = (function () {
       return () => ro.disconnect();
     }, []);
     const scale = actualWidth > 0 ? actualWidth / width : 1;
-    const axisFontPx = Math.max(9, Math.min(30, 11.5 / scale));
-    const manyLabels = categories.length > 16;
-    const padding = { top: 16 + Math.max(0, axisFontPx - 11.5) * 0.9, right: 16, bottom: (manyLabels ? 40 : 26) + Math.max(0, axisFontPx - 11.5) * 1.3, left: Math.max(56, axisFontPx * 4.2) };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
+    const axisFontPx = Math.max(9, Math.min(16, 10 / scale));
+    const charW = axisFontPx * 0.58; // ui-monospace 기준 대략적인 글자 한 칸 폭(svg 단위)
+
     const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
     const autoMax = allVals.length ? Math.max(...allVals) : 1;
     const autoMin = allVals.length ? Math.min(0, Math.min(...allVals) * 0.97) : 0;
     const maxVal = yMax != null ? yMax : autoMax;
     const minVal = yMin != null ? yMin : autoMin;
     const topVal = yMax != null ? maxVal : maxVal * 1.05;
+    const gridLines = 4;
+    // y축에 실제로 찍힐 문자열들을 먼저 만들어서, 그 중 제일 긴 것 기준으로 왼쪽 여백을 정확히 계산.
+    // (전에는 "대략 이 정도면 되겠지" 배수만 쓰다가 "R$15.90"처럼 긴 값에서 글자 왼쪽이 잘렸음)
+    const yLabels = Array.from({ length: gridLines + 1 }, (_, i) => fmtAxis(topVal - (topVal - minVal) / gridLines * i));
+    const longestYLabelLen = yLabels.reduce((m, s) => Math.max(m, String(s).length), 1);
+    const manyLabels = categories.length > 16;
+    const padding = {
+      top: axisFontPx * 1.1,
+      right: 14,
+      bottom: (manyLabels ? 34 : 24) + axisFontPx * 0.9,
+      left: longestYLabelLen * charW + 18
+    };
+    const innerW = width - padding.left - padding.right;
+    const innerH = height - padding.top - padding.bottom;
     const span = Math.max(0.01, topVal - minVal);
     const stepX = categories.length > 1 ? innerW / (categories.length - 1) : 0;
     const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
     const xFor = (i) => padding.left + i * stepX;
-    const gridLines = 4;
-    // 좁은 화면에서는 글자가 커진 만큼 라벨 사이 간격도 넓혀야 서로 안 겹침.
-    // 실제 렌더 폭 기준으로 "라벨 하나당 필요한 최소 폭(대략 7px * 글자수 근사)"을 역산해서
-    // 몇 번째 라벨마다 하나씩만 보여줄지 계산.
-    const longestLabelLen = categories.reduce((m, c) => Math.max(m, String(c).length), 1);
-    const estLabelPx = axisFontPx * 0.62 * longestLabelLen + 14;
+    // x축도 같은 방식: 실제 라벨 글자 길이 기준으로 몇 개나 겹치지 않게 들어가는지 역산.
+    const longestXLabelLen = categories.reduce((m, c) => Math.max(m, String(c).length), 1);
+    const estLabelPx = charW * longestXLabelLen + 16;
     const maxLabelsFit = Math.max(2, Math.floor(actualWidth / estLabelPx));
-    const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 12 : 10)));
+    const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 10 : 8)));
     const [hoverIdx, setHoverIdx] = useState(null);
     const handleMove = (e) => {
       if (!containerRef.current || categories.length === 0) return;
@@ -118,17 +127,20 @@ window.RadarUI = (function () {
     const tooltipLeftPct = hoverIdx !== null && categories.length > 1 ? hoverIdx / (categories.length - 1) * 100 : 50;
     return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
       React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" }, preserveAspectRatio: "none" },
-        Array.from({ length: gridLines + 1 }).map((_, i) => {
+        yLabels.map((label, i) => {
           const y = padding.top + innerH / gridLines * i;
-          const val = topVal - (topVal - minVal) / gridLines * i;
           return React.createElement("g", { key: i },
             React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: "#e7e9e3", strokeWidth: 1 }),
-            React.createElement("text", { x: padding.left - 10, y: y + axisFontPx * 0.32, textAnchor: "end", fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace" }, fmtAxis(val))
+            React.createElement("text", { x: padding.left - 10, y, textAnchor: "end", dominantBaseline: "middle", fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace" }, label)
           );
         }),
         // 뚜렷한 바닥선(x축) - 위의 옅은 격자선들과 구분되게 살짝 진하게
         React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: padding.top + innerH, y2: padding.top + innerH, stroke: COLORS.panelBorder2, strokeWidth: 1.2 }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - (axisFontPx > 16 ? 6 : 8), textAnchor: i === 0 ? "start" : (i + labelEvery > categories.length - 1 ? "end" : "middle"), fontSize: axisFontPx, fill: "#8a9086" }, c)),
+        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", {
+          key: i, x: xFor(i), y: height - padding.bottom + axisFontPx + 6,
+          textAnchor: i === 0 ? "start" : (i + labelEvery > categories.length - 1 ? "end" : "middle"),
+          fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace"
+        }, c)),
         hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.6 }),
         series.map((s, sIdx) => {
           const segs = []; let cur = [];
