@@ -1,0 +1,517 @@
+# -*- coding: utf-8 -*-
+"""
+창고 재고 데이터 공용 설정/파싱 모듈.
+
+실제 수집 실행은 scripts/fetch_all_warehouses_playwright.py 에서 한다.
+(이 파일에 원래 있던 requests 기반 로그인 방식은 이 사이트들 앞단의 무언가가
+브라우저가 아닌 요청을 계속 막아서 - 헤더를 브라우저와 완전히 동일하게
+맞춰도 404 - 결국 포기했고, 실제 Chromium을 띄우는 Playwright 방식으로
+교체되어 정상 작동 중이다. 그 삽질 과정은 git log 참고.)
+
+이 파일은 두 스크립트가 공유하는 것만 남겨뒀다:
+  - WAREHOUSE_CONFIGS: 창고/계정 목록
+  - parse_stock_table: 재고조회(셀분리) 결과 HTML 파싱 (헤더 기반, 창고별
+    컬럼 개수/이름 차이에 대응)
+  - apply_default_customs_status: 통관상태 빈값일 때 계정 기본값 적용
+  - load_existing / OUTPUT_PATH: 기존 데이터 파일 로드
+"""
+
+import json
+import os
+import re
+from datetime import datetime, timedelta, timezone
+
+KST = timezone(timedelta(hours=9))
+
+
+def now_kst() -> datetime:
+    """
+    로컬 PC(한국시간), GitHub Actions(UTC), 이 스크립트를 돌리는 사람의 서버
+    (역시 UTC일 수 있음) 등 실행 환경마다 시스템 시간대가 달라서, datetime.now()를
+    그냥 쓰면 실행한 곳에 따라 수집시각이 몇 시간씩 어긋난다 (실제로 KST 23:11에
+    수집한 걸 UTC 기준 14:11로 잘못 기록한 사고가 있었음). 항상 한국시간(KST,
+    UTC+9, 서머타임 없음)으로 명시적으로 계산해서 이 문제를 원천 차단한다.
+    """
+    return datetime.now(KST)
+
+OUTPUT_PATH = "data/warehouse_stock.json"
+
+# ------------------------------------------------------------------
+# 알려진 공급사/브랜드 목록. 창고 시스템의 "브랜드" 테이블 컬럼이 일부 항목에서
+# 내부 관리코드(날짜형 숫자, 예: "2022021602110001")를 담고 있어서 신뢰할 수
+# 없다는 게 확인됐다. 그래서 품목명 텍스트에서 이 목록에 있는 이름을 직접
+# 찾는 방식을 우선으로 쓰고, 못 찾으면 브랜드 컬럼값(단, 숫자코드처럼 보이면
+# 버림)으로 폴백한다.
+# 새 공급사가 추가되면 이 목록에 넣어주면 된다.
+# ------------------------------------------------------------------
+KNOWN_SUPPLIERS = [
+    "ACC", "AGROSUPER", "SEARA", "PATEL", "ALEJANDRO", "SMITHFIELD",
+    "AVINYO", "SEABOARD", "RIVASAM", "OLYMEL", "THOMAS", "MAFRIGES",
+    "INCARLOPSA", "RODRIGUEZ", "TEYS", "ASSA", "NBP", "FRIBIN",
+    "COSTABRAVA", "IOWA", "VJG7", "VJG", "MARCHER", "HKSCAN", "GATINE",
+    "ECT", "DEWAELE", "AFFCO", "DARLING DOWNS", "FAENADORA SUPER",
+    "KAMOURASKA", "MAPLE", "SWIFT", "EXC", "NATIONAL", "LORIENTE", "GREENIA", "LORFOOD",
+    "PERDIGAO", "SADIA", "DUMECO", "LAR", "QAF",
+    "NV", "A/S", "BAUCELLS",
+    "BINDAREE", "G/N", "S/W", "INCA", "RAABTAL",
+]
+# 공급사명 표기가 대소문자 섞여있는 경우(예: "Fribin")도 매칭되도록 대소문자 무시.
+# \b 대신 (?<![A-Za-z0-9])...(?![A-Za-z0-9]) 를 쓰는 이유: "ACC_상이품"처럼 뒤에
+# 언더스코어(_)가 붙으면 \b는 _를 단어문자로 취급해서 경계로 인식 못하는 문제가 있었음.
+_SUPPLIER_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9])(" + "|".join(re.escape(s) for s in sorted(KNOWN_SUPPLIERS, key=len, reverse=True)) + r")(?![A-Za-z0-9])",
+    re.IGNORECASE,
+)
+# 같은 공급사를 가리키는 다른 표기(내부 약어, 한글 음역 등). 매칭 후 이 이름으로 통일.
+SUPPLIER_ALIASES = {
+    "A/S": "AGROSUPER",
+    "G/N": "GREENIA",
+    "S/W": "SWIFT",
+    "INCA": "INCARLOPSA",
+    "GREENLEA": "GREENIA",
+    "LORIENTE": "INCARLOPSA",
+    "LORFOOD": "INCARLOPSA",
+    "KAMOURASKA": "MAPLE",
+}
+# 품목명에 라틴 문자 대신 한글 음역으로만 적힌 경우 (예: "닭다리정육-사디아")
+KOREAN_SUPPLIER_ALIASES = {
+    "사디아": "SADIA",
+}
+
+
+def _looks_like_code(text: str) -> bool:
+    """'2022021602110001' 같은 날짜형 내부관리코드처럼 보이면 True."""
+    digits = sum(ch.isdigit() for ch in text)
+    return len(text) >= 8 and digits >= len(text) * 0.8
+
+
+def extract_supplier(품목명: str, raw_brand: str, spec: str = "") -> str:
+    """
+    품목명에서 알려진 공급사명을 우선 찾고, 못 찾으면 브랜드 컬럼값도 같은
+    방식으로 검색한다 (예: "IOWA/EST 8", "DUMECO(61)" 처럼 브랜드 컬럼에만
+    적혀있고 품목명엔 없는 경우 대응). 그래도 없으면 브랜드 컬럼값을
+    괄호 등 잡다한 텍스트만 정리해서 그대로 쓰고, 코드성 문자열이면 버린다.
+
+    창고에 따라 브랜드 컬럼이 비어있고 대신 규격(spec) 컬럼에 공급사명이
+    들어있는 경우가 있음(예: 강동2냉장 - "AGROSUPER"가 규격 칸에 찍힘).
+    규격은 알려진 공급사 키워드로 정확히 매칭될 때만 사용하고(그 외엔
+    무시), 사이즈/포장단위 같은 진짜 규격값을 공급사로 오인하지 않게 함.
+    """
+    품목명 = 품목명 or ""
+    raw_brand = (raw_brand or "").strip()
+    spec = (spec or "").strip()
+
+    for text in (품목명, raw_brand, spec):
+        match = _SUPPLIER_PATTERN.search(text)
+        if match:
+            canonical = match.group(1).upper()
+            return SUPPLIER_ALIASES.get(canonical, canonical)
+
+    for kor, canonical in KOREAN_SUPPLIER_ALIASES.items():
+        if kor in 품목명:
+            return canonical
+
+    raw_brand_clean = re.sub(r"\(.*\)", "", raw_brand).strip()
+    if raw_brand_clean and not _looks_like_code(raw_brand_clean):
+        return raw_brand_clean
+    return "기타/미상"
+
+# ------------------------------------------------------------------
+# 창고별 접속 설정
+# 계정마다 로그인 시 통관/미통관 여부가 자동으로 라벨링되는 게 아니라,
+# 응답 테이블의 '통관구분' 컬럼 실제값을 그대로 신뢰하도록 설계했다.
+# (창고 직원이 수동으로 옮겨서 계정과 실제상태가 다를 수 있기 때문)
+#
+# wms_cd/co_stel/scustcd 필드는 requests 기반 방식에서나 필요했던 값이라
+# Playwright 방식(실제 브라우저가 폼을 그대로 제출)에서는 안 써도 되지만,
+# 참고 기록 차원에서 알고 있는 값은 남겨뒀다.
+# ------------------------------------------------------------------
+WAREHOUSE_CONFIGS = [
+    {
+        "창고명": "대청냉장",
+        "base_url": "http://211.239.173.90/dchdst",
+        "id_env": "NWILL_DAECHEONG_UNCLEARED_ID",
+        "pw_env": "NWILL_DAECHEONG_UNCLEARED_PW",
+        "계정용도": "미통관",
+    },
+    {
+        "창고명": "신우냉장",
+        "base_url": "http://nwill.net:8080/swdst",
+        "id_env": "NWILL_SINWOO_UNCLEARED_ID",
+        "pw_env": "NWILL_SINWOO_UNCLEARED_PW",
+        "계정용도": "미통관(계육)",  # 실제로는 계육(닭) 관련 미통관 계정
+    },
+    {
+        "창고명": "한라냉장",
+        "base_url": "http://211.239.173.90/hlgdst",
+        "id_env": "NWILL_HALLA_CLEARED_ID",
+        "pw_env": "NWILL_HALLA_CLEARED_PW",
+        "계정용도": "통관",
+    },
+    {
+        "창고명": "한라냉장",
+        "base_url": "http://211.239.173.90/hlgdst",
+        "id_env": "NWILL_HALLA_UNCLEARED_ID",
+        "pw_env": "NWILL_HALLA_UNCLEARED_PW",
+        "계정용도": "미통관",
+    },
+    {
+        "창고명": "대청냉장",
+        "base_url": "http://211.239.173.90/dchdst",
+        "id_env": "NWILL_DAECHEONG_CLEARED_ID",
+        "pw_env": "NWILL_DAECHEONG_CLEARED_PW",
+        "계정용도": "통관",
+    },
+    {
+        "창고명": "신우냉장",
+        "base_url": "http://nwill.net:8080/swdst",
+        "id_env": "NWILL_SINWOO_LIVESTOCK_CLEARED_ID",
+        "pw_env": "NWILL_SINWOO_LIVESTOCK_CLEARED_PW",
+        "계정용도": "통관(축산물)",
+    },
+    {
+        "창고명": "신우냉장",
+        "base_url": "http://nwill.net:8080/swdst",
+        "id_env": "NWILL_SINWOO_LIVESTOCK_UNCLEARED_ID",
+        "pw_env": "NWILL_SINWOO_LIVESTOCK_UNCLEARED_PW",
+        "계정용도": "미통관(축산물)",
+    },
+    {
+        "창고명": "신우냉장",
+        "base_url": "http://nwill.net:8080/swdst",
+        "id_env": "NWILL_SINWOO_POULTRY_CLEARED_ID",
+        "pw_env": "NWILL_SINWOO_POULTRY_CLEARED_PW",
+        "계정용도": "통관(계육)",
+    },
+    {
+        "창고명": "삼진1냉장",
+        "base_url": "http://nwill.net:8080/sjn1dst",
+        "id_env": "NWILL_SAMJIN1_ID",
+        "pw_env": "NWILL_SAMJIN1_PW",
+        "계정용도": "전체",  # 통관/미통관 구분 계정 없이 단일 계정
+    },
+    {
+        "창고명": "삼진2냉장",
+        "base_url": "http://nwill.net:8080/sjn2dst",
+        "id_env": "NWILL_SAMJIN2_ID",
+        "pw_env": "NWILL_SAMJIN2_PW",
+        "계정용도": "전체",
+    },
+    {
+        "창고명": "오로라씨에스",
+        "base_url": "http://211.239.173.90:8080/aurdst",
+        "id_env": "NWILL_AURORA_ID",
+        "pw_env": "NWILL_AURORA_PW",
+        "계정용도": "전체",
+    },
+    {
+        "창고명": "삼일냉장",
+        "base_url": "http://nwill.net:8080/sidst",
+        "id_env": "NWILL_SAMIL_ID",
+        "pw_env": "NWILL_SAMIL_PW",
+        "계정용도": "전체",
+    },
+    {
+        "창고명": "강동냉장",
+        "base_url": "http://211.239.173.90/kd1dst",
+        "id_env": "NWILL_GANGDONG_ID",
+        "pw_env": "NWILL_GANGDONG_PW",
+        "계정용도": "전체",
+    },
+    {
+        "창고명": "강동2냉장",
+        "base_url": "http://211.239.173.90/kd2dst",
+        "id_env": "NWILL_GANGDONG2_ID",
+        "pw_env": "NWILL_GANGDONG2_PW",
+        "계정용도": "전체",
+    },
+    {
+        "창고명": "에이스냉장(처인)",
+        "system": "acecs",
+        "base_url": "https://cs.acecs.co.kr/il6",
+        "depot_name": "처인사업소",
+        "id_env": "ACECS_ID",
+        "pw_env": "ACECS_PW",
+        "계정용도": "전체",
+    },
+]
+
+
+def _to_number(text: str):
+    """
+    "1,272" / "23,010.31" / "18.09KG" 처럼 천단위 콤마나 단위(KG 등)가 붙은
+    셀 텍스트에서 숫자만 뽑아 변환. 빈 값/파싱 불가능한 값은 0으로 처리
+    (대시보드가 숫자 필드로 합산하기 때문에 문자열이 섞이면 NaN이 발생한다).
+    """
+    if text is None:
+        return 0
+    cleaned = str(text).replace(",", "").strip()
+    if not cleaned:
+        return 0
+    match = re.match(r"-?\d+(\.\d+)?", cleaned)
+    if not match:
+        return 0
+    val = float(match.group())
+    return int(val) if val.is_integer() else val
+
+
+# 대시보드가 숫자로 계산/정렬하는 필드들 (콤마 제거 + 숫자 변환 필요)
+NUMERIC_FIELDS = ["재고수량", "중량_kg", "단위중량", "허용수량", "적재수량", "PLT수량"]
+
+
+def parse_stock_table(html: str, 창고명: str) -> list:
+    """
+    재고조회(셀분리) 결과 테이블 파싱.
+
+    창고마다 컬럼 개수/순서/이름이 다르다 (예: 신우는 19개, 대청/한라는 23~24개,
+    유통기한 컬럼명도 신우는 "유통기한", 대청/한라는 "소비기한"). 그래서 고정된
+    컬럼 순서를 가정하지 않고, 매번 <thead>에서 실제 헤더 텍스트를 읽어와
+    그 이름 그대로 딕셔너리 키로 사용한 뒤 공통 스키마로 매핑한다.
+    """
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.select_one("table.dataTables-example")
+    if table is None:
+        raise RuntimeError("재고조회 결과 테이블을 찾지 못했습니다 (페이지 구조 변경 가능성).")
+
+    thead = table.find("thead")
+    if thead is None:
+        raise RuntimeError("재고조회 결과 테이블에 헤더(thead)가 없습니다.")
+    headers = [th.get_text(strip=True) for th in thead.find_all("th")]
+
+    rows = []
+    tbody = table.find("tbody")
+    if tbody is None:
+        return rows
+
+    for tr in tbody.find_all("tr"):
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+
+        # "조회된 결과가 없습니다" 같은 안내행(칸 수가 헤더보다 훨씬 적음) 스킵
+        if len(cells) < len(headers) * 0.5:
+            continue
+
+        record = dict(zip(headers, cells))
+
+        record["창고명"] = 창고명
+        record["품목명"] = record.pop("수탁품", "")
+        raw_brand = record.pop("브랜드", "")
+        record["공급사"] = extract_supplier(record["품목명"], raw_brand, record.get("규격", ""))
+        record["저장위치"] = record.pop("저장구역", "")
+        record["중량_kg"] = record.pop("중량", "")
+        # 유통기한 컬럼명이 창고마다 다름 (유통기한 / 소비기한)
+        record["유통기한"] = record.pop("소비기한", None) or record.pop("유통기한", "")
+
+        pass_raw = record.pop("통관구분", "").strip()
+        # "분할통관"도 통관으로 취급 (사용자 요청)
+        if pass_raw == "분할통관":
+            pass_raw = "통관"
+        record["통관상태"] = pass_raw if pass_raw else None  # 후처리 단계에서 계정 기본값 적용
+
+        # 일부 창고(신우/한라)는 "사업부" 컬럼 자체에 "[계육팀-미통]", "축산1팀-통관"
+        # 처럼 실제 통관여부가 박혀 있는데, 이게 통관구분 컬럼/계정 기본값보다
+        # 더 신뢰도 높은 실제 정답이다 (예: MEDUHI881796 BL - 사업부는 "[계육팀-미통]"인데
+        # 통관구분/계정판정으로는 "통관"으로 잘못 찍히는 경우가 실제로 있었음).
+        # "미통"이 "통관"의 부분문자열이 아니므로(미+통관) 미통을 먼저 검사한다.
+        dept = record.get("사업부", "")
+        if "미통" in dept:
+            record["통관상태"] = "미통관"
+        elif "통관" in dept:
+            record["통관상태"] = "통관"
+
+        for field in NUMERIC_FIELDS:
+            if field in record:
+                record[field] = _to_number(record[field])
+
+        rows.append(record)
+
+    return rows
+
+
+# ACE CS(cs.acecs.co.kr, "Intralogis"/DevExpress 시스템)는 nwill과 완전히
+# 다른 구조 - DataTables 대신 DevExpress ASPxGridView를 쓰고, 결과 화면의
+# HTML은 헤더/바디에 의미 있는 <thead>/<tbody> 구분이 없어서 헤더 기반 파싱이
+# 안 통한다. 대신 컬럼 순서가 페이지 JS(dxo.columns)에 고정되어 있는 걸
+# 확인해서 그 순서를 그대로 하드코딩한다.
+ACECS_COLUMNS = [
+    "품목명", "관리번호", "규격", "단위", "LOT-NO", "B/L NO", "유통식별번호",
+    "EST-NO", "저장위치", "재고수량", "중량_kg", "단위중량", "유통기한",
+    "통관상태", "원산지",
+]
+
+
+def parse_acecs_table(html: str, 창고명: str) -> list:
+    """ACE CS(Intralogis) 재고조회 결과 테이블(#InventoryList_DXMainTable) 파싱."""
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.select_one("#InventoryList_DXMainTable")
+    if table is None:
+        raise RuntimeError("ACE CS 재고조회 결과 테이블을 찾지 못했습니다 (페이지 구조 변경 가능성).")
+
+    rows = []
+    for tr in table.select("tr[id^=InventoryList_DXDataRow]"):
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+        if len(cells) < len(ACECS_COLUMNS):
+            continue
+
+        record = dict(zip(ACECS_COLUMNS, cells))
+        record["창고명"] = 창고명
+        record["공급사"] = extract_supplier(record["품목명"], "")
+        record["비고"] = record.pop("원산지", "")
+
+        for field in NUMERIC_FIELDS:
+            if field in record:
+                record[field] = _to_number(record[field])
+
+        rows.append(record)
+
+    return rows
+
+
+def apply_default_customs_status(rows: list, cfg: dict) -> None:
+    """
+    통관구분 값이 비어있는 행에 한해 계정 기본값 적용.
+
+    cfg["계정용도"]는 "통관(축산물)", "미통관(계육)", "전체" 처럼 참고용 라벨이라
+    괄호 설명을 그대로 쓰면 대시보드가 인식 못하는 이상한 값이 들어간다.
+    "통관"/"미통관"만 실제 기본값으로 쓰고, 그 외("전체" 등)는 빈 값 그대로 둔다.
+    """
+    label = cfg["계정용도"]
+    base_label = re.sub(r"\(.*\)", "", label).strip()
+    default_status = base_label if base_label in ("통관", "미통관") else None
+
+    for r in rows:
+        if not r.get("통관상태"):
+            r["통관상태"] = default_status
+
+
+# 공급사별 축종 매핑. 공급사는 보통 특정 축종 전문이라 커팅명보다 신뢰도가 높음.
+# (확실한 근거 있는 것만 등록 - 애매한 공급사는 넣지 않고 키워드 추정에 맡김)
+SUPPLIER_ANIMAL_MAP = {
+    # 소
+    "ACC": "소",
+    "TEYS": "소",
+    "DARLING DOWNS": "소",
+    "PATEL": "소",
+    "BINDAREE": "소",
+    "GREENIA": "소",
+    "SWIFT": "소",
+    # 돼지
+    "AGROSUPER": "돼지",
+    "SEABOARD": "돼지",
+    "DEWAELE": "돼지",
+    "INCARLOPSA": "돼지",
+    "ALEJANDRO": "돼지",
+    "RIVASAM": "돼지",
+    "SMITHFIELD": "돼지",
+    "FRIBIN": "돼지",
+    "NV": "돼지",
+    "BAUCELLS": "돼지",
+    "OLYMEL": "돼지",
+    "MARCHER": "돼지",
+    "RAABTAL": "돼지",
+    "MAFRIGES": "돼지",
+    # 닭
+    "SADIA": "닭",
+    "PERDIGAO": "닭",
+    "LAR": "닭",
+    "QAF": "닭",
+    # SEARA는 뺐음 - 닭/돼지 둘 다 취급하는 회사라 품목명 접두어(돈/닭)로
+    # 알아서 분류하도록 키워드 판별에 맡김 (품목명이 항상 정확히 표기됨을 확인함)
+}
+
+
+def classify_animal(품목명: str, 공급사: str = None) -> str:
+    """
+    축종(소/돼지/닭/염소) 추정. index.html의 classifyAnimal()과 동일한 규칙
+    (품목명 텍스트 키워드 기반 추정치, 완벽하지 않을 수 있음).
+
+    커팅명만으로는 애매한 경우가 많다 (예: "앞사태"는 보통 소 부위지만 DEWAELE는
+    돼지 앞사태로 씀, "가부리"는 SEABOARD/AGROSUPER 계열에서 돼지 부위임).
+    반면 공급사는 거의 항상 특정 축종 전문이라 훨씬 신뢰도가 높으므로,
+    공급사가 알려진 경우 그것을 최우선으로 쓰고, 모르는 공급사일 때만
+    품목명 키워드로 추정한다.
+    """
+    if 공급사 and 공급사 in SUPPLIER_ANIMAL_MAP:
+        return SUPPLIER_ANIMAL_MAP[공급사]
+
+    name = 품목명 or ""
+    if re.search(r"염소", name):
+        return "염소"
+    if re.match(r"^\(?돈", name) or re.search(r"\)돈", name):
+        return "돼지"
+    if re.search(r"항정살|삼겹살|가[브부]리|갈매기살|시트밸리|등갈비|전지|후지|돈가스", name):
+        return "돼지"
+    if re.match(r"^\(?닭", name) or re.match(r"^\(?계", name) or re.search(r"계육|장각", name):
+        return "닭"
+    if re.match(r"^\(?우", name):
+        return "소"
+    if re.search(r"갈비|양지|차돌|채끝|척갈비|볼라전각|빽립|설도|우둔|홍두깨|토시|안창|제비추리|아롱사태|업진|알목심|스페어립", name):
+        return "소"
+    return "미분류"
+
+
+HISTORY_PATH = "data/warehouse_history.json"
+
+
+def append_daily_history(all_rows: list) -> None:
+    """
+    창고별/축종별 하루치 요약(재고수량/중량_kg 합계)을 별도의 가벼운 이력
+    파일에 누적한다. 원본 데이터(행 단위 전체)를 매일 그대로 쌓으면 1년 뒤
+    수만~십만 행이 되어 느려질 수 있어서, 요약값만 남기는 방식으로 설계.
+    같은 날짜에 여러 번 실행되면 그날 기록을 덮어써서 중복 누적을 막는다.
+    """
+    today = now_kst().strftime("%Y-%m-%d")
+    print(f"[history] today(KST)={today}, all_rows 건수={len(all_rows)}")
+
+    if os.path.exists(HISTORY_PATH):
+        with open(HISTORY_PATH, encoding="utf-8") as f:
+            history = json.load(f)
+    else:
+        history = {"기록": []}
+    existing_dates_before = sorted({h.get("날짜") for h in history.get("기록", [])})
+    print(f"[history] 기존 파일의 날짜들: {existing_dates_before}")
+
+    history["기록"] = [h for h in history["기록"] if h.get("날짜") != today]
+
+    totals = {}
+    for r in all_rows:
+        key = (r.get("창고명"), classify_animal(r.get("품목명", ""), r.get("공급사")))
+        bucket = totals.setdefault(key, {"재고수량": 0, "중량_kg": 0})
+        bucket["재고수량"] += r.get("재고수량", 0) or 0
+        bucket["중량_kg"] += r.get("중량_kg", 0) or 0
+    print(f"[history] 오늘({today}) 집계된 (창고,축종) 조합 수: {len(totals)}")
+
+    for (창고명, 축종), vals in totals.items():
+        history["기록"].append({
+            "날짜": today,
+            "창고명": 창고명,
+            "축종": 축종,
+            "재고수량": vals["재고수량"],
+            "중량_kg": round(vals["중량_kg"], 2),
+        })
+
+    # 이 실행에서 만든 "오늘" 레코드만 따로 저장해둔다. 여러 워크플로우가 같은
+    # main 브랜치에 자주 커밋하다 보니 push 충돌이 잦고, 그때마다 "git reset
+    # --mixed origin/main + 재시도"를 하는데, history.json은 매 실행 시작 시점의
+    # 스냅샷을 통째로 다시 쓰는 방식이라 재시도 도중 다른 실행이 이미 추가해둔
+    # 다른 날짜 기록을 덮어써 버리는 사고가 있었다(며칠치 기록이 통째로 사라짐).
+    # 커밋 재시도 시점마다 origin의 최신 history.json에 "오늘 것만" 다시 병합해
+    # 넣도록, 오늘 레코드만 별도 파일로 남겨서 워크플로우가 재사용하게 한다.
+    os.makedirs("debug", exist_ok=True)
+    with open("debug/history_today_rows.json", "w", encoding="utf-8") as f:
+        json.dump({"날짜": today, "레코드": [h for h in history["기록"] if h.get("날짜") == today]}, f, ensure_ascii=False)
+
+    with open(HISTORY_PATH, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    existing_dates_after = sorted({h.get("날짜") for h in history.get("기록", [])})
+    print(f"[history] 저장 후 날짜들: {existing_dates_after}, 총 레코드 {len(history['기록'])}건")
+
+
+def load_existing() -> dict:
+    if os.path.exists(OUTPUT_PATH):
+        with open(OUTPUT_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    return {"수집시각": None, "총건수": 0, "데이터": []}
