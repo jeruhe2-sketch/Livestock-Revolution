@@ -6,7 +6,11 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: repo-main-git-write  # 저장소 전체 워크플로우가 공유하는 잠금 (git push 충돌 방지)
+  # 10분마다 도는 폴링이라 무거운 데이터 수집 워크플로우들과 같은 잠금을
+  # 공유하면 그 사이에 계속 끼어들거나 뒤로 밀리면서 서로 push 충돌 빈도를
+  # 높이는 원인이 됨. 건드리는 파일도 겹치지 않으므로(data/telegram_bot_state.json,
+  # debug/telegram_bot_last.log) 독립된 그룹으로 분리.
+  group: telegram-bot-own-lock
   cancel-in-progress: false
 
 permissions:
