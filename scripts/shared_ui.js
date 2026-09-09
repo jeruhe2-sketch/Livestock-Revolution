@@ -66,8 +66,27 @@ window.RadarUI = (function () {
   function SvgLineChart({ categories, series, height = 260, formatValue, formatAxisValue, formatTooltipValue, width = 900, yMin, yMax, maxDots = 60 }) {
     const fmtAxis = formatAxisValue || formatValue || defaultNumFmt;
     const fmtTip = formatTooltipValue || formatValue || defaultNumFmt;
+    const containerRef = useRef(null);
+    // SVG는 viewBox 좌표계 안에서 고정 크기로 그려진 뒤 화면폭에 맞춰 통째로 축소/확대됨.
+    // 그래서 글자 크기를 고정값(예: 9)으로 박아두면, 화면이 좁을수록(모바일) 실제 픽셀 크기가
+    // 같이 줄어들어서 글씨가 찌그러져 보임. 실제 렌더된 폭을 측정해서 그 반대로 글자 크기를
+    // 키워주면(scale이 작을수록 svg 단위 폰트를 크게) 화면 크기와 무관하게 항상 비슷한
+    // 실제 픽셀 크기로 보이게 됨.
+    const { useState: useStateLocal2, useEffect: useEffectLocal2 } = React;
+    const [actualWidth, setActualWidth] = useStateLocal2(width);
+    useEffectLocal2(() => {
+      if (!containerRef.current || typeof ResizeObserver === "undefined") return;
+      const el = containerRef.current;
+      const update = () => { const w = el.getBoundingClientRect().width; if (w > 0) setActualWidth(w); };
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, []);
+    const scale = actualWidth > 0 ? actualWidth / width : 1;
+    const axisFontPx = Math.max(9, Math.min(30, 11.5 / scale));
     const manyLabels = categories.length > 16;
-    const padding = { top: 16, right: 16, bottom: manyLabels ? 40 : 26, left: 56 };
+    const padding = { top: 16, right: 16, bottom: (manyLabels ? 40 : 26) + Math.max(0, axisFontPx - 11.5) * 1.3, left: Math.max(56, axisFontPx * 4.2) };
     const innerW = width - padding.left - padding.right;
     const innerH = height - padding.top - padding.bottom;
     const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
@@ -81,8 +100,12 @@ window.RadarUI = (function () {
     const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
     const xFor = (i) => padding.left + i * stepX;
     const gridLines = 4;
-    const labelEvery = Math.max(1, Math.ceil(categories.length / (manyLabels ? 12 : 10)));
-    const containerRef = useRef(null);
+    // 좁은 화면에서는 글자가 커진 만큼 라벨 사이 간격도 넓혀야 서로 안 겹침.
+    // 실제 렌더 폭 기준으로 "라벨 하나당 필요한 최소 폭(대략 7px * 글자수 근사)"을 역산해서
+    // 몇 번째 라벨마다 하나씩만 보여줄지 계산.
+    const estLabelPx = axisFontPx * 4.5;
+    const maxLabelsFit = Math.max(3, Math.floor(actualWidth / estLabelPx));
+    const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 12 : 10)));
     const [hoverIdx, setHoverIdx] = useState(null);
     const handleMove = (e) => {
       if (!containerRef.current || categories.length === 0) return;
@@ -99,10 +122,10 @@ window.RadarUI = (function () {
           const val = topVal - (topVal - minVal) / gridLines * i;
           return React.createElement("g", { key: i },
             React.createElement("line", { x1: padding.left, x2: width - padding.right, y1: y, y2: y, stroke: COLORS.panelBorder, strokeDasharray: "3 3" }),
-            React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: "9", fill: COLORS.mute }, fmtAxis(val))
+            React.createElement("text", { x: padding.left - 8, y: y + 3, textAnchor: "end", fontSize: axisFontPx, fill: COLORS.mute }, fmtAxis(val))
           );
         }),
-        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: "9", fill: COLORS.mute }, c)),
+        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", { key: i, x: xFor(i), y: height - 8, textAnchor: "middle", fontSize: axisFontPx, fill: COLORS.mute }, c)),
         hoverIdx !== null && React.createElement("line", { x1: xFor(hoverIdx), x2: xFor(hoverIdx), y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: "1", strokeDasharray: "2 2" }),
         series.map((s) => {
           const segs = []; let cur = [];
