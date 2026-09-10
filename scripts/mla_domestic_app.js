@@ -8,7 +8,7 @@
    개인적 용도 및 내부 업무용으로만 사용. */
 window.MlaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-  const { COLORS, SheetTab, HoverAxisPicker, PillToggle, SvgLineChart, fmtUpdatedAt, pctFmt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SheetTab, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx } = window.RadarUI;
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
   const IND_ORDER = ["0", "4", "13", "7", "11", "90cl"];
@@ -36,6 +36,8 @@ window.MlaDomesticApp = (function () {
     const [selected, setSelected] = useState(["0"]);
     const [normalize, setNormalize] = useState(false);
     const [mainTab, setMainTab] = useState("chart");
+    const [chartSub, setChartSub] = useState("trend");
+    const [overlayIndicator, setOverlayIndicator] = useState("0");
     // null이면 "전체 기간"을 의미 (아래 렌더에서 YM_MIN/YM_MAX로 대체)
     const [ymStart, setYmStart] = useState(null);
     const [ymEnd, setYmEnd] = useState(null);
@@ -80,6 +82,31 @@ window.MlaDomesticApp = (function () {
     // 그래서 훅 호출은 항상 이 위치에서 raw 유무와 상관없이 실행하고,
     // 화면을 안 그리는 것(early return)은 모든 훅 호출이 끝난 뒤에만 함.
     const chartCategories = useMemoLite(raw, selected, ymStart ?? YM_MIN, ymEnd ?? YM_MAX, normalize);
+
+    // "연도별 겹쳐보기": 선택한 지표 하나를 연도별로 나눠서 1~12월 축 위에 겹쳐 그림.
+    const overlayYears = useMemo(() => {
+      const series = raw?.indicators?.[overlayIndicator] || [];
+      return [...new Set(series.map((r) => r.date.slice(0, 4)))].sort();
+    }, [raw, overlayIndicator]);
+    const overlayCategories = useMemo(() => Array.from({ length: 12 }, (_, i) => `${i + 1}월`), []);
+    const overlaySeries = useMemo(() => {
+      const series = raw?.indicators?.[overlayIndicator] || [];
+      return overlayYears.map((y, idx) => {
+        const byMonth = {};
+        series.forEach((r) => {
+          if (r.date.slice(0, 4) !== y) return;
+          const m = Number(r.date.slice(5, 7));
+          // 월 단위 비교라 그 달의 마지막(가장 최근) 값을 대표값으로 사용
+          byMonth[m] = r.value;
+        });
+        return { name: `${y}년`, color: PALETTE[idx % PALETTE.length], data: overlayCategories.map((_, i) => byMonth[i + 1] ?? null) };
+      });
+    }, [raw, overlayIndicator, overlayYears, overlayCategories]);
+    const exportOverlayXlsx = () => {
+      const header = ["월", ...overlaySeries.map((s) => s.name)];
+      const rows = overlayCategories.map((c, i) => [c, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : "")]);
+      downloadXlsx([header, ...rows], `호주내수_${IND_SHORT[overlayIndicator] || overlayIndicator}_연도별겹쳐보기.xlsx`, "겹쳐보기");
+    };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
@@ -163,8 +190,8 @@ window.MlaDomesticApp = (function () {
             React.createElement(HoverAxisPicker, { label: "시작월", value: ys, onChange: (v) => { setYmStart(+v); if (+v > ye) setYmEnd(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
             React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"),
             React.createElement(HoverAxisPicker, { label: "종료월", value: ye, onChange: (v) => { setYmEnd(+v); if (+v < ys) setYmStart(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
-            (ys !== YM_MIN || ye !== YM_MAX || selected.length !== 1 || selected[0] !== "0" || normalize || mainTab !== "chart") && React.createElement("button", {
-              onClick: () => { setYmStart(null); setYmEnd(null); setSelected(["0"]); setNormalize(false); setMainTab("chart"); },
+            (ys !== YM_MIN || ye !== YM_MAX || selected.length !== 1 || selected[0] !== "0" || normalize || mainTab !== "chart" || chartSub !== "trend") && React.createElement("button", {
+              onClick: () => { setYmStart(null); setYmEnd(null); setSelected(["0"]); setNormalize(false); setMainTab("chart"); setChartSub("trend"); },
               style: { fontSize: 13, color: COLORS.rust, background: "none", border: `1px solid ${COLORS.rust}`, borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontWeight: 700 }
             }, "필터 초기화")
           )
@@ -183,9 +210,26 @@ window.MlaDomesticApp = (function () {
         React.createElement(SheetTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "표" })
       ),
 
-      mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
-        chartCategories.series.length ? React.createElement(SvgLineChart, { categories: chartCategories.categories, series: chartCategories.series, formatAxisValue: (v) => v.toFixed(0) })
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
+      mainTab === "chart" && React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 12 } },
+          React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "추이" }),
+          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "연도별 겹쳐보기" })
+        ),
+        chartSub === "trend" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+          chartCategories.series.length ? React.createElement(SvgLineChart, { categories: chartCategories.categories, series: chartCategories.series, formatAxisValue: (v) => v.toFixed(0) })
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 지표를 선택하세요.")
+        ),
+        chartSub === "overlay" && React.createElement(React.Fragment, null,
+          React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+            React.createElement(HoverAxisPicker, { label: "지표", value: overlayIndicator, onChange: setOverlayIndicator, options: IND_ORDER.map((id) => [id, IND_SHORT[id]]) }),
+            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "엑셀 다운로드")
+          ),
+          React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 12 } },
+            overlaySeries.length ? React.createElement(SvgLineChart, { categories: overlayCategories, series: overlaySeries, height: 340, formatAxisValue: (v) => v.toFixed(0) })
+              : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "데이터가 없습니다.")
+          ),
+          React.createElement(ChartLegend, { series: overlaySeries })
+        )
       ),
 
       mainTab === "table" && React.createElement(React.Fragment, null,
