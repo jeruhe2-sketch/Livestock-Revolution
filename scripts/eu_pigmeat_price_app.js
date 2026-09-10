@@ -250,15 +250,23 @@ window.EuPigmeatPriceApp = (function () {
     }
 
     /* ── 겹쳐보기 ── */
-    const overlayXLabels = useMemo(() => Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`), [monthFrom, monthTo]);
+    const [overlayGranularity, setOverlayGranularity] = useState("month"); // "month" | "week"
+    const overlayXLabels = useMemo(() => {
+      if (overlayGranularity === "week") return Array.from({ length: 53 }, (_, i) => `${i + 1}주`);
+      return Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => `${monthFrom + i}월`);
+    }, [overlayGranularity, monthFrom, monthTo]);
     const overlaySeries = useMemo(() => years.map((y, idx) => {
       const bucket = {};
-      baseFilteredRows.forEach((r) => { if (r.year !== y) return; const xVal = `${r.month}월`; (bucket[xVal] || (bucket[xVal] = [])).push(r); });
+      baseFilteredRows.forEach((r) => {
+        if (r.year !== y) return;
+        const xVal = overlayGranularity === "week" ? `${r.week}주` : `${r.month}월`;
+        (bucket[xVal] || (bucket[xVal] = [])).push(r);
+      });
       return { name: String(y), color: SERIES_PALETTE[idx % SERIES_PALETTE.length], data: overlayXLabels.map((x) => bucket[x] ? Math.round(aggregateGroup(bucket[x]) * 100) / 100 : null) };
-    }), [baseFilteredRows, years, overlayXLabels]);
+    }), [baseFilteredRows, years, overlayXLabels, overlayGranularity]);
     function exportOverlayXlsx() {
-      const header = ["월", ...years.map(String)];
-      downloadXlsx([header, ...overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : "")])], `EU돈가_연도별겹쳐보기.xlsx`, "겹쳐보기");
+      const header = [overlayGranularity === "week" ? "주차" : "월", ...years.map(String)];
+      downloadXlsx([header, ...overlayXLabels.map((x, i) => [x, ...overlaySeries.map((s) => s.data[i] != null ? s.data[i] : "")])], `EU돈가_연도별겹쳐보기_${overlayGranularity === "week" ? "주별" : "월별"}.xlsx`, "겹쳐보기");
     }
 
     useEffect(() => {
@@ -436,10 +444,13 @@ window.EuPigmeatPriceApp = (function () {
             )
           ),
           chartSub === "overlay" && React.createElement(React.Fragment, null,
-            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10, justifyContent: "flex-end" } },
+            React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 } },
+              React.createElement(ToggleBtn, { active: overlayGranularity === "month", onClick: () => setOverlayGranularity("month"), label: "월별" }),
+              React.createElement(ToggleBtn, { active: overlayGranularity === "week", onClick: () => setOverlayGranularity("week"), label: "주별" }),
+              React.createElement("div", { style: { flex: 1 } }),
               React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u2B07 엑셀 다운로드")
             ),
-            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다 (현재 필터된 국가/등급 평균)."),
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, overlayGranularity === "week" ? "* 연도별로 1~53주 축 위에 겹쳐서 계절 패턴을 비교합니다 (현재 필터된 국가/등급 평균)." : "* 연도별로 1~12월 축 위에 겹쳐서 계절 패턴을 비교합니다 (현재 필터된 국가/등급 평균)."),
             React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 12, padding: "16px" } },
               React.createElement(SvgLineChart, { categories: overlayXLabels, series: overlaySeries, height: 340, formatAxisValue: fmtShort, formatTooltipValue: fmtEur }),
               React.createElement(ChartLegend, { series: overlaySeries })
