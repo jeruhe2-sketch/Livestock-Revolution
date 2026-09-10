@@ -328,9 +328,9 @@ window.AusTradeApp = (function () {
         React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "호주 → 중국 · 일본 · 한국 · 미국 외 16개국"),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "호주 축산물 수출현황"),
 
-        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "축종 · 형태"),
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "축종 · 형태"),
             React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" } },
               React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
                 SPECIES_ORDER.map((sp) => React.createElement("button", {
@@ -355,7 +355,7 @@ window.AusTradeApp = (function () {
           porkNoBreakdown && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.rust } }, "* 돼지고기는 원본 통계에 냉장/냉동 구분이 없어 항상 0으로 표시됩니다. '합계'를 사용하세요."),
 
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "목적지 · 연도"),
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "목적지 · 연도"),
             React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
           React.createElement(HoverMultiPicker, { label: "목적지", options: destOptions, selected: destFilter, onToggle: (v) => toggleFilter(destFilter, setDestFilter, v), onSelectAll: () => setDestFilter([...destOptions]), onClear: () => setDestFilter([]) }),
           React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
@@ -374,8 +374,8 @@ window.AusTradeApp = (function () {
           ),
 
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
+            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
               React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
                 [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
                   key: m,

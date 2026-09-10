@@ -47,11 +47,11 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./scripts/shared_ui.js?v=14"></script>
-<script src="./scripts/usda_domestic_app.js?v=41"></script>
-<script src="./scripts/cepea_domestic_app.js?v=34"></script>
-<script src="./scripts/aus_trade_app.js?v=29"></script>
-<script src="./scripts/eu_pigmeat_price_app.js?v=14"></script>
-<script src="./scripts/mla_domestic_app.js?v=15"></script>
+<script src="./scripts/usda_domestic_app.js?v=42"></script>
+<script src="./scripts/cepea_domestic_app.js?v=35"></script>
+<script src="./scripts/aus_trade_app.js?v=30"></script>
+<script src="./scripts/eu_pigmeat_price_app.js?v=15"></script>
+<script src="./scripts/mla_domestic_app.js?v=16"></script>
 <script src="./scripts/key_indicators_app.js?v=22"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #f4f5f2; }
@@ -399,7 +399,7 @@ function Dashboard({ db }) {
       }
     },
     p2
-  ))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), (mainTab !== "table" || chartSub !== "group" || meat !== (META.\uD488\uBA85[2] || META.\uD488\uBA85[0]) || ice !== "\uC804\uCCB4" || countryFilter.length > 0 || partFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "country" || colDim !== "year" || displayMode !== "abs" || groupBy !== "year" || !sortDesc || overlayDim !== "year" || overlayXAxis !== "month") && /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } }, /* @__PURE__ */ React.createElement(ChipGroup, { label: "\uAD6C\uBD84", options: ["\uC804\uCCB4", "\uB0C9\uB3D9", "\uB0C9\uC7A5"], value: ice, onChange: setIce }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uAD6D\uAC00", options: META.\uAD6D\uAC00, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...META.\uAD6D\uAC00]), onClear: () => setCountryFilter([]) }), /* @__PURE__ */ React.createElement(HoverMultiPicker, { label: "\uBD80\uC704", options: META.\uBD80\uC704.filter((p2) => p2 !== "-"), selected: partFilter, onToggle: (v) => toggleFilter(partFilter, setPartFilter, v), onSelectAll: () => setPartFilter(META.\uBD80\uC704.filter((p2) => p2 !== "-")), onClear: () => setPartFilter([]) })), /* @__PURE__ */ React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, "\uAE30\uAC04"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC", value: ymEnd, onChange: onYmEnd, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: COLORS.mute, marginLeft: 10 } }, "\uC6D4\uBCC4"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC2DC\uC791\uC6D4", value: monthFrom, onChange: onMonthFrom, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"), /* @__PURE__ */ React.createElement(HoverAxisPicker, { label: "\uC885\uB8CC\uC6D4", value: monthTo, onChange: onMonthTo, options: Array.from({ length: 12 }, (_, i2) => [i2 + 1, `${i2 + 1}\uC6D4`]) }), (mainTab !== "table" || chartSub !== "group" || meat !== (META.\uD488\uBA85[2] || META.\uD488\uBA85[0]) || ice !== "\uC804\uCCB4" || countryFilter.length > 0 || partFilter.length > 0 || ymStart !== YM_MIN || ymEnd !== YM_MAX || monthFrom !== 1 || monthTo !== 12 || rowDim !== "country" || colDim !== "year" || displayMode !== "abs" || groupBy !== "year" || !sortDesc || overlayDim !== "year" || overlayXAxis !== "month") && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
@@ -862,9 +862,9 @@ function Dashboard({ db, exRates, fxHistory }) {
       React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "EU → 한국 · 미국 · 영국 · 중국 · 일본 · 필리핀"),
       fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\u25CF ${fmtUpdatedAt(db.collectedAt)} 기준`),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 수출현황"),
-      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "단위"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "단위"),
           React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
             ["kg", "euro", "unitprice"].map((k) => React.createElement("button", {
               key: k, onClick: () => setValueKey(k),
@@ -876,7 +876,7 @@ function Dashboard({ db, exRates, fxHistory }) {
           )
         ),
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "수출국 · 수입국 · 연도"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "수출국 · 수입국 · 연도"),
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
             React.createElement(HoverMultiPicker, { label: "수출국(EU 회원국)", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
             React.createElement(HoverMultiPicker, { label: "수입국", options: partnerOptions, selected: partnerFilter, onToggle: (v) => toggleFilter(partnerFilter, setPartnerFilter, v), onSelectAll: () => setPartnerFilter([...partnerOptions]), onClear: () => setPartnerFilter([]) }),
@@ -893,17 +893,9 @@ function Dashboard({ db, exRates, fxHistory }) {
             }, "필터 초기화")
           )
         ),
-        valueKey !== "kg" && React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "이상치 처리"),
-          React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
-            React.createElement(ToggleBtn, { active: outlierMode === "exclude", onClick: () => setOutlierMode("exclude"), label: "제외" }),
-            React.createElement(ToggleBtn, { active: outlierMode === "include", onClick: () => setOutlierMode("include"), label: "포함" }),
-            React.createElement("span", { style: { fontSize: 11.5, color: COLORS.mute } }, "단가가 중앙값 대비 5배 이상 벗어난 행(원본 데이터 오류 의심)을 걸러냅니다.")
-          )
-        ),
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
-          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
             React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
               [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
                 key: m,
@@ -942,7 +934,12 @@ function Dashboard({ db, exRates, fxHistory }) {
             valueKey === "euro" && React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, fontWeight: 600, display: "flex", gap: 8 } },
               React.createElement("span", null, "≈ ", fmtUsd(baseFilteredRows.reduce((s, r) => s + (r.usdEquiv || 0), 0))),
               React.createElement("span", null, "≈ ", fmtWon(baseFilteredRows.reduce((s, r) => s + (r.krwEquiv || 0), 0)))
-            )
+            ),
+            valueKey !== "kg" && React.createElement("button", {
+              onClick: () => setOutlierMode((m) => m === "exclude" ? "include" : "exclude"),
+              title: "단가가 중앙값 대비 5배 이상 벗어난 행(원본 데이터 오류 의심)을 걸러내는 옵션입니다.",
+              style: { fontSize: 11, color: COLORS.mute, background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 3, textDecoration: "underline", textDecorationStyle: "dotted" }
+            }, outlierMode === "exclude" ? "이상치 제외 중 · 포함해서 보기" : "이상치 포함 중 · 제외하고 보기")
           )
         )
       ),
@@ -1428,9 +1425,9 @@ function Dashboard({ db }) {
     React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
       React.createElement("div", { style: { fontSize: 13.5, letterSpacing: "0.13em", color: COLORS.mute, fontWeight: 700, marginBottom: 4 } }, "미국 → 한국 · 중국 · 영국 · 일본 · 필리핀 등"),
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "미국 축산물 수출현황"),
-      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "품목"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "품목"),
           React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
             [1702, 1701].map((c) => React.createElement("button", {
               key: c, onClick: () => setCommodity(c),
@@ -1442,7 +1439,7 @@ function Dashboard({ db }) {
           )
         ),
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "수입국 · 연도 · 지표"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "수입국 · 연도 · 지표"),
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
             React.createElement(HoverMultiPicker, { label: "수입국", options: countryOptions, selected: countryFilter, onToggle: (v) => toggleFilter(countryFilter, setCountryFilter, v), onSelectAll: () => setCountryFilter([...countryOptions]), onClear: () => setCountryFilter([]) }),
             React.createElement(HoverMultiPicker, { label: "연도", options: [...YEARS_ALL].reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...YEARS_ALL]), onClear: () => setYearFilter([]) }),
@@ -1460,8 +1457,8 @@ function Dashboard({ db }) {
           )
         ),
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
-          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
             React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
               [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
                 key: m,

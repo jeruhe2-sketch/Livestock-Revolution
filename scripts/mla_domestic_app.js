@@ -143,9 +143,9 @@ window.MlaDomesticApp = (function () {
         })
       ),
 
-      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+      React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "지표"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "지표"),
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
             IND_ORDER.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, IND_SHORT[id])),
             React.createElement("div", { style: { flex: 1 } }),
@@ -154,7 +154,7 @@ window.MlaDomesticApp = (function () {
           )
         ),
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
             [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(Toggle, {
               key: m, active: ye === YM_MAX && ys === addYm(YM_MAX, -(Number(m) - 1)), color: COLORS.sage,

@@ -372,16 +372,16 @@ window.UsdaDomesticApp = (function () {
           })
         ),
 
-        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "품목"),
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "품목"),
             React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
               ITEMS.map((i) => React.createElement(ToggleBtn, { key: i.key, active: itemFilter.includes(i.key), onClick: () => toggleItem(i.key), label: i.label, activeColor: i.color }))
             )
           ),
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
+            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
               React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
                 React.createElement(HoverAxisPicker, { label: "시작", value: ymStart, onChange: onYmStart, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) }),
                 React.createElement("span", { style: { color: COLORS.mute } }, "–"),

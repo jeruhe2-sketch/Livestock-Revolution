@@ -290,9 +290,9 @@ window.EuPigmeatPriceApp = (function () {
         fmtUpdatedAt(raw.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 4 } }, `\u25CF ${fmtUpdatedAt(raw.collectedAt)} 기준`),
         React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 16px", letterSpacing: "-0.01em" } }, "EU 축산물 내수현황"),
 
-        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "14px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 12 } },
+        React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "등급"),
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "등급"),
             React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
               ["ALL", "S", "E"].map((k) => React.createElement("button", {
                 key: k, onClick: () => setClsFilter(k),
@@ -305,7 +305,7 @@ window.EuPigmeatPriceApp = (function () {
           ),
 
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "국가 · 연도"),
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "국가 · 연도"),
             React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
               React.createElement(HoverMultiPicker, { label: "국가", options: msOptions, selected: msFilter, onToggle: (v) => toggleFilter(msFilter, setMsFilter, v), onSelectAll: () => setMsFilter([...msOptions]), onClear: () => setMsFilter([]) }),
               React.createElement(HoverMultiPicker, { label: "연도", options: [...new Set(ROWS.map((r) => String(r.year)))].sort().reverse(), selected: yearFilter, onToggle: (v) => toggleFilter(yearFilter, setYearFilter, v), onSelectAll: () => setYearFilter([...new Set(ROWS.map((r) => String(r.year)))]), onClear: () => setYearFilter([]) }),
@@ -323,8 +323,8 @@ window.EuPigmeatPriceApp = (function () {
           ),
 
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 6 } }, "기간"),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
+            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
               React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
                 [["3", "최근 3개월"], ["6", "최근 6개월"], ["12", "최근 1년"]].map(([m, lbl]) => React.createElement(ToggleBtn, {
                   key: m, active: ymEnd === YM_MAX && ymStart === addYm(YM_MAX, -(Number(m) - 1)),
