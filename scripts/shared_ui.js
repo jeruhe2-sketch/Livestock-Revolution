@@ -317,7 +317,7 @@ window.RadarUI = (function () {
         React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
         React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
       ),
-      open && React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      open && React.createElement("div", { style: { position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 6, minWidth: 130, maxWidth: "calc(100vw - 32px)", maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         options.map(([v, l]) => React.createElement("button", {
           key: v, onClick: () => { onChange(v); setOpen(false); },
           style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" }
@@ -331,7 +331,7 @@ window.RadarUI = (function () {
     return React.createElement("div", { ref: rootRef, style: { position: "relative", display: "inline-block" }, onMouseEnter, onMouseLeave },
       React.createElement("div", { className: "radar-picker-trigger", onClick: onSummaryClick, style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer" } },
         label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "\u25BE")),
-      open && React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
+      open && React.createElement("div", { style: { position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", zIndex: 20, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`, borderRadius: 10, padding: 10, width: 240, maxWidth: "calc(100vw - 32px)", maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
           React.createElement("div", { style: { display: "flex", gap: 8 } },
