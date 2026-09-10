@@ -53,7 +53,7 @@ KNOWN_SUPPLIERS = [
     "KAMOURASKA", "MAPLE", "SWIFT", "EXC", "NATIONAL", "LORIENTE", "GREENIA", "LORFOOD",
     "PERDIGAO", "SADIA", "DUMECO", "LAR", "QAF",
     "NV", "A/S", "BAUCELLS",
-    "BINDAREE", "G/N", "S/W", "INCA", "RAABTAL",
+    "BINDAREE", "G/N", "S/W", "INCA", "RAABTAL", "GREENLEA",
 ]
 # 공급사명 표기가 대소문자 섞여있는 경우(예: "Fribin")도 매칭되도록 대소문자 무시.
 # \b 대신 (?<![A-Za-z0-9])...(?![A-Za-z0-9]) 를 쓰는 이유: "ACC_상이품"처럼 뒤에
