@@ -1913,21 +1913,19 @@ function Dashboard({ db, history, onRefresh, refreshing }) {
     setAccSortDir("asc");
     setMainTab(tab);
   };
+  // 창고/브랜드(공급사) 필터 목록은 가나다(ㄱㄴㄷ)/A-Z 순으로 정렬한다 (2026-09-16 확정).
+  const koSort = (a, b) => String(a).localeCompare(String(b), "ko");
   const warehouses = useMemo(() => {
     const subset = ROWS.filter((r) => (supplierFilter.length === 0 || supplierFilter.includes(r.\uACF5\uAE09\uC0AC)) && (animalFilter.length === 0 || animalFilter.includes(r.\uCD95\uC885)));
-    return [...new Set(subset.map((r) => r.\uCC3D\uACE0\uBA85))].sort();
+    return [...new Set(subset.map((r) => r.\uCC3D\uACE0\uBA85))].sort(koSort);
   }, [ROWS, supplierFilter, animalFilter]);
   const animalTypes = useMemo(() => {
     const subset = ROWS.filter((r) => (warehouseFilter.length === 0 || warehouseFilter.includes(r.\uCC3D\uACE0\uBA85)) && (supplierFilter.length === 0 || supplierFilter.includes(r.\uACF5\uAE09\uC0AC)));
-    return [...new Set(subset.map((r) => r.\uCD95\uC885))].sort();
+    return [...new Set(subset.map((r) => r.\uCD95\uC885))].sort(koSort);
   }, [ROWS, warehouseFilter, supplierFilter]);
   const suppliers = useMemo(() => {
     const subset = ROWS.filter((r) => (warehouseFilter.length === 0 || warehouseFilter.includes(r.\uCC3D\uACE0\uBA85)) && (animalFilter.length === 0 || animalFilter.includes(r.\uCD95\uC885)));
-    const totals = {};
-    subset.forEach((r) => {
-      totals[r.\uACF5\uAE09\uC0AC] = (totals[r.\uACF5\uAE09\uC0AC] || 0) + r.\uC7AC\uACE0\uC218\uB7C9;
-    });
-    return Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
+    return [...new Set(subset.map((r) => r.\uACF5\uAE09\uC0AC))].sort(koSort);
   }, [ROWS, warehouseFilter, animalFilter]);
   const toggle = (list, setList, v) => setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const filtered = useMemo(() => {
