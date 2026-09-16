@@ -234,6 +234,13 @@ WAREHOUSE_CONFIGS = [
         "pw_env": "ACECS_PW",
         "계정용도": "전체",
     },
+    {
+        "창고명": "효성티앤씨",
+        "base_url": "https://coldwms.hyosung.com",
+        "id_env": "HYOSUNG_TNC_ID",
+        "pw_env": "HYOSUNG_TNC_PW",
+        "계정용도": "전체",  # 통관/미통관 구분 계정 없이 단일 계정 (nwill계 창고와 동일 시스템)
+    },
 ]
 
 
