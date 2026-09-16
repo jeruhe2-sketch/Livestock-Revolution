@@ -19,11 +19,21 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 STATE_PATH = "data/telegram_bot_state.json"
-GOATCOUNTER_CODE = "livestock-radar"
+# 여러 사이트를 동시에 지원한다. (표시 이름 -> GoatCounter 사이트 코드)
+SITES = {
+    "축산레이더": "livestock-radar",
+    "축산라이브러리": "livestock-library",
+}
 KST = timezone(timedelta(hours=9))
 
 # 이 문구들 중 하나로 (대소문자/양옆 공백 무시) 정확히 보내면 통계로 답장한다.
+# "/방문자"는 등록된 사이트 전부를 한 번에 답장한다.
 TRIGGER_COMMANDS = {"/방문자", "방문자", "/visitors", "/stats", "/통계"}
+# 사이트 하나만 콕 집어 물어보고 싶을 때 (예: "/라이브러리방문자")
+SITE_TRIGGER_PREFIX_MAP = {
+    "레이더": "축산레이더",
+    "라이브러리": "축산라이브러리",
+}
 
 
 def _get(url: str) -> dict:
@@ -51,9 +61,9 @@ def save_state(state: dict) -> None:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
-def _api_get(api_key: str, path: str, params: dict) -> dict:
+def _api_get(api_key: str, goatcounter_code: str, path: str, params: dict) -> dict:
     query = urllib.parse.urlencode(params)
-    url = f"https://{GOATCOUNTER_CODE}.goatcounter.com/api/v0/{path}?{query}"
+    url = f"https://{goatcounter_code}.goatcounter.com/api/v0/{path}?{query}"
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {api_key}"})
     with urllib.request.urlopen(req, timeout=20) as resp:
         return json.loads(resp.read().decode("utf-8"))
@@ -63,17 +73,18 @@ def _iso(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def stats_total(api_key: str, start: datetime, end: datetime) -> dict:
+def stats_total(api_key: str, goatcounter_code: str, start: datetime, end: datetime) -> dict:
     """기간 내 방문자수(total) + 일자별 상세(stats)를 함께 반환."""
     return _api_get(
-        api_key, "stats/total", {"start": _iso(start), "end": _iso(end)}
+        api_key, goatcounter_code, "stats/total", {"start": _iso(start), "end": _iso(end)}
     )
 
 
-def top_referrers(api_key: str, start: datetime, end: datetime, limit: int = 3) -> list:
+def top_referrers(api_key: str, goatcounter_code: str, start: datetime, end: datetime, limit: int = 3) -> list:
     """기간 내 유입경로 상위 N개. [{name, count}, ...]"""
     data = _api_get(
         api_key,
+        goatcounter_code,
         "stats/toprefs",
         {"start": _iso(start), "end": _iso(end), "limit": limit},
     )
@@ -88,7 +99,7 @@ def _pct_change(now: int, before: int) -> str:
     return f"({arrow}{abs(diff):.0f}%)"
 
 
-def build_stats_message(api_key: str) -> str:
+def build_stats_message(api_key: str, goatcounter_code: str, site_label: str) -> str:
     now_kst = datetime.now(KST)
     today_start_kst = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
     today_start_utc = today_start_kst.astimezone(timezone.utc)
@@ -98,11 +109,11 @@ def build_stats_message(api_key: str) -> str:
     prev_week_start_utc = now_utc - timedelta(days=14)
     all_start_utc = datetime(2020, 1, 1, tzinfo=timezone.utc)  # 서비스 시작 훨씬 이전
 
-    today_data = stats_total(api_key, today_start_utc, now_utc)
-    yesterday_data = stats_total(api_key, yesterday_start_utc, today_start_utc)
-    week_data = stats_total(api_key, week_start_utc, now_utc)
-    prev_week_data = stats_total(api_key, prev_week_start_utc, week_start_utc)
-    total_data = stats_total(api_key, all_start_utc, now_utc)
+    today_data = stats_total(api_key, goatcounter_code, today_start_utc, now_utc)
+    yesterday_data = stats_total(api_key, goatcounter_code, yesterday_start_utc, today_start_utc)
+    week_data = stats_total(api_key, goatcounter_code, week_start_utc, now_utc)
+    prev_week_data = stats_total(api_key, goatcounter_code, prev_week_start_utc, week_start_utc)
+    total_data = stats_total(api_key, goatcounter_code, all_start_utc, now_utc)
 
     today_n = today_data.get("total", 0)
     yesterday_n = yesterday_data.get("total", 0)
@@ -121,7 +132,7 @@ def build_stats_message(api_key: str) -> str:
             day_label = day
         daily_lines.append(f"{day_label}: {count:,}명")
 
-    refs = top_referrers(api_key, week_start_utc, now_utc, limit=3)
+    refs = top_referrers(api_key, goatcounter_code, week_start_utc, now_utc, limit=3)
     if refs:
         ref_lines = "\n".join(
             f"  · {r.get('name') or '(직접 접속/북마크)'}: {r.get('count', 0)}명"
@@ -131,7 +142,7 @@ def build_stats_message(api_key: str) -> str:
         ref_lines = "  · (유입경로 데이터 없음 — 대부분 직접 접속/북마크)"
 
     lines = [
-        "📊 축산레이더 방문자 리포트",
+        f"📊 {site_label} 방문자 리포트",
         "",
         f"오늘: {today_n:,}명 {_pct_change(today_n, yesterday_n)}  (어제 {yesterday_n:,}명)",
         f"최근 7일: {week_n:,}명 {_pct_change(week_n, prev_week_n)}  (직전 7일 {prev_week_n:,}명)",
@@ -143,9 +154,34 @@ def build_stats_message(api_key: str) -> str:
     lines.append("")
     lines.append("🔗 최근 7일 유입경로 TOP 3")
     lines.append(ref_lines)
-    lines.append("")
-    lines.append("※ 같은 사람이 짧은 시간 내 새로고침한 건 중복 집계 안 됨")
 
+    return "\n".join(lines)
+
+
+def build_summary_line(api_key: str, goatcounter_code: str, site_label: str) -> str:
+    """여러 사이트를 한 메시지에 모아 보여줄 때 쓰는 한 줄 요약 (오늘/7일/누적만)."""
+    now_utc = datetime.now(timezone.utc)
+    now_kst = datetime.now(KST)
+    today_start_utc = now_kst.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    week_start_utc = now_utc - timedelta(days=7)
+    all_start_utc = datetime(2020, 1, 1, tzinfo=timezone.utc)
+
+    today_n = stats_total(api_key, goatcounter_code, today_start_utc, now_utc).get("total", 0)
+    week_n = stats_total(api_key, goatcounter_code, week_start_utc, now_utc).get("total", 0)
+    total_n = stats_total(api_key, goatcounter_code, all_start_utc, now_utc).get("total", 0)
+    return f"▪ {site_label}: 오늘 {today_n:,}명 · 7일 {week_n:,}명 · 누적 {total_n:,}명"
+
+
+def build_all_sites_message(api_key: str) -> str:
+    lines = ["📊 방문자 리포트 (전체 사이트)", ""]
+    for label, code in SITES.items():
+        try:
+            lines.append(build_summary_line(api_key, code, label))
+        except Exception as e:
+            lines.append(f"▪ {label}: 조회 실패 ({e})")
+    lines.append("")
+    lines.append("※ 사이트별 상세 리포트는 \"/레이더방문자\", \"/라이브러리방문자\"로 물어보세요")
+    lines.append("※ 같은 사람이 짧은 시간 내 새로고침한 건 중복 집계 안 됨")
     return "\n".join(lines)
 
 
@@ -191,14 +227,27 @@ def main() -> None:
 
         if text_normalized.lower() in {c.lower() for c in TRIGGER_COMMANDS}:
             try:
-                reply = build_stats_message(api_key)
+                reply = build_all_sites_message(api_key)
             except Exception as e:
                 reply = f"⚠️ 방문자 통계를 가져오는 중 오류가 발생했습니다: {e}"
             _post(
                 f"https://api.telegram.org/bot{bot_token}/sendMessage",
                 {"chat_id": chat_id, "text": reply},
             )
-            print("응답 전송 완료")
+            print("응답 전송 완료 (전체 요약)")
+        elif text_normalized.lstrip("/") in {f"{k}방문자" for k in SITE_TRIGGER_PREFIX_MAP}:
+            site_key = text_normalized.lstrip("/").replace("방문자", "")
+            site_label = SITE_TRIGGER_PREFIX_MAP[site_key]
+            site_code = SITES[site_label]
+            try:
+                reply = build_stats_message(api_key, site_code, site_label)
+            except Exception as e:
+                reply = f"⚠️ {site_label} 방문자 통계를 가져오는 중 오류가 발생했습니다: {e}"
+            _post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                {"chat_id": chat_id, "text": reply},
+            )
+            print(f"응답 전송 완료 ({site_label})")
         elif text:
             # 매칭 안 된 메시지도 로그에 남겨서 "왜 답장 안 왔지" 디버깅 쉽게
             print(f"명령어 불일치, 무시함: {text!r} (정규화: {text_normalized!r})")
