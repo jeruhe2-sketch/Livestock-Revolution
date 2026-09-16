@@ -34,6 +34,8 @@ SITE_TRIGGER_PREFIX_MAP = {
     "레이더": "축산레이더",
     "라이브러리": "축산라이브러리",
 }
+# 두 사이트를 표로 나란히 비교해서 보여주는 명령어
+COMPARE_COMMANDS = {"/비교", "비교", "/compare", "/비교방문자"}
 
 
 def _get(url: str) -> dict:
@@ -185,6 +187,76 @@ def build_all_sites_message(api_key: str) -> str:
     return "\n".join(lines)
 
 
+def _site_snapshot(api_key: str, goatcounter_code: str) -> dict:
+    """비교표 한 칸을 채우는 데 필요한 숫자들을 한 번에 모아온다."""
+    now_utc = datetime.now(timezone.utc)
+    now_kst = datetime.now(KST)
+    today_start_utc = now_kst.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    yesterday_start_utc = today_start_utc - timedelta(days=1)
+    week_start_utc = now_utc - timedelta(days=7)
+    month_start_utc = now_utc - timedelta(days=30)
+    all_start_utc = datetime(2020, 1, 1, tzinfo=timezone.utc)
+
+    today_n = stats_total(api_key, goatcounter_code, today_start_utc, now_utc).get("total", 0)
+    yesterday_n = stats_total(api_key, goatcounter_code, yesterday_start_utc, today_start_utc).get("total", 0)
+    week_n = stats_total(api_key, goatcounter_code, week_start_utc, now_utc).get("total", 0)
+    month_n = stats_total(api_key, goatcounter_code, month_start_utc, now_utc).get("total", 0)
+    total_n = stats_total(api_key, goatcounter_code, all_start_utc, now_utc).get("total", 0)
+
+    refs = top_referrers(api_key, goatcounter_code, week_start_utc, now_utc, limit=1)
+    top_ref = refs[0].get("name") or "직접접속" if refs else "-"
+
+    return {
+        "오늘": today_n, "어제": yesterday_n, "7일": week_n,
+        "30일": month_n, "누적": total_n, "유입1위": top_ref,
+    }
+
+
+def build_compare_message(api_key: str) -> str:
+    """등록된 모든 사이트를 표 하나에 나란히 놓고 비교하는 리포트.
+    텔레그램 HTML 파스모드의 <pre> 블록(고정폭 글꼴)을 써서 표처럼 정렬한다."""
+    labels = list(SITES.keys())
+    snapshots = {}
+    for label, code in SITES.items():
+        try:
+            snapshots[label] = _site_snapshot(api_key, code)
+        except Exception as e:
+            snapshots[label] = None
+            print(f"{label} 조회 실패: {e}")
+
+    # 사이트명은 표 헤더에서 4글자로 줄여서 폭을 맞춘다 (축산레이더->레이더, 축산라이브러리->라이브)
+    short = {"축산레이더": "레이더", "축산라이브러리": "라이브"}
+    col_w = 8
+    header = "지표".ljust(6) + "".join(short.get(l, l)[:col_w].rjust(col_w) for l in labels)
+    rows = []
+    for metric in ["오늘", "어제", "7일", "30일", "누적"]:
+        cells = []
+        for l in labels:
+            snap = snapshots.get(l)
+            val = f"{snap[metric]:,}" if snap else "실패"
+            cells.append(val.rjust(col_w))
+        rows.append(metric.ljust(6) + "".join(cells))
+
+    ref_lines = []
+    for l in labels:
+        snap = snapshots.get(l)
+        ref = snap["유입1위"] if snap else "조회실패"
+        ref_lines.append(f"  {short.get(l, l)}: {ref}")
+
+    table = "\n".join([header] + rows)
+    lines = [
+        "📊 사이트 비교 리포트",
+        "",
+        f"<pre>{table}</pre>",
+        "",
+        "🔗 7일 유입경로 1위",
+    ]
+    lines.extend(ref_lines)
+    lines.append("")
+    lines.append("※ 단위: 방문자 수(명) · 같은 사람 짧은 시간 내 새로고침은 중복 집계 안 됨")
+    return "\n".join(lines)
+
+
 def main() -> None:
     bot_token = os.environ["TELEGRAM_BOT_TOKEN"]
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
@@ -225,7 +297,17 @@ def main() -> None:
         if msg_chat_id != str(chat_id):
             continue
 
-        if text_normalized.lower() in {c.lower() for c in TRIGGER_COMMANDS}:
+        if text_normalized.lower() in {c.lower() for c in COMPARE_COMMANDS}:
+            try:
+                reply = build_compare_message(api_key)
+            except Exception as e:
+                reply = f"⚠️ 비교 리포트를 가져오는 중 오류가 발생했습니다: {e}"
+            _post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                {"chat_id": chat_id, "text": reply, "parse_mode": "HTML"},
+            )
+            print("응답 전송 완료 (비교)")
+        elif text_normalized.lower() in {c.lower() for c in TRIGGER_COMMANDS}:
             try:
                 reply = build_all_sites_message(api_key)
             except Exception as e:
