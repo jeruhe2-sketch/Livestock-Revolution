@@ -10,7 +10,7 @@ def fetch(start, end):
     with urllib.request.urlopen(req, timeout=20) as resp:
         return resp.read().decode("utf-8", errors="ignore")
 
-for start, end in [(1, 2), (2100, 2130), (100000, 100002), (500000, 500002), (1000000, 1000002), (2000000, 2000002)]:
+for start, end in [(46100, 46140), (46141, 46145)]:
     try:
         raw = fetch(start, end)
         data = json.loads(raw)
@@ -22,5 +22,6 @@ for start, end in [(1, 2), (2100, 2130), (100000, 100002), (500000, 500002), (10
         if rows:
             dates = [r.get("OCCRRNC_DE") for r in rows]
             print("이 구간 날짜 범위:", min(dates), "~", max(dates))
+            print("마지막 row:", rows[-1])
     except Exception as e:
         print(f"--- {start}~{end} 실패: {e!r}")
