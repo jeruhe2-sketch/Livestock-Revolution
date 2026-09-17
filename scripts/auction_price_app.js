@@ -28,7 +28,43 @@ window.AuctionPriceApp = (function () {
     const unit = speciesData?.unit || "원/kg";
 
     const filtered = useMemo(() => daily.slice(-rangeDays), [daily, rangeDays]);
-    const categories = filtered.map((d) => d.date.slice(5));
+
+    // 데이터가 많으면(전체 기간 등) 하루하루 점이 너무 빽빽해지므로 주간 평균으로 뭉쳐서 부드럽게
+    const AGGREGATE_THRESHOLD = 40;
+    const useWeekly = filtered.length > AGGREGATE_THRESHOLD;
+
+    const weekKey = (dateStr) => {
+      const d = new Date(dateStr);
+      const onejan = new Date(d.getFullYear(), 0, 1);
+      const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+      return `${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
+    };
+
+    const displayRows = useMemo(() => {
+      if (!useWeekly) return filtered.map((r) => ({ label: r.date.slice(5), avgAmt: r.avgAmt, byGrade: r.byGrade }));
+      const groups = {};
+      filtered.forEach((r) => {
+        const k = weekKey(r.date);
+        if (!groups[k]) groups[k] = { label: k.replace("-W", "/"), rows: [] };
+        groups[k].rows.push(r);
+      });
+      return Object.values(groups).map((g) => {
+        const avg = (getter) => {
+          const vals = g.rows.map(getter).filter((v) => v != null);
+          return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        };
+        const gradeKeys = new Set();
+        g.rows.forEach((r) => Object.keys(r.byGrade || {}).forEach((k) => gradeKeys.add(k)));
+        const byGrade = {};
+        gradeKeys.forEach((gk) => {
+          const v = avg((r) => r.byGrade?.[gk]?.amt != null ? Number(r.byGrade[gk].amt) : null);
+          if (v != null) byGrade[gk] = { amt: v };
+        });
+        return { label: g.label, avgAmt: avg((r) => r.avgAmt), byGrade };
+      });
+    }, [filtered, useWeekly]);
+
+    const categories = displayRows.map((d) => d.label);
 
     const gradeNames = useMemo(() => {
       const set = new Set();
@@ -39,12 +75,12 @@ window.AuctionPriceApp = (function () {
     const avgSeries = [{
       id: "평균", name: "전체 평균",
       color: "#b96a2e",
-      data: filtered.map((d) => d.avgAmt),
+      data: displayRows.map((d) => d.avgAmt),
     }];
     const gradeSeries = showGrades.map((g, idx) => ({
       id: g, name: g,
       color: PALETTE[(idx + 1) % PALETTE.length],
-      data: filtered.map((d) => d.byGrade?.[g]?.amt != null ? Number(d.byGrade[g].amt) : null),
+      data: displayRows.map((d) => d.byGrade?.[g]?.amt != null ? Number(d.byGrade[g].amt) : null),
     }));
     const chartSeries = [...avgSeries, ...gradeSeries];
 
@@ -123,7 +159,8 @@ window.AuctionPriceApp = (function () {
         categories.length
           ? React.createElement(React.Fragment, null,
               React.createElement(SvgLineChart, { categories, series: chartSeries, formatAxisValue: (v) => v.toLocaleString() }),
-              React.createElement(ChartLegend, { series: chartSeries })
+              React.createElement(ChartLegend, { series: chartSeries }),
+              useWeekly && React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 8 } }, "점이 많아 주간 평균으로 부드럽게 표시 중 (상세 일별 값은 '표'에서 확인)")
             )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "데이터 없음")
       ),
