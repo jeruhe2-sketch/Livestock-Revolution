@@ -65,6 +65,11 @@ def fetch_year(yyyy: str, judge_kind: str) -> list:
     return [_item_to_dict(i) for i in items]
 
 
+def fetch_tendays(yyyy_mm: str, judge_kind: str) -> list:
+    items = _call("consumerPriceTenDays", {"standYm": yyyy_mm, "judgeKind": judge_kind})
+    return [_item_to_dict(i) for i in items]
+
+
 def year_iter_back(n_years: int):
     this_year = date.today().year
     for i in range(n_years):
@@ -142,15 +147,37 @@ def main():
             yearly.append({"year": yyyy, "items": {k: sum(v) / len(v) for k, v in by_item.items()}})
         yearly.sort(key=lambda r: r["year"])
 
+        # 순별(초/중/하순) 추이
+        tendays = []
+        for ym in month_iter_back(MONTHS_BACK):
+            rows = fetch_tendays(ym, judge_kind)
+            time.sleep(0.25)
+            if not rows:
+                continue
+            for period_idx, period_label in [(1, "초순"), (2, "중순"), (3, "하순")]:
+                by_item = {}
+                for r in rows:
+                    item_nm = r.get("itemNm", "?")
+                    val = r.get(f"ntslPrc_{period_idx}")
+                    if val is not None:
+                        by_item.setdefault(item_nm, []).append(float(val))
+                if by_item:
+                    tendays.append({
+                        "label": f"{ym[:4]}-{ym[4:]}-{period_label}",
+                        "items": {k: sum(v) / len(v) for k, v in by_item.items()},
+                    })
+        tendays.sort(key=lambda r: r["label"])
+
         result["species"][name] = {
             "judgeKind": judge_kind,
             "unit": unit,
             "history": history,
             "yearly": yearly,
+            "tendays": tendays,
             "latestDate": latest_ymd,
             "latestSnapshot": latest_snapshot,
         }
-        print(f"  {name}: 월별 {len(history)}개월 / 연도별 {len(yearly)}개년 / 최신시세 {latest_ymd or '없음'}")
+        print(f"  {name}: 월별 {len(history)}개월 / 순별 {len(tendays)}개 구간 / 연도별 {len(yearly)}개년 / 최신시세 {latest_ymd or '없음'}")
 
     result["source"] = "축산물품질평가원(KAPE) 축산물유통정보 - 소비자가격 정보"
     result["updatedAt"] = date.today().isoformat()

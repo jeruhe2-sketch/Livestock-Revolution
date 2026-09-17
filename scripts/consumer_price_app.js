@@ -28,6 +28,7 @@ window.ConsumerPriceApp = (function () {
     const speciesData = raw?.species?.[species];
     const history = speciesData?.history || [];
     const yearly = speciesData?.yearly || [];
+    const tendays = speciesData?.tendays || [];
     const unit = speciesData?.unit || "원/100g";
 
     const itemNames = useMemo(() => {
@@ -76,6 +77,14 @@ window.ConsumerPriceApp = (function () {
       const rows = tableIdx.map((i) => [categories[i], ...series.map((s) => s.data[i] != null ? Math.round(s.data[i]) : "")]);
       downloadXlsx([header, ...rows], `국내_${species}_소비자가격.xlsx`, "소비자가격");
     };
+
+    const tendaysRecent = tendays.slice(-36);
+    const tenCategories = tendaysRecent.map((t) => t.label);
+    const tenSeries = useMemo(() => selected.map((name) => ({
+      id: name, name,
+      color: PALETTE[itemNames.indexOf(name) % PALETTE.length],
+      data: tendaysRecent.map((t) => t.items?.[name] ?? null),
+    })), [tendaysRecent, selected, itemNames]);
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
@@ -139,6 +148,7 @@ window.ConsumerPriceApp = (function () {
       React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
         React.createElement(SubTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "차트" }),
         React.createElement(SubTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "표" }),
+        React.createElement(SubTab, { active: mainTab === "tendays", onClick: () => setMainTab("tendays"), label: "순별(초중하)" }),
         React.createElement(SubTab, { active: mainTab === "yearly", onClick: () => setMainTab("yearly"), label: "연도별 평균" })
       ),
 
@@ -164,6 +174,16 @@ window.ConsumerPriceApp = (function () {
                   series.map((s) => React.createElement("td", { key: s.id, style: { padding: "8px 10px", color: COLORS.cream, textAlign: "right" } }, s.data[i] != null ? Math.round(s.data[i]).toLocaleString() : "—"))
                 )))
               )
+            )
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
+      ),
+
+      mainTab === "tendays" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+        tenSeries.length && tenCategories.length
+          ? React.createElement(React.Fragment, null,
+              React.createElement(SvgLineChart, { categories: tenCategories, series: tenSeries, formatAxisValue: (v) => v.toLocaleString() }),
+              React.createElement(ChartLegend, { series: tenSeries }),
+              React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 8 } }, "최근 12개월(36개 순) 기준 \u00B7 초순/중순/하순")
             )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
       ),
