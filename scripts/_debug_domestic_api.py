@@ -10,20 +10,17 @@ def fetch(start, end):
     with urllib.request.urlopen(req, timeout=20) as resp:
         return resp.read().decode("utf-8", errors="ignore")
 
-for start, end in [(1, 2), (100000, 100002), (500000, 500002), (1000000, 1000002), (2000000, 2000002)]:
+for start, end in [(1, 2), (2100, 2130), (100000, 100002), (500000, 500002), (1000000, 1000002), (2000000, 2000002)]:
     try:
         raw = fetch(start, end)
         data = json.loads(raw)
-        top_keys = list(data.keys())
-        rows = data.get(API_URL_ID, {}).get("row", []) if isinstance(data.get(API_URL_ID), dict) else None
+        inner = data.get(API_URL_ID, {})
+        rows = inner.get("row", [])
         print(f"--- {start}~{end} ---")
-        print("최상위 키:", top_keys)
-        if API_URL_ID in data and isinstance(data[API_URL_ID], dict):
-            inner_keys = list(data[API_URL_ID].keys())
-            print("내부 키:", inner_keys)
-        print("row 개수:", len(rows) if rows is not None else "구조다름")
+        print("totalCnt:", inner.get("totalCnt"), "| startRow:", inner.get("startRow"), "| endRow:", inner.get("endRow"), "| result:", inner.get("result"))
+        print("row 개수:", len(rows))
         if rows:
-            print("첫 row:", rows[0])
-            print("마지막 row:", rows[-1])
+            dates = [r.get("OCCRRNC_DE") for r in rows]
+            print("이 구간 날짜 범위:", min(dates), "~", max(dates))
     except Exception as e:
         print(f"--- {start}~{end} 실패: {e!r}")
