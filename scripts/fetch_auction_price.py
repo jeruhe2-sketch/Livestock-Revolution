@@ -3,11 +3,15 @@
 국내 축산물 도매시장 경락가격(소/돼지) - 축산물품질평가원(KAPE) 공식 API.
 data.go.kr "축산물품질평가원_축산물등급판정정보"(15058822).
 
+API가 startYmd~endYmd "범위"를 받아 그 구간 전체의 가중평균을 돌려주므로,
+하루하루 부르는 대신 "주(월요일~일요일) 단위로 한 번에" 불러서 호출 수를 줄인다.
+(2019년부터 지금까지 매일 부르면 수천 번, 주 단위면 400번 정도로 충분)
+
 소: http://data.ekape.or.kr/openapi-data/service/user/grade/auct/cattle
 돼지: http://data.ekape.or.kr/openapi-data/service/user/grade/auct/pigPriceDetail
 
-두 오퍼레이션 모두 여러 등급별 행을 반환하는데, "평균"(전체 등급 가중평균) 행이
-따로 있어 그것만 헤드라인으로 쓰고, 나머지 등급별 행도 참고용으로 같이 저장.
+각 오퍼레이션은 여러 등급별 행을 반환하는데 "평균"(전체 등급 가중평균) 행이 헤드라인,
+나머지 등급별 행(1+/1/2/등외 등)은 겹쳐보기용으로 같이 저장.
 
 산출: data/auction_price.json
 """
@@ -24,8 +28,8 @@ SERVICE_KEY = os.environ.get("KAPE_SERVICE_KEY")
 BASE = "http://data.ekape.or.kr/openapi-data/service/user/grade/auct"
 OUTPUT_PATH = "data/auction_price.json"
 
-DAYS_BACK = 130  # 주말 제외하면 실질 거래일이 줄어드니 넉넉히 (약 90영업일 확보 목적)
-MIN_RELIABLE_CNT = 1000  # 이보다 두수가 적은 날은 표본이 너무 작아 평균가 왜곡 위험 -> 제외
+DATA_START = date(2019, 1, 1)  # 실제 데이터 시작 확인됨 (2019-05 이전은 응답 있는지 불확실해 여유있게 1월부터 시도, 없으면 자동 스킵)
+MIN_RELIABLE_CNT = 500  # 주 단위라 하루보다 표본이 커서 기준 완화
 
 
 def _call(op: str, params: dict):
@@ -43,79 +47,70 @@ def _call(op: str, params: dict):
     return [{c.tag: c.text for c in item} for item in root.findall(".//item")]
 
 
-def fetch_cattle_day(ymd: str) -> list:
-    return _call("cattle", {"startYmd": ymd, "endYmd": ymd})
+def week_ranges(start: date, end: date):
+    """start를 포함하는 주의 월요일부터, end까지 (월,일) 튜플 생성."""
+    cur = start - timedelta(days=start.weekday())  # 그 주 월요일로 보정
+    while cur <= end:
+        week_end = min(cur + timedelta(days=6), end)
+        iso_year, iso_week, _ = cur.isocalendar()
+        yield cur, week_end, iso_year, iso_week
+        cur += timedelta(days=7)
 
 
-def fetch_pig_day(ymd: str) -> list:
-    return _call("pigPriceDetail", {"startYmd": ymd, "endYmd": ymd})
+def fetch_range(op: str, start: date, end: date) -> list:
+    return _call(op, {"startYmd": start.strftime("%Y%m%d"), "endYmd": end.strftime("%Y%m%d")})
 
 
-def day_iter_back(n_days: int):
-    d = date.today()
-    for i in range(n_days):
-        yield (d - timedelta(days=i)).strftime("%Y%m%d")
+def build_series(op: str, amt_key: str, cnt_key: str, grade_key: str) -> list:
+    today = date.today()
+    out = []
+    for wk_start, wk_end, iso_year, iso_week in week_ranges(DATA_START, today):
+        rows = fetch_range(op, wk_start, wk_end)
+        time.sleep(0.2)
+        if not rows:
+            continue
+        avg_row = next((r for r in rows if r.get(grade_key) == "평균"), None)
+        if avg_row is None or not avg_row.get(amt_key):
+            continue
+        cnt = int(avg_row[cnt_key]) if avg_row.get(cnt_key) else 0
+        if cnt < MIN_RELIABLE_CNT:
+            continue
+        by_grade = {
+            r.get(grade_key): {"amt": r.get(amt_key), "cnt": r.get(cnt_key)}
+            for r in rows if r.get(grade_key) and r.get(grade_key) != "평균"
+        }
+        out.append({
+            "label": f"{iso_year % 100:02d}-{iso_week:02d}",
+            "weekStart": wk_start.isoformat(),
+            "avgAmt": float(avg_row[amt_key]),
+            "avgCnt": cnt,
+            "byGrade": by_grade,
+        })
+    return out
 
 
 def main():
-    result = {"species": {}}
+    print("소 수집 중...")
+    cattle_weekly = build_series("cattle", "CTotAmt", "CTotCnt", "gradeNm")
+    print(f"  -> {len(cattle_weekly)}주")
 
-    # 소
-    cattle_daily = []
-    for ymd in day_iter_back(DAYS_BACK):
-        rows = fetch_cattle_day(ymd)
-        time.sleep(0.25)
-        if not rows:
-            continue
-        avg_row = next((r for r in rows if r.get("gradeNm") == "평균"), None)
-        if avg_row is None or not avg_row.get("CTotAmt"):
-            continue  # 경매 없는 날(주말 등) - 값 없이 응답만 오는 경우
-        cnt = int(avg_row["CTotCnt"]) if avg_row.get("CTotCnt") else 0
-        if cnt < MIN_RELIABLE_CNT:
-            continue  # 표본 너무 적어 평균가 왜곡되는 날 제외
-        by_grade = {r.get("gradeNm"): {"amt": r.get("CTotAmt"), "cnt": r.get("CTotCnt")} for r in rows}
-        cattle_daily.append({
-            "date": f"{ymd[:4]}-{ymd[4:6]}-{ymd[6:]}",
-            "avgAmt": float(avg_row["CTotAmt"]),
-            "avgCnt": cnt,
-            "byGrade": by_grade,
-        })
-    cattle_daily.sort(key=lambda r: r["date"])
+    print("돼지 수집 중...")
+    pig_weekly = build_series("pigPriceDetail", "auctAmt", "auctCnt", "gradeNm")
+    print(f"  -> {len(pig_weekly)}주")
 
-    # 돼지
-    pig_daily = []
-    for ymd in day_iter_back(DAYS_BACK):
-        rows = fetch_pig_day(ymd)
-        time.sleep(0.25)
-        if not rows:
-            continue
-        avg_row = next((r for r in rows if r.get("gradeNm") == "평균"), None)
-        if avg_row is None or not avg_row.get("auctAmt"):
-            continue
-        cnt = int(avg_row["auctCnt"]) if avg_row.get("auctCnt") else 0
-        if cnt < MIN_RELIABLE_CNT:
-            continue
-        by_grade = {r.get("gradeNm"): {"amt": r.get("auctAmt"), "cnt": r.get("auctCnt")} for r in rows}
-        pig_daily.append({
-            "date": f"{ymd[:4]}-{ymd[4:6]}-{ymd[6:]}",
-            "avgAmt": float(avg_row["auctAmt"]),
-            "avgCnt": cnt,
-            "byGrade": by_grade,
-        })
-    pig_daily.sort(key=lambda r: r["date"])
-
-    result["species"] = {
-        "소": {"unit": "원/kg(지육)", "daily": cattle_daily},
-        "돼지": {"unit": "원/kg(지육)", "daily": pig_daily},
+    result = {
+        "species": {
+            "소": {"unit": "원/kg(지육)", "weekly": cattle_weekly},
+            "돼지": {"unit": "원/kg(지육)", "weekly": pig_weekly},
+        },
+        "source": "축산물품질평가원(KAPE) 도매시장 경락가격 - 전국 주간 가중평균",
+        "updatedAt": date.today().isoformat(),
     }
-    result["source"] = "축산물품질평가원(KAPE) 도매시장 경락가격 - 전국 평균(등급 가중평균)"
-    result["updatedAt"] = date.today().isoformat()
 
     os.makedirs("data", exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, separators=(",", ":"))
-
-    print(f"저장 완료: {OUTPUT_PATH} (소 {len(cattle_daily)}일 / 돼지 {len(pig_daily)}일)")
+    print(f"저장 완료: {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
