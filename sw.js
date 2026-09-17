@@ -1,6 +1,11 @@
 // 축산레이더 서비스워커
-// index/data는 네트워크 우선, 정적 자산은 캐시 우선.
-const CACHE_VERSION = "v27";
+// index/data는 네트워크 우선, 정적 자산(scripts/*.js 등)은 캐시 우선.
+// 주의: scripts/*.js나 index.html/manifest.json 내용을 바꿀 때는 CACHE_VERSION도
+// 반드시 같이 올려야 한다. 안 올리면 배포해도 기존 방문자 브라우저는 캐시 우선
+// 전략 때문에 옛날 파일을 계속 쓰게 되어 "서버엔 반영됐는데 화면엔 안 보임" 상태가 됨
+// (2026-09-17: 드롭다운 위치 버그를 shared_ui.js에서 고쳤는데 버전을 안 올려서
+//  실제로 이 문제가 재현된 적 있음 - 반드시 체크리스트화할 것).
+const CACHE_VERSION = "v28";
 const SHELL_CACHE = `axr-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `axr-data-${CACHE_VERSION}`;
 const SHELL_FILES = ["./icons/icon-192.png?v=2","./icons/icon-512.png?v=2","./apple-touch-icon.png?v=2","./favicon.ico?v=2"];
