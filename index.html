@@ -2384,7 +2384,25 @@ root.render(React.createElement(ShellApp));
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    // 이미 서비스워커가 이 페이지를 통제하고 있던 상태였는지(=재방문/즐겨찾기)를
+    // 먼저 기억해둔다. 첫 방문(서비스워커가 아예 없던 상태)에서는 새로 설치되는
+    // 것 자체가 controllerchange를 한 번 내는데, 그건 "업데이트"가 아니라 그냥
+    // "최초 설치"라서 새로고침할 필요가 없음 - 그 경우까지 새로고침해버리면
+    // 첫 방문자가 이유 없이 화면이 한 번 깜빡이게 됨.
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register("./sw.js").then(() => {
+      if (!hadController) return;
+      // (2026-09-17 추가) 재방문 상태에서 서비스워커가 갱신되면(=배포된 새 버전이
+      // 적용되면) 사용자가 직접 강제새로고침 안 해도 자동으로 딱 한 번 새로고침해서
+      // 최신 화면을 보여준다. "즐겨찾기로 들어와도 예전 버전 그대로 보인다"는
+      // 문제의 재발 방지용.
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
+    }).catch(() => {});
   });
 }
 
