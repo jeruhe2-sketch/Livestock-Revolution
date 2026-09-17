@@ -19,6 +19,7 @@ window.AuctionPriceApp = (function () {
 
     const [species, setSpecies] = useState("돼지");
     const [showGrades, setShowGrades] = useState([]);
+    const [mainTab, setMainTab] = useState("chart");
 
     const speciesData = raw?.species?.[species];
     const weekly = speciesData?.weekly || [];
@@ -71,13 +72,43 @@ window.AuctionPriceApp = (function () {
         }, g))
       ),
 
-      React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16 } },
+      React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 14, borderBottom: `1px solid ${COLORS.panelBorder}` } },
+        React.createElement(SubTab, { active: mainTab === "chart", onClick: () => setMainTab("chart"), label: "차트" }),
+        React.createElement(SubTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "표" })
+      ),
+
+      mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
         categories.length
           ? React.createElement(React.Fragment, null,
               React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => Math.round(v).toLocaleString() }),
               React.createElement(ChartLegend, { series })
             )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "데이터 없음")
+      ),
+
+      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 } },
+        weekly.length
+          ? React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
+              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
+                React.createElement("thead", null, React.createElement("tr", null,
+                  React.createElement("th", { style: { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", left: 0, top: 0, background: COLORS.head, zIndex: 3 } }, "연도-주차"),
+                  React.createElement("th", { style: { textAlign: "right", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", top: 0, background: COLORS.head, zIndex: 2 } }, "전체평균"),
+                  React.createElement("th", { style: { textAlign: "right", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", top: 0, background: COLORS.head, zIndex: 2 } }, "두수"),
+                  showGrades.map((g) => React.createElement("th", { key: g, style: { textAlign: "right", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", top: 0, background: COLORS.head, zIndex: 2 } }, g))
+                )),
+                React.createElement("tbody", null, [...weekly].reverse().map((w) => React.createElement("tr", { key: w.label, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
+                  React.createElement("td", { style: { padding: "8px 10px", color: COLORS.cream, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, w.label),
+                  React.createElement("td", { style: { padding: "8px 10px", color: COLORS.cream, textAlign: "right" } }, round(w.avgAmt)?.toLocaleString() ?? "—"),
+                  React.createElement("td", { style: { padding: "8px 10px", color: COLORS.mute, textAlign: "right" } }, w.avgCnt?.toLocaleString() ?? "—"),
+                  showGrades.map((g) => React.createElement("td", { key: g, style: { padding: "8px 10px", color: COLORS.cream, textAlign: "right" } }, w.byGrade?.[g]?.amt ? round(Number(w.byGrade[g].amt)).toLocaleString() : "—"))
+                )))
+              )
+            )
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "데이터 없음")
+      ),
+
+      React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute } },
+        `출처: ${raw.source || "축산물품질평가원(KAPE)"} \u00B7 수집: ${raw.updatedAt || "—"}`
       )
     );
   };
