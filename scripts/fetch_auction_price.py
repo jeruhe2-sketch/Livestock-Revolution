@@ -24,7 +24,8 @@ SERVICE_KEY = os.environ.get("KAPE_SERVICE_KEY")
 BASE = "http://data.ekape.or.kr/openapi-data/service/user/grade/auct"
 OUTPUT_PATH = "data/auction_price.json"
 
-DAYS_BACK = 90
+DAYS_BACK = 130  # 주말 제외하면 실질 거래일이 줄어드니 넉넉히 (약 90영업일 확보 목적)
+MIN_RELIABLE_CNT = 1000  # 이보다 두수가 적은 날은 표본이 너무 작아 평균가 왜곡 위험 -> 제외
 
 
 def _call(op: str, params: dict):
@@ -67,11 +68,16 @@ def main():
         if not rows:
             continue
         avg_row = next((r for r in rows if r.get("gradeNm") == "평균"), None)
+        if avg_row is None or not avg_row.get("CTotAmt"):
+            continue  # 경매 없는 날(주말 등) - 값 없이 응답만 오는 경우
+        cnt = int(avg_row["CTotCnt"]) if avg_row.get("CTotCnt") else 0
+        if cnt < MIN_RELIABLE_CNT:
+            continue  # 표본 너무 적어 평균가 왜곡되는 날 제외
         by_grade = {r.get("gradeNm"): {"amt": r.get("CTotAmt"), "cnt": r.get("CTotCnt")} for r in rows}
         cattle_daily.append({
             "date": f"{ymd[:4]}-{ymd[4:6]}-{ymd[6:]}",
-            "avgAmt": float(avg_row["CTotAmt"]) if avg_row and avg_row.get("CTotAmt") else None,
-            "avgCnt": int(avg_row["CTotCnt"]) if avg_row and avg_row.get("CTotCnt") else None,
+            "avgAmt": float(avg_row["CTotAmt"]),
+            "avgCnt": cnt,
             "byGrade": by_grade,
         })
     cattle_daily.sort(key=lambda r: r["date"])
@@ -84,11 +90,16 @@ def main():
         if not rows:
             continue
         avg_row = next((r for r in rows if r.get("gradeNm") == "평균"), None)
+        if avg_row is None or not avg_row.get("auctAmt"):
+            continue
+        cnt = int(avg_row["auctCnt"]) if avg_row.get("auctCnt") else 0
+        if cnt < MIN_RELIABLE_CNT:
+            continue
         by_grade = {r.get("gradeNm"): {"amt": r.get("auctAmt"), "cnt": r.get("auctCnt")} for r in rows}
         pig_daily.append({
             "date": f"{ymd[:4]}-{ymd[4:6]}-{ymd[6:]}",
-            "avgAmt": float(avg_row["auctAmt"]) if avg_row and avg_row.get("auctAmt") else None,
-            "avgCnt": int(avg_row["auctCnt"]) if avg_row and avg_row.get("auctCnt") else None,
+            "avgAmt": float(avg_row["auctAmt"]),
+            "avgCnt": cnt,
             "byGrade": by_grade,
         })
     pig_daily.sort(key=lambda r: r["date"])

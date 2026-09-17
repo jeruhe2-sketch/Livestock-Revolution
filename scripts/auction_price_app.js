@@ -19,7 +19,7 @@ window.AuctionPriceApp = (function () {
     }, []);
 
     const [species, setSpecies] = useState("돼지");
-    const [rangeDays, setRangeDays] = useState(30);
+    const [rangeDays, setRangeDays] = useState(22);
     const [mainTab, setMainTab] = useState("chart");
     const [showGrades, setShowGrades] = useState([]);
 
@@ -96,7 +96,7 @@ window.AuctionPriceApp = (function () {
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "기간"),
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } },
-            [[14, "2주"], [30, "1개월"], [90, "3개월(전체)"]].map(([d, lbl]) => React.createElement(Toggle, {
+            [[10, "2주"], [22, "1개월"], [999, "전체"]].map(([d, lbl]) => React.createElement(Toggle, {
               key: d, active: rangeDays === d, color: COLORS.sage, onClick: () => setRangeDays(d)
             }, lbl))
           )
