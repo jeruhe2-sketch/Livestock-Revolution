@@ -10,7 +10,6 @@ window.DiseaseStatusApp = (function () {
   const { COLORS, fmtUpdatedAt } = window.RadarUI;
 
   const OVERSEAS_URL = "https://raw.githubusercontent.com/jeruhe2-sketch/Livestock-Revolution-Second/main/data/asf_alerts.json";
-  const DOMESTIC_URL = "./data/domestic_disease.json";
 
   // 회사 실제 거래 원산지 - 매칭되면 강조 표시
   const WATCHED_COUNTRIES = ["스페인", "브라질"];
@@ -36,19 +35,12 @@ window.DiseaseStatusApp = (function () {
   return function DiseaseStatusApp() {
     const [overseas, setOverseas] = useState(null);
     const [overseasError, setOverseasError] = useState(null);
-    const [domestic, setDomestic] = useState(null);
-    const [domesticError, setDomesticError] = useState(null);
 
     useEffect(() => {
       fetch(OVERSEAS_URL, { cache: "no-store" })
         .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
         .then(setOverseas)
         .catch((e) => setOverseasError(String(e)));
-
-      fetch(DOMESTIC_URL, { cache: "no-store" })
-        .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
-        .then(setDomestic)
-        .catch((e) => setDomesticError(String(e)));
     }, []);
 
     const overseasAlerts = overseas?.alerts || [];
@@ -57,7 +49,7 @@ window.DiseaseStatusApp = (function () {
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 900 } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "가축전염병 발생현황"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 20 } },
-        "해외(WOAH 즉시통보) + 국내(검역본부) 발생현황을 한 화면에서 확인합니다."
+        "해외(WOAH 즉시통보) 발생현황을 확인합니다."
       ),
 
       urgentAlerts.length > 0 && React.createElement("div", {
@@ -90,35 +82,8 @@ window.DiseaseStatusApp = (function () {
         React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 24 } }, `최근 갱신: ${fmtUpdatedAt(overseas.updated_at) || "—"}`)
       ),
 
-      React.createElement("h2", { style: { fontSize: 15, fontWeight: 800, color: COLORS.cream, margin: "0 0 10px" } }, "\u{1F1F0}\u{1F1F7} 국내 (농림축산검역본부)"),
-      domesticError && React.createElement(Card, null,
-        React.createElement("div", { style: { color: COLORS.mute, fontSize: 13 } }, "아직 연동 전입니다 (API_KEY 발급 대기 중).")
-      ),
-      !domesticError && !domestic && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13 } }, "불러오는 중..."),
-      domestic && React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 14, flexWrap: "wrap" } },
-          React.createElement(Card, null,
-            React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 4 } }, "관심축종 진행중"),
-            React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: domestic.active_count > 0 ? COLORS.rust : COLORS.sage } }, `${domestic.active_count ?? 0}건`)
-          ),
-          React.createElement(Card, null,
-            React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 4 } }, "관심축종 누적"),
-            React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: COLORS.cream } }, `${domestic.watch_species_count ?? 0}건`)
-          )
-        ),
-        (domestic.active_cases || []).length > 0 && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
-          domestic.active_cases.map((c, i) => React.createElement(Card, { key: i },
-            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", gap: 10 } },
-              React.createElement("div", { style: { fontSize: 13.5, color: COLORS.cream, fontWeight: 600 } }, `${c.LKNTS_NM || "—"} \u00B7 ${c.LVSTCKSPC_NM || "—"}`),
-              React.createElement(Badge, { text: "진행중", tone: "danger" })
-            ),
-            React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 6 } }, `${c.FARM_LOCPLC || "—"} \u00B7 발생일 ${c.OCCRRNC_DE || "—"}`)
-          ))
-        )
-      ),
-
       React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 24, borderTop: `1px solid ${COLORS.panelBorder}`, paddingTop: 10 } },
-        "해외 데이터는 WOAH(세계동물보건기구) 즉시통보 이메일을 30분 이내 반영하며, 국내 데이터는 검역본부 발생현황을 기준으로 합니다."
+        "해외 데이터는 WOAH(세계동물보건기구) 즉시통보 이메일을 30분 이내 반영합니다."
       )
     );
   };
