@@ -23,7 +23,7 @@ ENDPOINT = "http://data.ekape.or.kr/openapi-data/service/user/grade/LPStock"
 OUTPUT_PATH = "data/livestock_inventory.json"
 
 SPECIES = {"4301": "소", "4304": "돼지"}
-MONTHS_BACK = 24  # 최근 24개월치 시도 (자료 없는 달은 자동으로 건너뜀)
+MONTHS_BACK = 100  # 확인된 데이터 시작월(2019-05)까지 넉넉히 커버 (없는 달은 자동 스킵)
 
 PART_LABELS_COW = {
     "livestockPart_1": "안심", "livestockPart_2": "등심", "livestockPart_3": "채끝",
