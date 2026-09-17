@@ -45,7 +45,7 @@ OUTPUT_PATH = "data/warehouse_stock.json"
 # 새 공급사가 추가되면 이 목록에 넣어주면 된다.
 # ------------------------------------------------------------------
 KNOWN_SUPPLIERS = [
-    "ACC", "AGROSUPER", "SEARA", "PATEL", "ALEJANDRO", "SMITHFIELD",
+    "ACC", "AGROSUPER", "SEARA", "PATEL", "ALEJANDRO", "ALEHJANDRO", "SMITHFIELD",
     "AVINYO", "SEABOARD", "RIVASAM", "OLYMEL", "THOMAS", "MAFRIGES",
     "INCARLOPSA", "RODRIGUEZ", "TEYS", "ASSA", "NBP", "FRIBIN",
     "COSTABRAVA", "IOWA", "VJG7", "VJG", "MARCHER", "HKSCAN", "GATINE",
@@ -72,6 +72,10 @@ SUPPLIER_ALIASES = {
     "LORIENTE": "INCARLOPSA",
     "LORFOOD": "INCARLOPSA",
     "KAMOURASKA": "MAPLE",
+    # 2026-09-17: 신우냉장 품목명에 "ALEHJANDRO"(H 오타)로 찍힌 건 발견
+    # (돈로인립 ALEHJANDRO 6610 DUROC ...) → 기타/미상으로 새고 있었음. 창고 WMS
+    # 입력 오탈자로 보이며 실제로는 ALEJANDRO 공급사이므로 별칭으로 흡수.
+    "ALEHJANDRO": "ALEJANDRO",
 }
 # 품목명에 라틴 문자 대신 한글 음역으로만 적힌 경우 (예: "닭다리정육-사디아")
 KOREAN_SUPPLIER_ALIASES = {
