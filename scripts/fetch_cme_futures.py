@@ -36,11 +36,16 @@ SYMBOLS = {
     "liveCattle": "LEV26.CME",
     "feederCattle": "GFV26.CME",
     "leanHog": "HEV26.CME",
+    "corn": "ZCZ26.CBT",
+    "soybean": "ZSX26.CBT",
 }
 # ↑ V26 = 2026년 10월물(Oct). CME 월물 코드: F1 G2 H3 J4 K5 M6 N7 Q8 U9 V10 X11 Z12.
 # 연속선물 티커(LE=F 등)는 이 무료 API에서 실시간 갱신이 안 되는 걸 여러 날에 걸쳐
 # 확인해서(며칠씩 값이 그대로 멈춰있음) 구체적 계약월 티커로 전환함 - 대신 만기가
 # 다가오면(대략 분기마다) 다음 근월물로 이 딕셔너리를 수동으로 바꿔줘야 함.
+# corn/soybean은 CME 산하 CBOT 거래소라 야후 파이낸스에서 접미사가 .CBT (.CME 아님).
+# corn: ZCZ26 = 2026년 12월물. soybean: ZSX26 = 2026년 11월물.
+# (돼지고기 사료비 선행지표 용도로 추가 - ASF 등 남미/북미 작황 이슈 트래킹과 연계)
 
 
 def fetch_one(symbol: str):

@@ -185,7 +185,7 @@ window.KeyIndicatorsApp = (function () {
   }
 
   const ACCENT = { fx: "#3a6ea5", meat: "#b96a2e", futures: "#2e7d4f" };
-  const SECTIONS = [["fx", "환율"], ["meat", "해외 육류 시세"], ["futures", "CME 축산 선물"]];
+  const SECTIONS = [["fx", "환율"], ["meat", "해외 육류 시세"], ["futures", "CME 축산 선물"], ["feed", "사료곡물 선물"]];
 
   function useIsMobile() {
     const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)").matches : false));
@@ -314,6 +314,8 @@ window.KeyIndicatorsApp = (function () {
         liveCattle: cmeStat(cme?.liveCattle),
         feederCattle: cmeStat(cme?.feederCattle),
         leanHog: cmeStat(cme?.leanHog),
+        corn: cmeStat(cme?.corn),
+        soybean: cmeStat(cme?.soybean),
         daehanJetang: cmeStat(stock),
       };
     }, [weekly, mla, usda, fx, usdaCutout, cme, stock]);
@@ -351,10 +353,12 @@ window.KeyIndicatorsApp = (function () {
       { section: "futures", label: "Live Cattle 선물", value: cardStats.liveCattle.latest != null ? cardStats.liveCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.liveCattle, accent: ACCENT.futures, krwPerKg: approxKrwPerKg(cardStats.liveCattle.latest, "usd_cents_per_lb", fx), updatedAt: cmeUpdatedAt },
       { section: "futures", label: "Feeder Cattle 선물", value: cardStats.feederCattle.latest != null ? cardStats.feederCattle.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.feederCattle, accent: ACCENT.futures, krwPerKg: approxKrwPerKg(cardStats.feederCattle.latest, "usd_cents_per_lb", fx), updatedAt: cmeUpdatedAt },
       { section: "futures", label: "Lean Hog 선물", value: cardStats.leanHog.latest != null ? cardStats.leanHog.latest.toFixed(2) : "—", unit: "\u00A2/lb", stats: cardStats.leanHog, accent: ACCENT.futures, krwPerKg: approxKrwPerKg(cardStats.leanHog.latest, "usd_cents_per_lb", fx), updatedAt: cmeUpdatedAt },
+      { section: "feed", label: "옥수수 선물", value: cardStats.corn.latest != null ? cardStats.corn.latest.toFixed(2) : "—", unit: "\u00A2/bu", stats: cardStats.corn, accent: ACCENT.futures, updatedAt: cmeUpdatedAt },
+      { section: "feed", label: "대두 선물", value: cardStats.soybean.latest != null ? cardStats.soybean.latest.toFixed(2) : "—", unit: "\u00A2/bu", stats: cardStats.soybean, accent: ACCENT.futures, updatedAt: cmeUpdatedAt },
     ];
 
     if (isMobile) {
-      const counts = { fx: 0, meat: 0, futures: 0 };
+      const counts = { fx: 0, meat: 0, futures: 0, feed: 0 };
       entries.forEach((e) => { counts[e.section]++; });
       return React.createElement("div", { style: { padding: "16px 14px 28px" } },
         React.createElement("h1", { style: { fontSize: 19, fontWeight: 800, margin: "2px 0 10px", letterSpacing: "-0.01em", color: COLORS.cream } }, "주요지표"),
