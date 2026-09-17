@@ -60,6 +60,17 @@ def fetch_daily(yyyymmdd: str, judge_kind: str) -> list:
     return [_item_to_dict(i) for i in items]
 
 
+def fetch_year(yyyy: str, judge_kind: str) -> list:
+    items = _call("consumerPriceYear", {"standY": yyyy, "judgeKind": judge_kind})
+    return [_item_to_dict(i) for i in items]
+
+
+def year_iter_back(n_years: int):
+    this_year = date.today().year
+    for i in range(n_years):
+        yield str(this_year - i)
+
+
 def month_iter_back(n_months: int):
     today = date.today()
     y, m = today.year, today.month
@@ -115,14 +126,31 @@ def main():
         latest_snapshot = {k: sum(v) / len(v) for k, v in latest_snapshot.items()}
         unit = (daily_rows[0].get("unit") if daily_rows else None) or "원/100g"
 
+        # 연도별 (평년 비교용)
+        yearly = []
+        for yyyy in year_iter_back(10):
+            rows = fetch_year(yyyy, judge_kind)
+            time.sleep(0.25)
+            if not rows:
+                continue
+            by_item = {}
+            for r in rows:
+                item_nm = r.get("itemNm", "?")
+                ntsl = r.get("ntslPrc")
+                if ntsl is not None:
+                    by_item.setdefault(item_nm, []).append(float(ntsl))
+            yearly.append({"year": yyyy, "items": {k: sum(v) / len(v) for k, v in by_item.items()}})
+        yearly.sort(key=lambda r: r["year"])
+
         result["species"][name] = {
             "judgeKind": judge_kind,
             "unit": unit,
             "history": history,
+            "yearly": yearly,
             "latestDate": latest_ymd,
             "latestSnapshot": latest_snapshot,
         }
-        print(f"  {name}: 월별 {len(history)}개월 / 최신시세 {latest_ymd or '없음'}")
+        print(f"  {name}: 월별 {len(history)}개월 / 연도별 {len(yearly)}개년 / 최신시세 {latest_ymd or '없음'}")
 
     result["source"] = "축산물품질평가원(KAPE) 축산물유통정보 - 소비자가격 정보"
     result["updatedAt"] = date.today().isoformat()
