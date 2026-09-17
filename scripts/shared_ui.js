@@ -285,20 +285,34 @@ window.RadarUI = (function () {
     const closeTimer = useRefLocal(null);
     const rootRef = useRefLocal(null);
     const [panelTop, setPanelTop] = useStateLocal(0);
+    const [panelLeft, setPanelLeft] = useStateLocal(null);
     // 터치 전용 기기는 tap 한 번에 mouseenter(호버 시뮬레이션)와 click이 연달아 발생해서,
     // 열렸다가(mouseenter) 바로 토글로 닫히는(click) 문제가 있었음. 진짜 마우스가 있는
     // 기기에서만 hover로 열고닫게 하고, 터치 기기는 click 토글만 쓰게 분리.
     const supportsHover = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(hover: hover)").matches;
     const clearTimer = () => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } };
-    const openNow = () => {
-      clearTimer();
-      if (rootRef.current) setPanelTop(rootRef.current.getBoundingClientRect().bottom + 6);
-      setOpen(true);
+    // (2026-09-17 수정) 패널의 가로 위치를 "화면 폭" 기준으로 분리.
+    // - 모바일(좁은 화면, max-width:640px)만 화면 정중앙 고정 유지.
+    // - 웹(그 외 넓은 화면)은 트리거 바로 아래(왼쪽 정렬, 화면 밖으로 안 나가게 clamp)에 앵커링.
+    // 호버 열고/닫는 방식(supportsHover)과는 별개의 기준임 — 위치만 화면 폭으로 나눔.
+    const PANEL_WIDTH = 320;
+    const computePos = () => {
+      if (!rootRef.current) return;
+      const rect = rootRef.current.getBoundingClientRect();
+      setPanelTop(rect.bottom + 6);
+      const isMobileWidth = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+      if (isMobileWidth) {
+        setPanelLeft(null); // 모바일: 화면 중앙 고정
+      } else if (typeof window !== "undefined") {
+        const maxLeft = Math.max(16, window.innerWidth - PANEL_WIDTH - 16);
+        setPanelLeft(Math.max(16, Math.min(rect.left, maxLeft))); // 웹: 트리거 기준
+      }
     };
+    const openNow = () => { clearTimer(); computePos(); setOpen(true); };
     const closeSoon = () => { clearTimer(); closeTimer.current = setTimeout(() => setOpen(false), 180); };
     const toggleClick = (e) => {
       e.preventDefault();
-      if (!open && rootRef.current) setPanelTop(rootRef.current.getBoundingClientRect().bottom + 6);
+      if (!open) computePos();
       setOpen((o) => !o);
     };
     useEffectLocal(() => {
@@ -309,19 +323,21 @@ window.RadarUI = (function () {
     }, [open]);
     useEffectLocal(() => clearTimer, []);
     return {
-      open, setOpen, rootRef, panelTop,
+      open, setOpen, rootRef, panelTop, panelLeft,
       onMouseEnter: supportsHover ? openNow : undefined,
       onMouseLeave: supportsHover ? closeSoon : undefined,
       onSummaryClick: toggleClick
     };
   }
 
-  // 드롭다운 패널의 가로 위치: 버튼 기준이 아니라 "화면 자체" 기준으로 항상 가운데 정렬한다.
-  // (버튼이 화면 왼쪽/오른쪽 어디에 있든, 패널 자체는 항상 화면 폭 안에 고정된 규격으로 뜨기 때문에
-  //  절대 옆으로 삐져나갈 수가 없다 - 트리거 위치를 재서 보정하는 방식은 타이밍에 따라 어긋날 수 있어 폐기함)
-  function fixedPanelStyle(panelTop, extra){
+  // 드롭다운 패널의 가로 위치: panelLeft가 주어지면(호버 지원 데스크톱) 트리거
+  // 바로 아래에 앵커링하고, null이면(모바일 등) 화면 중앙에 고정한다.
+  function fixedPanelStyle(panelTop, panelLeft, extra){
     return Object.assign({
-      position: "fixed", top: panelTop, left: "50%", transform: "translateX(-50%)",
+      position: "fixed", top: panelTop,
+      ...(panelLeft == null
+        ? { left: "50%", transform: "translateX(-50%)" }
+        : { left: panelLeft }),
       zIndex: 30, background: "#eef0ec", border: `1px solid ${COLORS.panelBorder2}`,
       borderRadius: 10, maxHeight: "min(280px, calc(100vh - " + panelTop + "px - 16px))",
       overflowY: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
@@ -330,7 +346,7 @@ window.RadarUI = (function () {
   }
 
   function HoverAxisPicker({ label, value, onChange, options }) {
-    const { open, setOpen, rootRef, panelTop, onMouseEnter, onMouseLeave, onSummaryClick } = useHoverOrClick();
+    const { open, setOpen, rootRef, panelTop, panelLeft, onMouseEnter, onMouseLeave, onSummaryClick } = useHoverOrClick();
     const found = options.find(([v]) => v === value);
     const currentLabel = found ? found[1] : value;
     return React.createElement("div", { ref: rootRef, style: { position: "relative", display: "inline-block" }, onMouseEnter, onMouseLeave },
@@ -339,7 +355,7 @@ window.RadarUI = (function () {
         React.createElement("span", { style: { fontSize: 14.5, fontWeight: 700, color: COLORS.amber } }, currentLabel),
         React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "\u25BE")
       ),
-      open && React.createElement("div", { style: fixedPanelStyle(panelTop, { padding: 6, width: "min(200px, calc(100vw - 32px))" }) },
+      open && React.createElement("div", { style: fixedPanelStyle(panelTop, panelLeft, { padding: 6, width: "min(200px, calc(100vw - 32px))" }) },
         options.map(([v, l]) => React.createElement("button", {
           key: v, onClick: () => { onChange(v); setOpen(false); },
           style: { display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 6, fontSize: 14.5, cursor: "pointer", border: "none", background: v === value ? "rgba(217,139,63,0.18)" : "transparent", color: v === value ? COLORS.amberSoft : COLORS.cream, whiteSpace: "nowrap" }
@@ -349,11 +365,11 @@ window.RadarUI = (function () {
   }
 
   function HoverMultiPicker({ label, options, selected, onToggle, onSelectAll, onClear }) {
-    const { open, rootRef, panelTop, onMouseEnter, onMouseLeave, onSummaryClick } = useHoverOrClick();
+    const { open, rootRef, panelTop, panelLeft, onMouseEnter, onMouseLeave, onSummaryClick } = useHoverOrClick();
     return React.createElement("div", { ref: rootRef, style: { position: "relative", display: "inline-block" }, onMouseEnter, onMouseLeave },
       React.createElement("div", { className: "radar-picker-trigger", onClick: onSummaryClick, style: { display: "flex", alignItems: "center", gap: 6, background: COLORS.panel, border: `1px solid ${selected.length ? COLORS.amber : COLORS.panelBorder}`, borderRadius: 8, padding: "6px 12px", color: selected.length ? COLORS.amber : COLORS.mute, fontSize: 14.5, fontWeight: 600, cursor: "pointer" } },
         label, " ", selected.length ? `(${selected.length})` : "전체", " ", React.createElement("span", { style: { fontSize: 12 } }, "\u25BE")),
-      open && React.createElement("div", { style: fixedPanelStyle(panelTop, { padding: 10 }) },
+      open && React.createElement("div", { style: fixedPanelStyle(panelTop, panelLeft, { padding: 10 }) },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 6 } },
           React.createElement("span", { style: { fontSize: 13, color: COLORS.mute } }, options.length, "개 옵션"),
           React.createElement("div", { style: { display: "flex", gap: 8 } },
