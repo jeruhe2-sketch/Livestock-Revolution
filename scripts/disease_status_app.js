@@ -71,10 +71,16 @@ window.DiseaseStatusApp = (function () {
           : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 } },
               overseasAlerts.slice(0, 20).map((a, i) => React.createElement(Card, { key: a.message_id || i },
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 } },
-                  React.createElement("div", { style: { fontSize: 13.5, color: COLORS.cream, fontWeight: 600, lineHeight: 1.5 } }, a.subject || "(제목 없음)"),
+                  React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 14, color: COLORS.cream, fontWeight: 700, lineHeight: 1.5 } },
+                      `${a.country_kr || a.country_code || "\uAD6D\uAC00\uBBF8\uD655\uC778"} \u00B7 ${a.disease_kr || a.disease_en || a.disease || "\uAE30\uD0C0"}`
+                    ),
+                    a.disease_kr && a.disease_en && a.disease_kr !== a.disease_en && React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 2 } }, a.disease_en),
+                    a.report_date && React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 2 } }, `WOAH \uD1B5\uBCF4\uC77C: ${a.report_date}`)
+                  ),
                   a.urgent
                     ? React.createElement(Badge, { text: `\u26A0 ${a.matched_country || "관련"}`, tone: "danger" })
-                    : React.createElement(Badge, { text: a.disease || "기타", tone: "neutral" })
+                    : React.createElement(Badge, { text: a.disease_kr || a.disease_en || a.disease || "기타", tone: "neutral" })
                 ),
                 React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 6 } }, a.received_at || "")
               ))
