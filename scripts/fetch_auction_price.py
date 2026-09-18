@@ -28,8 +28,9 @@ SERVICE_KEY = os.environ.get("KAPE_SERVICE_KEY")
 BASE = "http://data.ekape.or.kr/openapi-data/service/user/grade/auct"
 OUTPUT_PATH = "data/auction_price.json"
 
-DATA_START = date(2019, 1, 1)  # 실제 데이터 시작 확인됨 (2019-05 이전은 응답 있는지 불확실해 여유있게 1월부터 시도, 없으면 자동 스킵)
-MIN_RELIABLE_CNT = 500  # 주 단위라 하루보다 표본이 커서 기준 완화
+DATA_START = date(2019, 1, 1)  # 최초 시딩(파일 없을 때)만 여기서부터 전체
+RECENT_WEEKS = 13  # 파일 있으면 최근 13주(약 3개월)만 재수집
+MIN_RELIABLE_CNT = 500
 
 
 def _call(op: str, params: dict):
@@ -61,10 +62,11 @@ def fetch_range(op: str, start: date, end: date) -> list:
     return _call(op, {"startYmd": start.strftime("%Y%m%d"), "endYmd": end.strftime("%Y%m%d")})
 
 
-def build_series(op: str, amt_key: str, cnt_key: str, grade_key: str) -> list:
+def build_series(op: str, amt_key: str, cnt_key: str, grade_key: str, prev_weekly: list) -> list:
     today = date.today()
-    out = []
-    for wk_start, wk_end, iso_year, iso_week in week_ranges(DATA_START, today):
+    start = DATA_START if not prev_weekly else (today - timedelta(weeks=RECENT_WEEKS))
+    new_rows = {}
+    for wk_start, wk_end, iso_year, iso_week in week_ranges(start, today):
         rows = fetch_range(op, wk_start, wk_end)
         time.sleep(0.2)
         if not rows:
@@ -79,24 +81,37 @@ def build_series(op: str, amt_key: str, cnt_key: str, grade_key: str) -> list:
             r.get(grade_key): {"amt": r.get(amt_key), "cnt": r.get(cnt_key)}
             for r in rows if r.get(grade_key) and r.get(grade_key) != "평균"
         }
-        out.append({
-            "label": f"{iso_year % 100:02d}-{iso_week:02d}",
+        label = f"{iso_year % 100:02d}-{iso_week:02d}"
+        new_rows[label] = {
+            "label": label,
             "weekStart": wk_start.isoformat(),
             "avgAmt": float(avg_row[amt_key]),
             "avgCnt": cnt,
             "byGrade": by_grade,
-        })
-    return out
+        }
+    merged = {r["label"]: r for r in prev_weekly}
+    merged.update(new_rows)  # 최근 주는 새 값으로 덮어씀
+    return sorted(merged.values(), key=lambda r: r["weekStart"]), len(new_rows)
 
 
 def main():
+    existing = {}
+    if os.path.exists(OUTPUT_PATH):
+        try:
+            with open(OUTPUT_PATH, "r", encoding="utf-8") as f:
+                existing = json.load(f).get("species", {})
+        except Exception:
+            existing = {}
+
     print("소 수집 중...")
-    cattle_weekly = build_series("cattle", "CTotAmt", "CTotCnt", "gradeNm")
-    print(f"  -> {len(cattle_weekly)}주")
+    prev_cattle = existing.get("소", {}).get("weekly", [])
+    cattle_weekly, n_new = build_series("cattle", "CTotAmt", "CTotCnt", "gradeNm", prev_cattle)
+    print(f"  -> 누적 {len(cattle_weekly)}주 (이번 갱신 {n_new}주)")
 
     print("돼지 수집 중...")
-    pig_weekly = build_series("pigPriceDetail", "auctAmt", "auctCnt", "gradeNm")
-    print(f"  -> {len(pig_weekly)}주")
+    prev_pig = existing.get("돼지", {}).get("weekly", [])
+    pig_weekly, n_new2 = build_series("pigPriceDetail", "auctAmt", "auctCnt", "gradeNm", prev_pig)
+    print(f"  -> 누적 {len(pig_weekly)}주 (이번 갱신 {n_new2}주)")
 
     result = {
         "species": {

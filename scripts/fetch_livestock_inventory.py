@@ -23,7 +23,8 @@ ENDPOINT = "http://data.ekape.or.kr/openapi-data/service/user/grade/LPStock"
 OUTPUT_PATH = "data/livestock_inventory.json"
 
 SPECIES = {"4301": "소", "4304": "돼지"}
-MONTHS_BACK = 100  # 확인된 데이터 시작월(2019-05)까지 넉넉히 커버 (없는 달은 자동 스킵)
+MONTHS_BACK = 100  # 최초 시딩(파일 없을 때)용 - 이 경우에만 전체 수집
+RECENT_MONTHS = 3  # 파일이 이미 있으면 최근 3개월만 재수집(과거분은 그대로 유지)
 
 PART_LABELS_COW = {
     "livestockPart_1": "안심", "livestockPart_2": "등심", "livestockPart_3": "채끝",
@@ -86,24 +87,40 @@ def month_iter_back(n_months: int):
 
 
 def main():
+    existing = {}
+    if os.path.exists(OUTPUT_PATH):
+        try:
+            with open(OUTPUT_PATH, "r", encoding="utf-8") as f:
+                existing = json.load(f).get("species", {})
+        except Exception:
+            existing = {}
+
     result = {"species": {}}
     for judge_kind, species_name in SPECIES.items():
         labels = PART_LABELS_COW if judge_kind == "4301" else PART_LABELS_PIG
-        history = []
-        for yyyy, mm in month_iter_back(MONTHS_BACK):
+        prev_history = existing.get(species_name, {}).get("history", [])
+        months_back = RECENT_MONTHS if prev_history else MONTHS_BACK
+
+        new_history = {}
+        for yyyy, mm in month_iter_back(months_back):
             data = fetch_month(yyyy, mm, judge_kind)
             time.sleep(0.3)
             if data is None:
                 continue
-            history.append({
-                "yearMonth": f"{yyyy}-{mm}",
+            ym = f"{yyyy}-{mm}"
+            new_history[ym] = {
+                "yearMonth": ym,
                 "totStock": data["totStock"],
                 "unit": data["unit"],
                 "parts": {labels.get(k, k): v for k, v in data["parts"].items()},
-            })
-        history.sort(key=lambda r: r["yearMonth"])  # 오래된 순으로 정렬
+            }
+
+        merged = {h["yearMonth"]: h for h in prev_history}
+        merged.update(new_history)  # 최근 개월은 새 값으로 덮어씀 (수정발표 대응)
+        history = sorted(merged.values(), key=lambda r: r["yearMonth"])
+
         result["species"][species_name] = {"judgeKind": judge_kind, "history": history}
-        print(f"  {species_name}: {len(history)}개월치 수집 (최신: {history[-1]['yearMonth'] if history else '없음'})")
+        print(f"  {species_name}: 이번에 {len(new_history)}개월 갱신, 누적 {len(history)}개월 (최신: {history[-1]['yearMonth'] if history else '없음'})")
 
     result["source"] = "축산물품질평가원(KAPE) 축산물유통정보 - 조사업체 표본 기준 추정치"
     result["updatedAt"] = date.today().isoformat()
