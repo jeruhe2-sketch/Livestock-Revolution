@@ -8,12 +8,12 @@ window.UsdaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
   const { COLORS, SheetTab, SubTab, ToggleBtn, HoverAxisPicker, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile } = window.RadarUI;
   const ITEMS = [
-    { key: "Bnls CC Strap-off", label: "등심", color: COLORS.amber },
-    { key: "Picnic Cushion Meat Vac", label: "전지", color: COLORS.sage },
-    { key: "1/4 Trim Bnls Butt VAC", label: "목전지", color: "#2f6f96" },
-    { key: "PorkCutout", label: "돈육 컷아웃", color: "#8a5a30" },
-    { key: "BeefChoiceCutout", label: "소고기 Choice 컷아웃", color: "#a34a3f" },
-    { key: "BeefSelectCutout", label: "소고기 Select 컷아웃", color: "#6b5ca5" }
+    { key: "Bnls CC Strap-off", label: "등심 (Bnls CC Strap-off)", color: COLORS.amber },
+    { key: "Picnic Cushion Meat Vac", label: "전지 (Picnic Cushion Meat Vac)", color: COLORS.sage },
+    { key: "1/4 Trim Bnls Butt VAC", label: "목전지 (1/4 Trim Bnls Butt VAC)", color: "#2f6f96" },
+    { key: "PorkCutout", label: "돈육 컷아웃 (Pork Cutout)", color: "#8a5a30" },
+    { key: "BeefChoiceCutout", label: "소고기 Choice 컷아웃 (Beef Choice Cutout)", color: "#a34a3f" },
+    { key: "BeefSelectCutout", label: "소고기 Select 컷아웃 (Beef Select Cutout)", color: "#6b5ca5" }
   ];
   const KG_PER_LB = 0.45359237;
   const lbToKg = (v) => v == null || !isFinite(v) ? null : v / KG_PER_LB;
@@ -358,7 +358,8 @@ window.UsdaDomesticApp = (function () {
     return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", color: COLORS.cream, fontFamily: "'Pretendard','Malgun Gothic','Noto Sans KR',sans-serif" } },
       React.createElement("div", { style: { maxWidth: 1120, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em" } }, "미국 축산물 내수현황"),
-        React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 14 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
+        React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 4 } }, "돼지고기 주요 부위 협상가(Wtd Avg) · 등심 / 전지 / 목전지"),
+        React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginBottom: 14 } }, "출처: USDA AMS LMR Datamart · National Daily Pork Report (LM_PK602, mpr.datamart.ams.usda.gov)"),
         fmtUpdatedAt(db.collectedAt) && React.createElement("div", { style: { fontSize: 12.5, color: COLORS.amberSoft, fontWeight: 700, marginBottom: 14 } }, `\u25CF ${fmtUpdatedAt(db.collectedAt)} 기준`),
 
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 8, marginBottom: 12 } },
