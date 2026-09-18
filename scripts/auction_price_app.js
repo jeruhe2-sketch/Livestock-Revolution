@@ -2,7 +2,7 @@
    지육(도체) 기준 전국 주간 가중평균. 소매가/수입단가와 단위가 달라 직접 비교 안 함. */
 window.AuctionPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, downloadXlsx } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, downloadXlsx, buildYearOverlay } = window.RadarUI;
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
   const round = (v) => v == null ? null : Math.round(v);
@@ -72,6 +72,42 @@ window.AuctionPriceApp = (function () {
         ...showGrades.map((g) => w.byGrade?.[g]?.amt != null ? round(Number(w.byGrade[g].amt)) : "")
       ]);
       downloadXlsx([header, ...rows], `국내_${species}_경락가격_${idxLabel(is)}~${idxLabel(ie)}.xlsx`, "경락가격");
+    };
+
+    // ── 그룹 비교(등급별 랭킹) / 겹쳐보기(연도별 계절 패턴) ──
+    const [chartSub, setChartSub] = useState("trend");
+    const groupItems = useMemo(() => {
+      const overallVals = filtered.map((w) => w.avgAmt).filter((v) => v != null && isFinite(v));
+      const overallItem = { key: "전체평균", v: overallVals.length ? overallVals.reduce((a, b) => a + b, 0) / overallVals.length : 0 };
+      const gradeItems = gradeNames.map((g) => {
+        const vals = filtered.map((w) => w.byGrade?.[g]?.amt != null ? Number(w.byGrade[g].amt) : null).filter((v) => v != null && isFinite(v));
+        return { key: g, v: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
+      });
+      return [overallItem, ...gradeItems].sort((a, b) => b.v - a.v);
+    }, [filtered, gradeNames]);
+
+    const overlayTargetGrades = showGrades.length ? showGrades : null;
+    const overlay = useMemo(() => buildYearOverlay(weekly, {
+      yearOf: (w) => w.weekStart ? +String(w.weekStart).slice(0, 4) : null,
+      bucketOf: (w) => { const parts = String(w.label).split("-"); return parseInt(parts[1], 10) || null; },
+      bucketLabel: (b) => `${b}\uC8FC`,
+      valueOf: (w) => {
+        if (!overlayTargetGrades) return w.avgAmt != null ? Number(w.avgAmt) : null;
+        const vals = overlayTargetGrades.map((g) => w.byGrade?.[g]?.amt).filter((v) => v != null && isFinite(v)).map(Number);
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      },
+      bucketCompare: (a, b) => a - b,
+    }), [weekly, overlayTargetGrades ? overlayTargetGrades.join(",") : "__overall"]);
+
+    const exportGroupXlsx = () => {
+      const header = ["구분", `평균가(${unit})`];
+      const rows = groupItems.map((it) => [it.key, round(it.v)]);
+      downloadXlsx([header, ...rows], `국내_${species}_경락가격_그룹비교_${idxLabel(is)}~${idxLabel(ie)}.xlsx`, "그룹비교");
+    };
+    const exportOverlayXlsx = () => {
+      const header = ["ISO\uC8FC\uCC28", ...overlay.series.map((s) => s.name)];
+      const rows = overlay.categories.map((c, i) => [c, ...overlay.series.map((s) => s.data[i] != null ? round(s.data[i]) : "")]);
+      downloadXlsx([header, ...rows], `국내_${species}_경락가격_겹쳐보기.xlsx`, "겹쳐보기");
     };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
@@ -156,13 +192,44 @@ window.AuctionPriceApp = (function () {
         React.createElement(SubTab, { active: mainTab === "table", onClick: () => setMainTab("table"), label: "표" })
       ),
 
-      mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
-        categories.length
-          ? React.createElement(React.Fragment, null,
-              React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => Math.round(v).toLocaleString() }),
-              React.createElement(ChartLegend, { series })
-            )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "데이터 없음")
+      mainTab === "chart" && React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
+          React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "\uCD94\uC774" }),
+          React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "\uADF8\uB8F9 \uBE44\uAD50" }),
+          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "\uACB9\uCCD0\uBCF4\uAE30" })
+        ),
+
+        chartSub === "trend" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
+          categories.length
+            ? React.createElement(React.Fragment, null,
+                React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => Math.round(v).toLocaleString() }),
+                React.createElement(ChartLegend, { series })
+              )
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uB370\uC774\uD130 \uC5C6\uC74C")
+        ),
+
+        chartSub === "group" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
+          React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute } }, `\uC804\uCCB4\uD3C9\uADE0\uACFC \uAC01 \uB4F1\uAE09\uC758 \uC870\uD68C\uAE30\uAC04(${idxLabel(is)}~${idxLabel(ie)}) \uD3C9\uADE0\uAC00\uB97C \uBE44\uAD50\uD569\uB2C8\uB2E4.`),
+            React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+          ),
+          groupItems.length
+            ? React.createElement(BarRanking, { items: groupItems, formatValue: (v) => `${Math.round(v).toLocaleString()} ${unit}` })
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uB370\uC774\uD130 \uC5C6\uC74C")
+        ),
+
+        chartSub === "overlay" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
+          React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute } }, `\uC5F0\uB3C4\uBCC4\uB85C 1~53\uC8FC \uCD95 \uC704\uC5D0 \uACB9\uCCD0\uC11C \uACC4\uC808 \uD328\uD134\uC744 \uBE44\uAD50\uD569\uB2C8\uB2E4 (${overlayTargetGrades ? overlayTargetGrades.join(", ") : "\uC804\uCCB4\uD3C9\uADE0"}).`),
+            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+          ),
+          overlay.series.length && overlay.categories.length
+            ? React.createElement(React.Fragment, null,
+                React.createElement(SvgLineChart, { categories: overlay.categories, series: overlay.series, formatAxisValue: (v) => Math.round(v).toLocaleString() }),
+                React.createElement(ChartLegend, { series: overlay.series })
+              )
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uB370\uC774\uD130 \uC5C6\uC74C")
+        )
       ),
 
       mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 } },

@@ -4,7 +4,7 @@
    연도별 평년비교(consumerPriceYear) 세 가지를 한 화면에서. */
 window.ConsumerPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay } = window.RadarUI;
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a"];
   const Toggle = PillToggle;
@@ -94,6 +94,35 @@ window.ConsumerPriceApp = (function () {
       const header = ["연월", ...selected.map((s) => `${s}(${unit})`)];
       const rows = tableIdx.map((i) => [categories[i], ...series.map((s) => s.data[i] != null ? Math.round(s.data[i]) : "")]);
       downloadXlsx([header, ...rows], `국내_${species}_소비자가격.xlsx`, "소비자가격");
+    };
+
+    // ── 그룹 비교(부위별 랭킹) / 겹쳐보기(연도별 계절 패턴) ──
+    const [chartSub, setChartSub] = useState("trend");
+    const groupItems = useMemo(() => itemNames.map((name) => {
+      const vals = filtered.map((h) => h.items?.[name]).filter((v) => v != null && isFinite(v));
+      return { key: name, v: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
+    }).sort((a, b) => b.v - a.v), [filtered, itemNames]);
+
+    const overlayTargetNames = selected.length ? selected : itemNames;
+    const overlay = useMemo(() => buildYearOverlay(history, {
+      yearOf: (h) => +h.yearMonth.split("-")[0],
+      bucketOf: (h) => +h.yearMonth.split("-")[1],
+      bucketLabel: (b) => `${b}\uC6D4`,
+      valueOf: (h) => {
+        const vals = overlayTargetNames.map((n) => h.items?.[n]).filter((v) => v != null && isFinite(v));
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      },
+    }), [history, overlayTargetNames.join(",")]);
+
+    const exportGroupXlsx = () => {
+      const header = ["부위", `평균가(${unit})`];
+      const rows = groupItems.map((it) => [it.key, Math.round(it.v)]);
+      downloadXlsx([header, ...rows], `국내_${species}_소비자가격_그룹비교_${ymLabel(ys)}~${ymLabel(ye)}.xlsx`, "그룹비교");
+    };
+    const exportOverlayXlsx = () => {
+      const header = ["월", ...overlay.series.map((s) => s.name)];
+      const rows = overlay.categories.map((c, i) => [c, ...overlay.series.map((s) => s.data[i] != null ? Math.round(s.data[i]) : "")]);
+      downloadXlsx([header, ...rows], `국내_${species}_소비자가격_겹쳐보기.xlsx`, "겹쳐보기");
     };
 
     // 순별(초/중/하순, 월 3회) 기간 필터 - 일단위는 아니지만 월별보다 촘촘한 단위
@@ -195,13 +224,44 @@ window.ConsumerPriceApp = (function () {
         React.createElement(SubTab, { active: mainTab === "yearly", onClick: () => setMainTab("yearly"), label: "연도별 평균" })
       ),
 
-      mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
-        series.length && categories.length
-          ? React.createElement(React.Fragment, null,
-              React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => v.toLocaleString() }),
-              React.createElement(ChartLegend, { series })
-            )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
+      mainTab === "chart" && React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12 } },
+          React.createElement(SubTab, { active: chartSub === "trend", onClick: () => setChartSub("trend"), label: "\uCD94\uC774" }),
+          React.createElement(SubTab, { active: chartSub === "group", onClick: () => setChartSub("group"), label: "\uADF8\uB8F9 \uBE44\uAD50" }),
+          React.createElement(SubTab, { active: chartSub === "overlay", onClick: () => setChartSub("overlay"), label: "\uACB9\uCCD0\uBCF4\uAE30" })
+        ),
+
+        chartSub === "trend" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+          series.length && categories.length
+            ? React.createElement(React.Fragment, null,
+                React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => v.toLocaleString() }),
+                React.createElement(ChartLegend, { series })
+              )
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uBD80\uC704\uB97C \uC120\uD0DD\uD558\uC138\uC694.")
+        ),
+
+        chartSub === "group" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+          React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute } }, `\uAC01 \uBD80\uC704\uC758 \uC870\uD68C\uAE30\uAC04(${ymLabel(ys)}~${ymLabel(ye)}) \uD3C9\uADE0\uAC00\uB97C \uBE44\uAD50\uD569\uB2C8\uB2E4.`),
+            React.createElement("button", { onClick: exportGroupXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+          ),
+          groupItems.length
+            ? React.createElement(BarRanking, { items: groupItems, formatValue: (v) => `${Math.round(v).toLocaleString()} ${unit}` })
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uB370\uC774\uD130 \uC5C6\uC74C")
+        ),
+
+        chartSub === "overlay" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+          React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
+            React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute } }, "\uC5F0\uB3C4\uBCC4\uB85C 1~12\uC6D4 \uCD95 \uC704\uC5D0 \uACB9\uCCD0\uC11C \uACC4\uC808 \uD328\uD134\uC744 \uBE44\uAD50\uD569\uB2C8\uB2E4 (\uD604\uC7AC \uC120\uD0DD\uB41C \uBD80\uC704 \uD3C9\uADE0)."),
+            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+          ),
+          overlay.series.length && overlay.categories.length
+            ? React.createElement(React.Fragment, null,
+                React.createElement(SvgLineChart, { categories: overlay.categories, series: overlay.series, formatAxisValue: (v) => v.toLocaleString() }),
+                React.createElement(ChartLegend, { series: overlay.series })
+              )
+            : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uB370\uC774\uD130 \uC5C6\uC74C")
+        )
       ),
 
       mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },

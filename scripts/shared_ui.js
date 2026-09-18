@@ -528,11 +528,49 @@ window.RadarUI = (function () {
     );
   }
 
+  /* ── 연도별 겹쳐보기(계절 패턴 비교) 공용 데이터 빌더 ──
+     가격류 탭(KMTA/경락/소비자가격)에 공통으로 쓰려고 뽑아냄. 원본 로우 배열을
+     "버킷(월 또는 월-주)" x "연도"로 재집계해서 SvgLineChart에 바로 꽂을 수 있는
+     {categories, series} 형태로 반환한다.
+       rows        - 원본 로우 배열 (주/월 단위 레코드)
+       yearOf(r)   - 로우의 연도(정수) 반환, 없으면 null
+       bucketOf(r) - 로우가 속하는 버킷 키(정렬 가능한 값, 보통 월*10+주 또는 월)
+       bucketLabel(b, r) - 버킷 키 -> 화면 표시 라벨
+       valueOf(r)  - 로우의 값(숫자) 반환, 없으면 null (여러 항목 평균은 호출부에서 미리 계산)
+       bucketCompare - 버킷 정렬 비교자(기본 오름차순 숫자 비교) */
+  function buildYearOverlay(rows, { yearOf, bucketOf, bucketLabel, valueOf, bucketCompare }) {
+    const bucketLabels = new Map(); // bucketKey -> label
+    const byYear = new Map(); // year -> Map(bucketKey -> value[])
+    rows.forEach((r) => {
+      const y = yearOf(r), b = bucketOf(r);
+      if (y == null || b == null) return;
+      if (!bucketLabels.has(b)) bucketLabels.set(b, bucketLabel(b, r));
+      if (!byYear.has(y)) byYear.set(y, new Map());
+      const m = byYear.get(y);
+      if (!m.has(b)) m.set(b, []);
+      const v = valueOf(r);
+      if (v != null && isFinite(v)) m.get(b).push(v);
+    });
+    const buckets = [...bucketLabels.keys()].sort(bucketCompare || ((a, b) => a - b));
+    const categories = buckets.map((b) => bucketLabels.get(b));
+    const years = [...byYear.keys()].sort((a, b) => a - b);
+    const YEAR_PALETTE = ["#9aa3ad", "#7d8a97", "#5580a8", "#3a6ea5", "#2f6f96", "#8a5a30", "#b96a2e", "#a34a3f", "#3f7d64", "#2e7d4f"];
+    const series = years.map((y, i) => {
+      const m = byYear.get(y);
+      const data = buckets.map((b) => {
+        const vals = m.get(b);
+        return vals && vals.length ? vals.reduce((a, c) => a + c, 0) / vals.length : null;
+      });
+      return { id: `y${y}`, name: `${y}\uB144`, color: YEAR_PALETTE[i % YEAR_PALETTE.length], data };
+    });
+    return { categories, series };
+  }
+
   return {
     COLORS, thStyle, tdStyle,
     fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile,
     SvgLineChart, SvgTimeBarChart, ChartLegend, BarRanking, ShiftRanking,
     SheetTab, SubTab, ToggleBtn, PillToggle,
-    HoverAxisPicker, HoverMultiPicker, ChipGroup,
+    HoverAxisPicker, HoverMultiPicker, ChipGroup, buildYearOverlay,
   };
 })();
