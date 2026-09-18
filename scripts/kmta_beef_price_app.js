@@ -1,18 +1,18 @@
-/* 축산레이더 · KMTA(한국육류유통수출협회) 돈육 부산물 시세
-   https://www.kmta.or.kr/kr/price/pork_etc.php 를 주 단위로 수집한 data/kmta_pork_etc.json.
-   공장출고가 기준(원/kg). 부위별시세(kmta_pork_price_app.js)와 달리 일반/브랜드,
-   냉장/냉동 구분 없이 부산물별 가격 한 줄씩만 있어서 UI가 더 단순함. */
-window.KmtaPorkEtcApp = (function () {
+/* 축산레이더 · KMTA(한국육류유통수출협회) 한우육 부위별시세
+   https://www.kmta.or.kr/kr/price/beef.php 를 주 단위로 수집한 data/kmta_beef_price.json.
+   한우 거세우 1등급 기준 공장출고가(원/kg). 돈육 부위별시세와 달리 일반/브랜드,
+   냉장/냉동 구분 없이 부위별 가격 한 줄씩만 있어서 UI가 더 단순함(부산물 탭과 같은 형태). */
+window.KmtaBeefPriceApp = (function () {
   const { useState, useMemo } = React;
   const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8"];
 
-  return function KmtaPorkEtcApp() {
+  return function KmtaBeefPriceApp() {
     const [raw, setRaw] = useState(null);
     const [error, setError] = useState(null);
     React.useEffect(() => {
-      fetch("./data/kmta_pork_etc.json", { cache: "no-store" })
+      fetch("./data/kmta_beef_price.json", { cache: "no-store" })
         .then((r) => { if (!r.ok) throw new Error("no-file"); return r.json(); })
         .then(setRaw)
         .catch((e) => setError(String(e)));
@@ -21,7 +21,7 @@ window.KmtaPorkEtcApp = (function () {
     const weeks = raw?.weeks || [];
     const itemNames = useMemo(() => {
       const set = new Set();
-      weeks.forEach((w) => Object.keys(w.items || {}).forEach((n) => set.add(n)));
+      weeks.forEach((w) => Object.keys(w.parts || {}).forEach((n) => set.add(n)));
       return [...set];
     }, [weeks]);
 
@@ -46,16 +46,16 @@ window.KmtaPorkEtcApp = (function () {
     const itemSeries = useMemo(() => selected.map((name) => ({
       id: name, name,
       color: PALETTE[itemNames.indexOf(name) % PALETTE.length],
-      data: filtered.map((w) => w.items?.[name] ?? null),
+      data: filtered.map((w) => w.parts?.[name] ?? null),
     })), [filtered, selected, itemNames]);
 
     const overallSeries = useMemo(() => {
       if (!itemNames.length) return null;
       const data = filtered.map((w) => {
-        const vals = itemNames.map((n) => w.items?.[n]).filter((v) => v != null && isFinite(v));
+        const vals = itemNames.map((n) => w.parts?.[n]).filter((v) => v != null && isFinite(v));
         return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
       });
-      return { id: "__overall", name: "전체(부산물평균)", color: COLORS.rust, data };
+      return { id: "__overall", name: "전체(부위평균)", color: COLORS.rust, data };
     }, [filtered, itemNames]);
 
     const series = [...(showOverall && overallSeries ? [overallSeries] : []), ...itemSeries];
@@ -69,7 +69,7 @@ window.KmtaPorkEtcApp = (function () {
     const exportXlsx = () => {
       const header = ["연-월-주", ...series.map((s) => `${s.name}(\uC6D0/kg)`)];
       const rows = tableIdx.map((i) => [categories[i], ...series.map((s) => s.data[i] != null ? s.data[i] : "")]);
-      downloadXlsx([header, ...rows], `KMTA_돈육_부산물시세_${idxLabel(is)}~${idxLabel(ie)}.xlsx`, "돈육부산물시세");
+      downloadXlsx([header, ...rows], `KMTA_한우육_부위별시세_${idxLabel(is)}~${idxLabel(ie)}.xlsx`, "한우육부위별시세");
     };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
@@ -83,9 +83,9 @@ window.KmtaPorkEtcApp = (function () {
     const diffPct = latestVal != null && prevVal ? Math.round((latestVal - prevVal) / prevVal * 1000) / 10 : null;
 
     return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
-      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "돈육 부산물 시세"),
+      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "한우육 부위별시세"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 18 } },
-        "\uD55C\uAD6D\uC721\uB958\uC720\uD1B5\uC218\uCD9C\uD611\uD68C(KMTA) \u00B7 \uAD6D\uB0B4\uC0B0 \uACF5\uC7A5\uCD9C\uACE0\uAC00 \uAE30\uC900\uC73C\uB85C \uCD94\uC815, \uC6D0/kg \u00B7 \uC8FC \uB2E8\uC704 \u00B7 \uC2E4\uC81C \uD1B5\uACC4\uC0C1 2010\uB144\uBD80\uD130 \uAC12\uC774 \uC788\uC74C(\uADF8 \uC804\uC740 \uC9D1\uACC4 \uC5C6\uC74C)"
+        "\uD55C\uAD6D\uC721\uB958\uC720\uD1B5\uC218\uCD9C\uD611\uD68C(KMTA) \u00B7 \uD55C\uC6B0 \uAC70\uC138\uC6B0 1\uB4F1\uAE09 \uAE30\uC900 \uACF5\uC7A5\uCD9C\uACE0\uAC00, \uC6D0/kg \u00B7 \uC8FC \uB2E8\uC704 \u00B7 \uC218\uC785\uC721\uC740 \uD574\uB2F9 \uC5C6\uC74C(\uD55C\uC6B0\uB294 \uC815\uC758\uC0C1 \uAD6D\uB0B4\uC0B0)"
       ),
 
       latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
@@ -108,7 +108,7 @@ window.KmtaPorkEtcApp = (function () {
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "\uBD80\uC0B0\uBB3C"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "\uBD80\uC704"),
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
             React.createElement("button", {
               onClick: () => setShowOverall((v) => !v),
@@ -118,7 +118,7 @@ window.KmtaPorkEtcApp = (function () {
                 background: showOverall ? COLORS.amber : COLORS.panel,
                 color: showOverall ? "#ffffff" : COLORS.cream
               }
-            }, "\u{1F4CA} \uC804\uCCB4(\uBD80\uC0B0\uBB3C\uD3C9\uADE0)"),
+            }, "\u{1F4CA} \uC804\uCCB4(\uBD80\uC704\uD3C9\uADE0)"),
             React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             itemNames.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
@@ -151,7 +151,7 @@ window.KmtaPorkEtcApp = (function () {
               React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0) }),
               React.createElement(ChartLegend, { series })
             )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uBD80\uC0B0\uBB3C\uC744 \uC120\uD0DD\uD558\uC138\uC694.")
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uBD80\uC704\uB97C \uC120\uD0DD\uD558\uC138\uC694.")
       ),
 
       mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
@@ -168,7 +168,7 @@ window.KmtaPorkEtcApp = (function () {
                 )))
               )
             )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uBD80\uC0B0\uBB3C\uC744 \uC120\uD0DD\uD558\uC138\uC694.")
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uBD80\uC704\uB97C \uC120\uD0DD\uD558\uC138\uC694.")
       ),
 
       React.createElement("div", { style: { fontSize: 12, color: COLORS.mute } },

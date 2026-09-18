@@ -92,9 +92,9 @@ window.KmtaPorkPriceApp = (function () {
     const diffPct = latestVal != null && prevVal ? Math.round((latestVal - prevVal) / prevVal * 1000) / 10 : null;
 
     return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
-      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "\uB3C8\uC721 \uBD80\uC704\uBCC4\uC2DC\uC138 (KMTA)"),
+      React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "돈육 부위별시세"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 18 } },
-        "\uD55C\uAD6D\uC721\uB958\uC720\uD1B5\uC218\uCD9C\uD611\uD68C(KMTA) \u00B7 \uACF5\uC7A5\uCD9C\uACE0\uAC00 \uAE30\uC900, \uC6D0/kg \u00B7 \uC8FC \uB2E8\uC704(\uBC1C\uD589 \uC2DC\uCC28 \uC788\uC74C) \u00B7 KAPE \uC18C\uBE44\uC790\uAC00\uACA9\uACFC \uAE30\uC900\uC774 \uB2E4\uB974\uC5EC \uC9C1\uC811 \uBE44\uAD50 \uC548 \uD568"
+        "\uD55C\uAD6D\uC721\uB958\uC720\uD1B5\uC218\uCD9C\uD611\uD68C(KMTA) \u00B7 \uAD6D\uB0B4\uC0B0 \uACF5\uC7A5\uCD9C\uACE0\uAC00 \uAE30\uC900\uC73C\uB85C \uCD94\uC815, \uC6D0/kg \u00B7 \uC8FC \uB2E8\uC704(\uBC1C\uD589 \uC2DC\uCC28 \uC788\uC74C) \u00B7 KAPE \uC18C\uBE44\uC790\uAC00\uACA9\uACFC \uAE30\uC900\uC774 \uB2E4\uB974\uC5EC \uC9C1\uC811 \uBE44\uAD50 \uC548 \uD568"
       ),
 
       latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
