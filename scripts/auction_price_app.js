@@ -18,6 +18,7 @@ window.AuctionPriceApp = (function () {
     }, []);
 
     const [species, setSpecies] = useState("돼지");
+    const [showOverall, setShowOverall] = useState(true);
     const [showGrades, setShowGrades] = useState([]);
     const [mainTab, setMainTab] = useState("chart");
     const [idxStart, setIdxStart] = useState(null);
@@ -42,7 +43,7 @@ window.AuctionPriceApp = (function () {
     const filtered = useMemo(() => weekly.filter((_, i) => i >= is && i <= ie), [weekly, is, ie]);
 
     const categories = filtered.map((w) => w.label);
-    const avgSeries = [{ id: "평균", name: "전체평균", color: "#b96a2e", data: filtered.map((w) => round(w.avgAmt)) }];
+    const avgSeries = showOverall ? [{ id: "평균", name: "전체평균", color: "#b96a2e", data: filtered.map((w) => round(w.avgAmt)) }] : [];
     const gradeSeries = showGrades.map((g, idx) => ({
       id: g, name: g,
       color: PALETTE[(idx + 1) % PALETTE.length],
@@ -104,8 +105,18 @@ window.AuctionPriceApp = (function () {
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "등급"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "지표"),
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
+            React.createElement("button", {
+              onClick: () => setShowOverall((v) => !v),
+              style: {
+                padding: "6px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+                border: `1.5px solid ${showOverall ? COLORS.amber : COLORS.panelBorder2}`,
+                background: showOverall ? COLORS.amber : COLORS.panel,
+                color: showOverall ? "#ffffff" : COLORS.cream
+              }
+            }, "\u{1F4CA} 전체평균"),
+            React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             gradeNames.map((g) => React.createElement(Toggle, {
               key: g, active: showGrades.includes(g),
               onClick: () => setShowGrades((s) => s.includes(g) ? s.filter((x) => x !== g) : [...s, g])

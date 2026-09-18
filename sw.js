@@ -11,7 +11,7 @@
 // → 이제부터 코드 변경사항은 CACHE_VERSION을 안 올려도 다음 새로고침에서 바로
 //   반영된다(네트워크 우선이라). CACHE_VERSION은 "오프라인 폴백용 캐시 청소"
 //   목적으로만 가끔 올리면 되고, 안 올려도 기능상 문제는 없다.
-const CACHE_VERSION = "v29";
+const CACHE_VERSION = "v30";
 const SHELL_CACHE = `axr-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `axr-data-${CACHE_VERSION}`;
 const SHELL_FILES = ["./icons/icon-192.png?v=2", "./icons/icon-512.png?v=2", "./apple-touch-icon.png?v=2", "./favicon.ico?v=2"];
@@ -58,10 +58,16 @@ self.addEventListener("fetch", (e) => {
 
   // 그 외 전부(HTML/네비게이션/manifest/data json/scripts js 등): 네트워크 우선,
   // 실패했을 때만(오프라인) 마지막으로 받아둔 캐시로 폴백.
+  // 주의: fetch(e.request)만 쓰면 "네트워크 우선"이라 믿었어도 브라우저의 일반
+  // HTTP 디스크캐시(서비스워커 Cache Storage와는 다른 레이어)가 GitHub Pages의
+  // cache-control: max-age=600 헤더를 보고 10분간 그냥 그걸 돌려줘버려서,
+  // 방금 배포한 새 버전인데도 "옛날 것"이 보이는 문제가 있었음.
+  // → cache: "no-store"로 강제해서 항상 실제 네트워크까지 나가게 함.
   const isData = u.pathname.includes("/data/") && u.pathname.endsWith(".json");
   const cacheName = isData ? DATA_CACHE : SHELL_CACHE;
+  const freshRequest = new Request(e.request, { cache: "no-store" });
   e.respondWith(
-    fetch(e.request)
+    fetch(freshRequest)
       .then((r) => {
         const copy = r.clone();
         caches.open(cacheName).then((c) => c.put(e.request, copy));

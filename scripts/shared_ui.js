@@ -198,6 +198,9 @@ window.RadarUI = (function () {
     const axisFontPx = 11;
     const charW = axisFontPx * 0.58;
 
+    const barSeries = series.filter((s) => !s.dashed);
+    const lineSeries = series.filter((s) => s.dashed);
+
     const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
     const autoMax = allVals.length ? Math.max(...allVals) : 1;
     const autoMin = allVals.length ? Math.min(0, Math.min(...allVals) * 0.97) : 0;
@@ -219,10 +222,11 @@ window.RadarUI = (function () {
     const span = Math.max(0.01, topVal - minVal);
     const colW = categories.length > 0 ? innerW / categories.length : 0;
     const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
+    const xForCenter = (i) => padding.left + colW * (i + 0.5);
     const zeroY = yFor(Math.max(minVal, 0));
     const groupGap = colW * 0.22;
     const barGap = 2;
-    const barsPerGroup = Math.max(1, series.length);
+    const barsPerGroup = Math.max(1, barSeries.length);
     const groupW = Math.max(1, colW - groupGap);
     const barW = Math.max(1, (groupW - barGap * (barsPerGroup - 1)) / barsPerGroup);
 
@@ -258,7 +262,7 @@ window.RadarUI = (function () {
           key: i, x: padding.left + colW * (i + 0.5), y: height - padding.bottom + axisFontPx + 6,
           textAnchor: "middle", fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace"
         }, c)),
-        categories.map((_, i) => series.map((s, sIdx) => {
+        categories.map((_, i) => barSeries.map((s, sIdx) => {
           const v = s.data[i];
           if (v == null || !isFinite(v)) return null;
           const barX = padding.left + i * colW + groupGap / 2 + sIdx * (barW + barGap);
@@ -267,9 +271,23 @@ window.RadarUI = (function () {
           const barH = Math.max(0.5, Math.abs(zeroY - y));
           return React.createElement("rect", {
             key: `${i}-${s.id}`, x: barX, y: barY, width: barW, height: barH,
-            fill: s.color, opacity: s.dashed ? 0.45 : (hoverIdx === i ? 1 : 0.88), rx: 2
+            fill: s.color, opacity: hoverIdx === i ? 1 : 0.88, rx: 2
           });
         })),
+        // 평균 등 "기준선" 성격의 series(dashed)는 막대 그룹 옆이 아니라 카테고리
+        // 중심을 지나는 점선으로 그려서, 막대들과 겹치는 그룹-바가 아니라 눈에 띄는
+        // 수평 기준선처럼 보이게 함.
+        lineSeries.map((s) => {
+          const segs = []; let cur = [];
+          s.data.forEach((v, i) => {
+            if (v == null || !isFinite(v)) { if (cur.length) { segs.push(cur); cur = []; } return; }
+            cur.push(`${cur.length ? "L" : "M"}${xForCenter(i)},${yFor(v)}`);
+          });
+          if (cur.length) segs.push(cur);
+          return React.createElement("g", { key: s.name },
+            segs.map((seg, si) => React.createElement("path", { key: si, d: seg.join(" "), fill: "none", stroke: s.color, strokeWidth: 1.8, strokeDasharray: "5 4", opacity: 0.75 }))
+          );
+        }),
         hoverIdx !== null && React.createElement("line", { x1: padding.left + (hoverIdx + 0.5) * colW, x2: padding.left + (hoverIdx + 0.5) * colW, y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.5 })
       ),
       hoverIdx !== null && React.createElement("div", {

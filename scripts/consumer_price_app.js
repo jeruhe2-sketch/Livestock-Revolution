@@ -21,6 +21,7 @@ window.ConsumerPriceApp = (function () {
 
     const [species, setSpecies] = useState("돼지");
     const [selected, setSelected] = useState([]);
+    const [showOverall, setShowOverall] = useState(true);
     const [mainTab, setMainTab] = useState("chart");
     const [ymStart, setYmStart] = useState(null);
     const [ymEnd, setYmEnd] = useState(null);
@@ -63,11 +64,24 @@ window.ConsumerPriceApp = (function () {
     }), [history, ys, ye]);
 
     const categories = filtered.map((h) => h.yearMonth);
-    const series = useMemo(() => selected.map((name) => ({
-      id: name, name,
-      color: PALETTE[itemNames.indexOf(name) % PALETTE.length],
-      data: filtered.map((h) => h.items?.[name] ?? null),
-    })), [filtered, selected, itemNames]);
+    // "전체" = 추적 중인 모든 부위를 합쳐 낸 단순평균(단위가 다 원/100g로 같아서 비교 가능).
+    // 재고동향 탭의 "총재고" 버튼과 같은 역할 - 부위별로 쪼개보기 전에 전체 흐름부터.
+    const overallSeries = useMemo(() => {
+      if (!itemNames.length) return null;
+      const data = filtered.map((h) => {
+        const vals = itemNames.map((n) => h.items?.[n]).filter((v) => v != null && isFinite(v));
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      });
+      return { id: "__overall", name: "전체(부위평균)", color: COLORS.rust, data };
+    }, [filtered, itemNames]);
+    const series = useMemo(() => [
+      ...(showOverall && overallSeries ? [overallSeries] : []),
+      ...selected.map((name) => ({
+        id: name, name,
+        color: PALETTE[itemNames.indexOf(name) % PALETTE.length],
+        data: filtered.map((h) => h.items?.[name] ?? null),
+      }))
+    ], [filtered, selected, itemNames, showOverall, overallSeries]);
 
     const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
     const tableIdx = categories.map((_, i) => i).reverse();
@@ -133,8 +147,18 @@ window.ConsumerPriceApp = (function () {
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "부위"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "지표"),
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
+            React.createElement("button", {
+              onClick: () => setShowOverall((v) => !v),
+              style: {
+                padding: "6px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+                border: `1.5px solid ${showOverall ? COLORS.amber : COLORS.panelBorder2}`,
+                background: showOverall ? COLORS.amber : COLORS.panel,
+                color: showOverall ? "#ffffff" : COLORS.cream
+              }
+            }, "\u{1F4CA} 전체(부위평균)"),
+            React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             itemNames.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀 다운로드")
