@@ -78,7 +78,12 @@ window.ConsumerPriceApp = (function () {
       downloadXlsx([header, ...rows], `국내_${species}_소비자가격.xlsx`, "소비자가격");
     };
 
-    const tendaysRecent = tendays.slice(-36);
+    // 순별(초/중/하순, 월 3회) 기간 필터 - 일단위는 아니지만 월별보다 촘촘한 단위
+    const TEN_MAX = tendays.length - 1;
+    const [tenIdxStart, setTenIdxStart] = useState(null);
+    React.useEffect(() => { setTenIdxStart(null); }, [species]);
+    const tenStart = tenIdxStart ?? Math.max(0, TEN_MAX - 35);
+    const tendaysRecent = useMemo(() => tendays.filter((_, i) => i >= tenStart), [tendays, tenStart]);
     const tenCategories = tendaysRecent.map((t) => t.label);
     const tenSeries = useMemo(() => selected.map((name) => ({
       id: name, name,
@@ -179,11 +184,24 @@ window.ConsumerPriceApp = (function () {
       ),
 
       mainTab === "tendays" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+        React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement("span", { style: { fontSize: 12, color: COLORS.mute } }, "기간:"),
+          [["12", "최근 12순(4개월)"], ["24", "최근 24순(8개월)"], ["36", "최근 36순(1년)"]].map(([n, lbl]) => React.createElement(Toggle, {
+            key: n, active: tenStart === Math.max(0, TEN_MAX - (Number(n) - 1)), color: COLORS.sage,
+            onClick: () => setTenIdxStart(Math.max(0, TEN_MAX - (Number(n) - 1)))
+          }, lbl)),
+          React.createElement(Toggle, { active: tenStart === 0, color: COLORS.sage, onClick: () => setTenIdxStart(0) }, "전체"),
+          TEN_MAX >= 0 && React.createElement(HoverAxisPicker, {
+            label: "시작", value: tenStart,
+            onChange: (v) => setTenIdxStart(+v),
+            options: tendays.map((t, i) => [i, t.label])
+          })
+        ),
         tenSeries.length && tenCategories.length
           ? React.createElement(React.Fragment, null,
               React.createElement(SvgLineChart, { categories: tenCategories, series: tenSeries, formatAxisValue: (v) => v.toLocaleString() }),
               React.createElement(ChartLegend, { series: tenSeries }),
-              React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 8 } }, "최근 12개월(36개 순) 기준 \u00B7 초순/중순/하순")
+              React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 8 } }, `${tenCategories[0] || "—"} ~ ${tenCategories[tenCategories.length - 1] || "—"} \u00B7 초순/중순/하순`)
             )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
       ),
