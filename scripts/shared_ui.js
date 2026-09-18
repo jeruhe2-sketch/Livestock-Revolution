@@ -176,6 +176,119 @@ window.RadarUI = (function () {
     );
   }
 
+  // 시계열 막대그래프. SvgLineChart와 축/여백/호버 로직을 최대한 동일하게 맞춰서
+  // 라인↔막대 전환해도 시각적 일관성이 유지되게 함. 여러 series는 카테고리 폭 안에서
+  // 나란히(그룹) 배치.
+  function SvgTimeBarChart({ categories, series, height = 260, formatValue, formatAxisValue, formatTooltipValue, width = 900, yMin, yMax }) {
+    const fmtAxis = formatAxisValue || formatValue || defaultNumFmt;
+    const fmtTip = formatTooltipValue || formatValue || defaultNumFmt;
+    const containerRef = useRef(null);
+    const { useState: useStateLocal3, useEffect: useEffectLocal3 } = React;
+    const [actualWidth, setActualWidth] = useStateLocal3(width);
+    useEffectLocal3(() => {
+      if (!containerRef.current || typeof ResizeObserver === "undefined") return;
+      const el = containerRef.current;
+      const update = () => { const w = el.getBoundingClientRect().width; if (w > 0) setActualWidth(w); };
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, []);
+    const W = actualWidth > 0 ? actualWidth : width;
+    const axisFontPx = 11;
+    const charW = axisFontPx * 0.58;
+
+    const allVals = series.flatMap((s) => s.data).filter((v) => v != null && isFinite(v));
+    const autoMax = allVals.length ? Math.max(...allVals) : 1;
+    const autoMin = allVals.length ? Math.min(0, Math.min(...allVals) * 0.97) : 0;
+    const maxVal = yMax != null ? yMax : autoMax;
+    const minVal = yMin != null ? yMin : autoMin;
+    const topVal = yMax != null ? maxVal : maxVal * 1.05;
+    const gridLines = 4;
+    const yLabels = Array.from({ length: gridLines + 1 }, (_, i) => fmtAxis(topVal - (topVal - minVal) / gridLines * i));
+    const longestYLabelLen = yLabels.reduce((m, s) => Math.max(m, String(s).length), 1);
+    const manyLabels = categories.length > 16;
+    const padding = {
+      top: axisFontPx * 1.1,
+      right: 14,
+      bottom: (manyLabels ? 34 : 24) + axisFontPx * 0.9,
+      left: longestYLabelLen * charW + 18
+    };
+    const innerW = W - padding.left - padding.right;
+    const innerH = height - padding.top - padding.bottom;
+    const span = Math.max(0.01, topVal - minVal);
+    const colW = categories.length > 0 ? innerW / categories.length : 0;
+    const yFor = (v) => padding.top + innerH - (v - minVal) / span * innerH;
+    const zeroY = yFor(Math.max(minVal, 0));
+    const groupGap = colW * 0.22;
+    const barGap = 2;
+    const barsPerGroup = Math.max(1, series.length);
+    const groupW = Math.max(1, colW - groupGap);
+    const barW = Math.max(1, (groupW - barGap * (barsPerGroup - 1)) / barsPerGroup);
+
+    const longestXLabelLen = categories.reduce((m, c) => Math.max(m, String(c).length), 1);
+    const estLabelPx = (charW * longestXLabelLen + 20) * 1.4;
+    const maxLabelsFit = Math.max(2, Math.floor(W / estLabelPx));
+    const labelEvery = Math.max(1, Math.ceil(categories.length / Math.min(maxLabelsFit, manyLabels ? 7 : 6)));
+    const [hoverIdx, setHoverIdx] = useState(null);
+    const handleMove = (e) => {
+      if (!containerRef.current || categories.length === 0) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const rect = containerRef.current.getBoundingClientRect();
+      const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      setHoverIdx(Math.min(categories.length - 1, Math.floor(frac * categories.length)));
+    };
+    const tooltipLeftPct = hoverIdx !== null && categories.length > 0 ? (hoverIdx + 0.5) / categories.length * 100 : 50;
+
+    return React.createElement("div", { ref: containerRef, style: { position: "relative", touchAction: "pan-y" }, onMouseMove: handleMove, onMouseLeave: () => setHoverIdx(null), onTouchStart: handleMove, onTouchMove: handleMove, onTouchEnd: () => setHoverIdx(null) },
+      React.createElement("svg", { viewBox: `0 0 ${W} ${height}`, style: { width: "100%", height, display: "block", cursor: "crosshair" } },
+        yLabels.map((label, i) => {
+          const y = padding.top + innerH / gridLines * i;
+          return React.createElement("g", { key: i },
+            React.createElement("line", { x1: padding.left, x2: W - padding.right, y1: y, y2: y, stroke: "#e7e9e3", strokeWidth: 1 }),
+            React.createElement("text", { x: padding.left - 10, y, textAnchor: "end", dominantBaseline: "middle", fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace" }, label)
+          );
+        }),
+        hoverIdx !== null && React.createElement("rect", {
+          x: padding.left + hoverIdx * colW, y: padding.top, width: colW, height: innerH,
+          fill: COLORS.amberSoft, opacity: 0.08
+        }),
+        React.createElement("line", { x1: padding.left, x2: W - padding.right, y1: padding.top + innerH, y2: padding.top + innerH, stroke: COLORS.panelBorder2, strokeWidth: 1.2 }),
+        categories.map((c, i) => i % labelEvery === 0 && React.createElement("text", {
+          key: i, x: padding.left + colW * (i + 0.5), y: height - padding.bottom + axisFontPx + 6,
+          textAnchor: "middle", fontSize: axisFontPx, fill: "#8a9086", fontFamily: "ui-monospace,monospace"
+        }, c)),
+        categories.map((_, i) => series.map((s, sIdx) => {
+          const v = s.data[i];
+          if (v == null || !isFinite(v)) return null;
+          const barX = padding.left + i * colW + groupGap / 2 + sIdx * (barW + barGap);
+          const y = yFor(v);
+          const barY = Math.min(y, zeroY);
+          const barH = Math.max(0.5, Math.abs(zeroY - y));
+          return React.createElement("rect", {
+            key: `${i}-${s.id}`, x: barX, y: barY, width: barW, height: barH,
+            fill: s.color, opacity: s.dashed ? 0.45 : (hoverIdx === i ? 1 : 0.88), rx: 2
+          });
+        })),
+        hoverIdx !== null && React.createElement("line", { x1: padding.left + (hoverIdx + 0.5) * colW, x2: padding.left + (hoverIdx + 0.5) * colW, y1: padding.top, y2: padding.top + innerH, stroke: COLORS.amberSoft, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.5 })
+      ),
+      hoverIdx !== null && React.createElement("div", {
+        style: {
+          position: "absolute", left: `${tooltipLeftPct}%`, top: 6,
+          transform: `translateX(${tooltipLeftPct > 70 ? "-100%" : tooltipLeftPct < 5 ? "0%" : "-50%"})`,
+          background: COLORS.cream, color: "#f7f8f5", borderRadius: 8, padding: "8px 10px",
+          fontSize: 12, pointerEvents: "none", whiteSpace: "nowrap", boxShadow: "0 4px 10px rgba(0,0,0,.18)", zIndex: 5
+        }
+      },
+        React.createElement("div", { style: { fontWeight: 700, marginBottom: 4 } }, categories[hoverIdx]),
+        series.map((s) => React.createElement("div", { key: s.name, style: { display: "flex", justifyContent: "space-between", gap: 10 } },
+          React.createElement("span", { style: { color: s.color } }, "\u25CF " + (series.length > 1 ? s.name : "")),
+          React.createElement("span", null, fmtTip(s.data[hoverIdx]))
+        ))
+      )
+    );
+  }
+
   function ChartLegend({ series }) {
     if (series.length < 2) return null;
     return React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, marginTop: 6, paddingBottom: 10 } },
@@ -400,7 +513,7 @@ window.RadarUI = (function () {
   return {
     COLORS, thStyle, tdStyle,
     fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile,
-    SvgLineChart, ChartLegend, BarRanking, ShiftRanking,
+    SvgLineChart, SvgTimeBarChart, ChartLegend, BarRanking, ShiftRanking,
     SheetTab, SubTab, ToggleBtn, PillToggle,
     HoverAxisPicker, HoverMultiPicker, ChipGroup,
   };

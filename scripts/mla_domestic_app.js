@@ -1,7 +1,7 @@
 /* 축산레이더 · 호주 내수(EYCI 등) 현황
    MLA(Meat & Livestock Australia) Statistics API(인증 불필요, 공개 API)로 GitHub Actions가
    수집한 data/mla_domestic.json을 그린다.
-   지표: EYCI, 중량우(Heavy Steer), 처리소(Processor Cow), 무역용 양(Trade Lamb), 머튼(Mutton)
+   지표: EYCI, 중량우(Heavy Steer), 가공우육(Processor Cow), 무역용 양(Trade Lamb), 머튼(Mutton)
    + 주간 도축량(NLRS 자발적 조사, 소/양)
 
    주의: MLA Market Report and Information Terms of Use 적용 대상 데이터.
@@ -13,7 +13,7 @@ window.MlaDomesticApp = (function () {
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
   const IND_ORDER = ["0", "4", "13", "7", "11", "90cl"];
   const IND_SHORT = {
-    "0": "EYCI (동부 영계)", "4": "중량우 (Heavy Steer)", "13": "처리소 (Processor Cow)",
+    "0": "EYCI (동부 어린소)", "4": "중량우 (Heavy Steer)", "13": "가공우육 (Processor Cow)",
     "7": "무역용 양 (Trade Lamb)", "11": "머튼 (Mutton)", "90cl": "90CL (미국 수입육지표)"
   };
 

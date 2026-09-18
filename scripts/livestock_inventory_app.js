@@ -5,7 +5,7 @@
    단위: 소=kg, 돼지=ton (그대로 표기, 서로 합산/비교하지 않음). */
 window.LivestockInventoryApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a", "#7a8a3a", "#c48a3a", "#5a7ab9", "#9a4a6a"];
   const Toggle = PillToggle;
@@ -40,6 +40,7 @@ window.LivestockInventoryApp = (function () {
       return [...set];
     }, [history]);
     const ALL_INDICATORS = ["총재고", ...partNames];
+    const PART_INDICATORS = partNames;
 
     const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
       const all = history.map((h) => {
@@ -68,14 +69,26 @@ window.LivestockInventoryApp = (function () {
     }, [history, ys, ye]);
 
     const categories = filtered.map((h) => h.yearMonth);
-    const series = useMemo(() => {
-      return selected.map((name, idx) => ({
+    const baseSeries = useMemo(() => {
+      return selected.map((name) => ({
         id: name,
         name,
         color: PALETTE[ALL_INDICATORS.indexOf(name) % PALETTE.length],
         data: filtered.map((h) => name === "총재고" ? h.totStock : (h.parts?.[name] ?? null)),
       }));
     }, [filtered, selected, ALL_INDICATORS]);
+    // 차트용: 선택된 각 지표마다 "OOO 평균" 기준선을 같이 그려서(옅은 색) 조회기간
+    // 평균이 카드 숫자뿐 아니라 차트에도 바로 보이게 함. 표/엑셀은 baseSeries 그대로 씀.
+    const chartSeries = useMemo(() => {
+      const avgLines = baseSeries.map((s) => {
+        const vals = s.data.filter((v) => v != null && isFinite(v));
+        if (!vals.length) return null;
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        return { id: `${s.id}_avg`, name: `${s.name} 평균`, color: s.color, dashed: true, data: filtered.map(() => avg) };
+      }).filter(Boolean);
+      return [...baseSeries, ...avgLines];
+    }, [baseSeries, filtered]);
+    const series = baseSeries;
 
     const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
     const tableIdx = categories.map((_, i) => i).reverse();
@@ -130,9 +143,19 @@ window.LivestockInventoryApp = (function () {
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "부위"),
+          React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "지표"),
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } },
-            ALL_INDICATORS.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
+            React.createElement("button", {
+              onClick: () => toggle("총재고"),
+              style: {
+                padding: "6px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+                border: `1.5px solid ${selected.includes("총재고") ? COLORS.amber : COLORS.panelBorder2}`,
+                background: selected.includes("총재고") ? COLORS.amber : COLORS.panel,
+                color: selected.includes("총재고") ? "#ffffff" : COLORS.cream
+              }
+            }, "\u{1F4CA} 총재고"),
+            React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
+            PART_INDICATORS.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀 다운로드")
           )
@@ -157,10 +180,10 @@ window.LivestockInventoryApp = (function () {
       ),
 
       mainTab === "chart" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
-        series.length && categories.length
+        chartSeries.length && categories.length
           ? React.createElement(React.Fragment, null,
-              React.createElement(SvgLineChart, { categories, series, formatAxisValue: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0) }),
-              React.createElement(ChartLegend, { series })
+              React.createElement(SvgTimeBarChart, { categories, series: chartSeries, formatAxisValue: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0) }),
+              React.createElement(ChartLegend, { series: chartSeries })
             )
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
       ),
