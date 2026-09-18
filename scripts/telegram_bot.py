@@ -28,7 +28,7 @@ SITES = {
 KST = timezone(timedelta(hours=9))
 
 # 이 문구들 중 하나로 (대소문자/양옆 공백 무시) 정확히 보내면 통계로 답장한다.
-TRIGGER_COMMANDS = {"/기록", "기록", "/방문자", "방문자", "/visitors", "/stats", "/통계"}
+TRIGGER_COMMANDS = {"/기록", "기록", "/방문자", "방문자", "/visitors", "/stats", "/통계", "/비교", "비교"}
 
 
 def _get(url: str) -> dict:
