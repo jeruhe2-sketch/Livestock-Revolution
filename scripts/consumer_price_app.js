@@ -71,6 +71,10 @@ window.ConsumerPriceApp = (function () {
 
     const toggle = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
     const tableIdx = categories.map((_, i) => i).reverse();
+    const periodAvgByItem = useMemo(() => series.map((s) => {
+      const vals = s.data.filter((v) => v != null && isFinite(v));
+      return { name: s.name, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null };
+    }), [series]);
 
     const exportXlsx = () => {
       const header = ["연월", ...selected.map((s) => `${s}(${unit})`)];
@@ -147,6 +151,16 @@ window.ConsumerPriceApp = (function () {
             React.createElement("span", { style: { color: COLORS.mute } }, "\u2013"),
             React.createElement(HoverAxisPicker, { label: "종료월", value: ye, onChange: (v) => { setYmEnd(+v); if (+v < ys) setYmStart(+v); }, options: [...ALL_YM].reverse().map((ym) => [ym, ymLabel(ym)]) })
           )
+        )
+      ),
+
+      periodAvgByItem.length > 0 && React.createElement("div", { style: { marginBottom: 14 } },
+        React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 8 } }, `조회기간 평균가 (${ymLabel(ys)}~${ymLabel(ye)})`),
+        React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } },
+          periodAvgByItem.map((it) => React.createElement("div", { key: it.name, style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "10px 14px", minWidth: 110 } },
+            React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 4 } }, it.name),
+            React.createElement("div", { style: { fontSize: 17, fontWeight: 800, color: COLORS.cream } }, it.avg != null ? Math.round(it.avg).toLocaleString() : "—")
+          ))
         )
       ),
 

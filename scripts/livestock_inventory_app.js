@@ -84,6 +84,11 @@ window.LivestockInventoryApp = (function () {
       return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     };
 
+    const periodAvgTot = useMemo(() => {
+      const vals = filtered.map((h) => h.totStock).filter((v) => v != null && isFinite(v));
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    }, [filtered]);
+
     const exportXlsx = () => {
       const header = ["연월", ...selected.map((s) => `${s}(${unit})`)];
       const rows = tableIdx.map((i) => [categories[i], ...series.map((s) => s.data[i] != null ? s.data[i] : "")]);
@@ -116,6 +121,10 @@ window.LivestockInventoryApp = (function () {
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `${species} 총재고 (${latest.yearMonth})`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, `${latest.totStock?.toLocaleString() ?? "—"} ${unit}`),
           momPct != null && React.createElement("div", { style: { fontSize: 12, color: momPct > 0 ? COLORS.rust : COLORS.sage, marginTop: 4 } }, `전월대비 ${momPct > 0 ? "+" : ""}${momPct.toFixed(1)}%`)
+        ),
+        React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
+          React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `조회기간 평균 총재고 (${ymLabel(ys)}~${ymLabel(ye)})`),
+          React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, periodAvgTot != null ? `${Math.round(periodAvgTot).toLocaleString()} ${unit}` : "—")
         )
       ),
 
