@@ -48,9 +48,13 @@ def _num(s):
     if not s:
         return None
     try:
-        return float(s) if "." in s else int(s)
+        v = float(s) if "." in s else int(s)
     except ValueError:
         return None
+    # 이 사이트는 그 주에 거래가 없던 칸을 빈칸이 아니라 "0"으로 써두는 경우가 많음
+    # (특히 브랜드·냉동 조합, 2003~2010년대 초반에 흔함). 원/kg = 0은 실제 가격일 수
+    # 없으므로 데이터없음(None)으로 취급 - 안 그러면 차트가 0으로 뚝 떨어져 보임.
+    return None if v == 0 else v
 
 
 def fetch_week(session, y, m, w):
