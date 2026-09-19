@@ -282,7 +282,7 @@ window.EuPigmeatPriceApp = (function () {
       if (mainTab === "table") { sp.set("rd", rowDim); sp.set("cd", colDim); if (displayMode !== "abs") sp.set("dm", displayMode); }
       else { sp.set("csub", chartSub); if (chartSub === "group") sp.set("gb", groupBy); if (chartSub === "trend") { sp.set("td", trendDim); if (smoothed) sp.set("sm", "1"); } }
       const newSearch = "?" + sp.toString();
-      if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
+      if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
     }, [msFilter, clsFilter, yearFilter, ymStart, ymEnd, monthFrom, monthTo, mainTab, rowDim, colDim, displayMode, chartSub, groupBy, trendDim, smoothed]);
 
     const [linkCopied, setLinkCopied] = useState(false);

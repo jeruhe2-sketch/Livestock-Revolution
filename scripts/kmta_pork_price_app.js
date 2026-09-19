@@ -5,7 +5,7 @@
    (여긴 공장출고가, KAPE는 소비자가). 참고용 두 번째 소스로 병행 제공. */
 window.KmtaPorkPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8"];
   const KINDS = [
@@ -33,14 +33,19 @@ window.KmtaPorkPriceApp = (function () {
     }, [weeks]);
 
     const [selected, setSelected] = useState([]);
-    const [kindIdx, setKindIdx] = useState(0);
-    const [showOverall, setShowOverall] = useState(true);
-    const [mainTab, setMainTab] = useState("chart");
-    const [idxStart, setIdxStart] = useState(null);
-    const [idxEnd, setIdxEnd] = useState(null);
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [kindIdx, setKindIdx] = useState(() => pInt("ki", 0));
+    const [showOverall, setShowOverall] = useState(() => p("ov", "1") === "1");
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table"]));
+    const [idxStart, setIdxStart] = useState(() => pInt("is", null));
+    const [idxEnd, setIdxEnd] = useState(() => pInt("ie", null));
 
     React.useEffect(() => {
-      if (partNames.length && selected.length === 0) setSelected([partNames[0]]);
+      if (partNames.length && selected.length === 0) {
+        const fromUrl = pList("sel", null);
+        const valid = fromUrl ? fromUrl.filter((k) => partNames.includes(k)) : [];
+        setSelected(valid.length ? valid : [partNames[0]]);
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [partNames.join(",")]);
 
@@ -83,7 +88,7 @@ window.KmtaPorkPriceApp = (function () {
     };
 
     // ── 그룹 비교(부위별 랭킹) / 겹쳐보기(연도별 계절 패턴) ──
-    const [chartSub, setChartSub] = useState("trend");
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "group", "overlay"]));
     const groupItems = useMemo(() => partNames.map((name) => {
       const vals = filtered.map((w) => valOf(w, name)).filter((v) => v != null && isFinite(v));
       return { key: name, v: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
@@ -111,14 +116,37 @@ window.KmtaPorkPriceApp = (function () {
       downloadXlsx([header, ...rows], `KMTA_돈육_부위별시세_겹쳐보기.xlsx`, "겹쳐보기");
     };
 
+    const { linkCopied, copyShareLink } = useShareLink();
+    React.useEffect(() => {
+      const sp = new URLSearchParams();
+      sp.set("tab", mainTab);
+      sp.set("ki", kindIdx);
+      if (!showOverall) sp.set("ov", "0");
+      if (selected.length) sp.set("sel", selected.join(","));
+      if (idxStart != null) sp.set("is", idxStart);
+      if (idxEnd != null) sp.set("ie", idxEnd);
+      if (mainTab === "chart") sp.set("csub", chartSub);
+      const newSearch = "?" + sp.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [mainTab, kindIdx, showOverall, selected.join(","), idxStart, idxEnd, chartSub]);
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
     const latest = weeks[weeks.length - 1];
     const prevW = weeks[weeks.length - 2];
-    const latestVal = latest ? valOf(latest, selected[0] || partNames[0]) : null;
-    const prevVal = prevW ? valOf(prevW, selected[0] || partNames[0]) : null;
+    const yearAgoW = weeks[weeks.length - 1 - 52] || null;
+    const cmpItem = selected[0] || partNames[0];
+    const latestVal = latest ? valOf(latest, cmpItem) : null;
+    const prevVal = prevW ? valOf(prevW, cmpItem) : null;
+    const yearAgoVal = yearAgoW ? valOf(yearAgoW, cmpItem) : null;
     const diffPct = latestVal != null && prevVal ? Math.round((latestVal - prevVal) / prevVal * 1000) / 10 : null;
+    const yoyPct = latestVal != null && yearAgoVal ? Math.round((latestVal - yearAgoVal) / yearAgoVal * 1000) / 10 : null;
+
+    const resetFilters = () => {
+      setKindIdx(0); setShowOverall(true); setSelected(partNames.length ? [partNames[0]] : []);
+      setIdxStart(null); setIdxEnd(null); setMainTab("chart"); setChartSub("trend");
+    };
 
     return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "돈육 부위별시세"),
@@ -126,13 +154,25 @@ window.KmtaPorkPriceApp = (function () {
         "\uD55C\uAD6D\uC721\uB958\uC720\uD1B5\uC218\uCD9C\uD611\uD68C(KMTA) \u00B7 \uAD6D\uB0B4\uC0B0 \uACF5\uC7A5\uCD9C\uACE0\uAC00 \uAE30\uC900\uC73C\uB85C \uCD94\uC815, \uC6D0/kg \u00B7 \uC8FC \uB2E8\uC704(\uBC1C\uD589 \uC2DC\uCC28 \uC788\uC74C) \u00B7 KAPE \uC18C\uBE44\uC790\uAC00\uACA9\uACFC \uAE30\uC900\uC774 \uB2E4\uB974\uC5EC \uC9C1\uC811 \uBE44\uAD50 \uC548 \uD568"
       ),
 
-      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
+      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10, alignItems: "flex-start" } },
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
-          React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `\uCD5C\uADFC(${latest.label}) ${selected[0] || partNames[0] || ""}`),
+          React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `\uCD5C\uADFC(${latest.label}) ${cmpItem || ""}`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, latestVal != null ? `${latestVal.toLocaleString()} \uC6D0/kg` : "\u2014"),
-          diffPct != null && React.createElement("div", { style: { fontSize: 12, color: diffPct > 0 ? COLORS.rust : COLORS.sage, marginTop: 4 } }, `\uC804\uC8FC\uB300\uBE44 ${diffPct > 0 ? "+" : ""}${diffPct}%`)
+          React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 6 } },
+            diffPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "\uC804\uC8FC "),
+              React.createElement("span", { style: { color: diffPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${diffPct > 0 ? "+" : ""}${diffPct}%`)
+            ),
+            yoyPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "\uC804\uB144 "),
+              React.createElement("span", { style: { color: yoyPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${yoyPct > 0 ? "+" : ""}${yoyPct}%`)
+            )
+          )
         )
       ),
+
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
 
       periodAvgByItem.length > 0 && React.createElement("div", { style: { marginBottom: 14 } },
         React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 8 } }, `\uC870\uD68C\uAE30\uAC04 \uD3C9\uADE0\uAC00 (${idxLabel(is)}~${idxLabel(ie)})`),
@@ -166,6 +206,7 @@ window.KmtaPorkPriceApp = (function () {
             React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             partNames.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
+            React.createElement(ResetFilterButton, { onClick: resetFilters }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
           )
         ),

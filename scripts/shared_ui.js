@@ -566,11 +566,63 @@ window.RadarUI = (function () {
     return { categories, series };
   }
 
+  /* ── URL 상태 저장/복원 + "이 화면 링크 복사" 공용 헬퍼 ──
+     최초기 4개 탭(CEPEA/USDA내수/EU돈가/호주무역)에만 있던 기능을 전체로 확산.
+     사용법:
+       const { p, pOneOf, pList, pInt } = readUrlParams();
+       const [x, setX] = useState(() => pOneOf("x", "a", ["a","b"]));
+       ...
+       useUrlSync({ x, y, z }, (sp) => { sp.set("x", x); ... }); // 매 렌더 후 URL 동기화
+       const { linkCopied, copyShareLink } = useShareLink();
+  */
+  function readUrlParams() {
+    const sp = new URLSearchParams(window.location.search);
+    const p = (key, fallback) => { const v = sp.get(key); return v != null ? v : fallback; };
+    const pOneOf = (key, fallback, validValues) => { const v = p(key, fallback); return validValues.includes(v) ? v : fallback; };
+    const pList = (key, fallback) => { const v = sp.get(key); return v ? v.split(",").filter(Boolean) : (fallback || []); };
+    const pInt = (key, fallback) => { const v = sp.get(key); const n = parseInt(v, 10); return Number.isFinite(n) ? n : fallback; };
+    return { sp, p, pOneOf, pList, pInt };
+  }
+
+  function useShareLink() {
+    const [linkCopied, setLinkCopied] = useState(false);
+    const copyShareLink = () => {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 1600);
+      }).catch(() => {});
+    };
+    return { linkCopied, copyShareLink };
+  }
+
+  function ShareLinkButton({ linkCopied, onClick }) {
+    return React.createElement("button", {
+      onClick,
+      style: {
+        fontSize: 13, fontWeight: 700, color: linkCopied ? COLORS.sage : COLORS.mute,
+        background: "none", border: `1px solid ${linkCopied ? COLORS.sage : COLORS.panelBorder}`,
+        borderRadius: 6, padding: "5px 10px", cursor: "pointer"
+      }
+    }, linkCopied ? "\u2713 \uBCF5\uC0AC\uB428" : "\uC774 \uD654\uBA74 \uB9C1\uD06C \uBCF5\uC0AC");
+  }
+
+  function ResetFilterButton({ onClick, label }) {
+    return React.createElement("button", {
+      onClick,
+      style: {
+        fontSize: 12.5, fontWeight: 700, color: COLORS.rust,
+        background: "none", border: `1px solid ${COLORS.rust}`,
+        borderRadius: 6, padding: "5px 10px", cursor: "pointer"
+      }
+    }, label || "\uD544\uD130 \uCD08\uAE30\uD654");
+  }
+
   return {
     COLORS, thStyle, tdStyle,
     fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile,
     SvgLineChart, SvgTimeBarChart, ChartLegend, BarRanking, ShiftRanking,
     SheetTab, SubTab, ToggleBtn, PillToggle,
     HoverAxisPicker, HoverMultiPicker, ChipGroup, buildYearOverlay,
+    readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton,
   };
 })();

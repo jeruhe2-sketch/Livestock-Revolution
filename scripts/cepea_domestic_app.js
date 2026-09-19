@@ -311,7 +311,7 @@ window.CepeaDomesticApp = (function () {
         if (chartSub === "overlay") sp.set("oi", overlayItem);
       }
       const newSearch = "?" + sp.toString();
-      if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch);
+      if (newSearch !== window.location.search) window.history.replaceState(null, "", newSearch + window.location.hash);
     }, [mainTab, ymStart, ymEnd, monthFrom, monthTo, itemFilter, granularity, displayMode, chartSub, smoothed, overlayItem]);
 
     const [linkCopied, setLinkCopied] = useState(false);
