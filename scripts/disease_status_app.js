@@ -7,7 +7,7 @@
 */
 window.DiseaseStatusApp = (function () {
   const { useState, useEffect } = React;
-  const { COLORS, fmtUpdatedAt } = window.RadarUI;
+  const { COLORS, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
 
   const OVERSEAS_URL = "https://raw.githubusercontent.com/jeruhe2-sketch/Livestock-Revolution-Second/main/data/asf_alerts.json";
 
@@ -46,6 +46,19 @@ window.DiseaseStatusApp = (function () {
     const overseasAlerts = overseas?.alerts || [];
     const urgentAlerts = overseasAlerts.filter((a) => a.urgent);
 
+    const exportXlsx = () => {
+      const header = ["국가", "질병(한글)", "질병(원문)", "WOAH 통보일", "수신일시", "공급사 원산지 관련"];
+      const rows = overseasAlerts.map((a) => [
+        a.country_kr || a.country_code || "",
+        a.disease_kr || a.disease || "",
+        a.disease_en || a.subject || "",
+        a.report_date || "",
+        a.received_at || "",
+        a.urgent ? (a.matched_country || "관련") : "",
+      ]);
+      downloadXlsx([header, ...rows], "가축전염병_해외발생현황(WOAH).xlsx", "WOAH알림");
+    };
+
     return React.createElement("div", { style: { padding: "24px 28px", maxWidth: 900 } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "가축전염병 발생현황"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 20 } },
@@ -62,7 +75,10 @@ window.DiseaseStatusApp = (function () {
         )
       ),
 
-      React.createElement("h2", { style: { fontSize: 15, fontWeight: 800, color: COLORS.cream, margin: "0 0 10px" } }, "\u{1F30F} 해외 (WOAH 즉시통보)"),
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
+        React.createElement("h2", { style: { fontSize: 15, fontWeight: 800, color: COLORS.cream, margin: 0 } }, "\u{1F30F} 해외 (WOAH 즉시통보)"),
+        overseasAlerts.length > 0 && React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+      ),
       overseasError && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginBottom: 20 } }, "아직 데이터가 없습니다 (파이프라인 최초 알림 대기 중)."),
       !overseasError && !overseas && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginBottom: 20 } }, "불러오는 중..."),
       overseas && React.createElement(React.Fragment, null,
@@ -84,12 +100,11 @@ window.DiseaseStatusApp = (function () {
                 ),
                 React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginTop: 6 } }, a.received_at || "")
               ))
-            ),
-        React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 24 } }, `최근 갱신: ${fmtUpdatedAt(overseas.updated_at) || "—"}`)
+            )
       ),
 
       React.createElement("div", { style: { fontSize: 11.5, color: COLORS.mute, marginTop: 24, borderTop: `1px solid ${COLORS.panelBorder}`, paddingTop: 10 } },
-        "해외 데이터는 WOAH(세계동물보건기구) 즉시통보 이메일을 30분 이내 반영합니다."
+        `출처: WOAH(세계동물보건기구) 즉시통보 이메일(WAHIS Distribution List) \u00B7 수신 후 30분 이내 반영 \u00B7 최근 갱신: ${overseas ? (fmtUpdatedAt(overseas.updated_at) || "—") : "—"}`
       )
     );
   };
