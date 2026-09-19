@@ -4,7 +4,8 @@
    연도별 평년비교(consumerPriceYear) 세 가지를 한 화면에서. */
 window.ConsumerPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton, buildPivot, PivotTable } = window.RadarUI;
+  const PIVOT_DIM_LABEL = { item: "\uBD80\uC704", year: "\uC5F0\uB3C4" };
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a"];
   const Toggle = PillToggle;
@@ -109,7 +110,12 @@ window.ConsumerPriceApp = (function () {
     }).sort((a, b) => b.v - a.v), [filtered, itemNames]);
 
     const overlayTargetNames = selected.length ? selected : itemNames;
-    const overlay = useMemo(() => buildYearOverlay(history, {
+    const [overlayAllYears, setOverlayAllYears] = useState(false);
+    const overlayMaxYear = history.length ? +history[history.length - 1].yearMonth.split("-")[0] : null;
+    const overlayHistory = useMemo(() => (
+      overlayAllYears || !overlayMaxYear ? history : history.filter((h) => +h.yearMonth.split("-")[0] >= overlayMaxYear - 7)
+    ), [history, overlayAllYears, overlayMaxYear]);
+    const overlay = useMemo(() => buildYearOverlay(overlayHistory, {
       yearOf: (h) => +h.yearMonth.split("-")[0],
       bucketOf: (h) => +h.yearMonth.split("-")[1],
       bucketLabel: (b) => `${b}\uC6D4`,
@@ -117,7 +123,35 @@ window.ConsumerPriceApp = (function () {
         const vals = overlayTargetNames.map((n) => h.items?.[n]).filter((v) => v != null && isFinite(v));
         return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
       },
-    }), [history, overlayTargetNames.join(",")]);
+    }), [overlayHistory, overlayTargetNames.join(",")]);
+
+    const [rowDim, setRowDim] = useState(() => pOneOf("rd", "item", ["item", "year"]));
+    const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["item", "year"]));
+    const [pivotDisplay, setPivotDisplay] = useState(() => pOneOf("pdm", "abs", ["abs", "yoy"]));
+    const onRowDimChange = (v) => { if (v === colDim) setColDim(rowDim); setRowDim(v); };
+    const onColDimChange = (v) => { if (v === rowDim) setRowDim(colDim); setColDim(v); };
+    const pivotRows = useMemo(() => {
+      const out = [];
+      filtered.forEach((h) => {
+        itemNames.forEach((name) => {
+          const v = h.items?.[name];
+          if (v != null && isFinite(v)) out.push({ item: name, year: h.yearMonth.split("-")[0], value: v });
+        });
+      });
+      return out;
+    }, [filtered, itemNames]);
+    const dimVal = (row, dimKey) => dimKey === "item" ? row.item : row.year;
+    const pivot = useMemo(() => buildPivot(pivotRows, {
+      rowOf: (r) => dimVal(r, rowDim), colOf: (r) => dimVal(r, colDim), valueOf: (r) => r.value,
+      rowSort: rowDim === "year" ? (labels) => labels.sort((a, b) => +a - +b) : undefined,
+      colSort: colDim === "year" ? (labels) => labels.sort((a, b) => +a - +b) : undefined,
+    }), [pivotRows, rowDim, colDim]);
+    const exportPivotXlsx = () => {
+      const header = [PIVOT_DIM_LABEL[rowDim], ...pivot.colLabels, "\uCD1D\uD569\uACC4"];
+      const rows2 = pivot.rowLabels.map((rl) => [rl, ...pivot.colLabels.map((cl) => pivot.matrix[rl]?.[cl] != null ? Math.round(pivot.matrix[rl][cl]) : ""), pivot.rowTotals[rl] != null ? Math.round(pivot.rowTotals[rl]) : ""]);
+      const footer = ["\uCD1D\uD569\uACC4", ...pivot.colLabels.map((cl) => pivot.colTotals[cl] != null ? Math.round(pivot.colTotals[cl]) : ""), pivot.grandTotal != null ? Math.round(pivot.grandTotal) : ""];
+      downloadXlsx([header, ...rows2, footer], `국내_${species}_소비자가격_피벗표_${PIVOT_DIM_LABEL[rowDim]}x${PIVOT_DIM_LABEL[colDim]}.xlsx`, "피벗표");
+    };
 
     const exportGroupXlsx = () => {
       const header = ["부위", `평균가(${unit})`];
@@ -158,12 +192,14 @@ window.ConsumerPriceApp = (function () {
       if (ymEnd != null) sp2.set("ye", ymEnd);
       if (mainTab === "chart") sp2.set("csub", chartSub);
       if (mainTab === "tendays" && tenIdxStart != null) sp2.set("tis", tenIdxStart);
+      if (mainTab === "table") { sp2.set("rd", rowDim); sp2.set("cd", colDim); if (pivotDisplay !== "abs") sp2.set("pdm", pivotDisplay); }
       const newSearch = "?" + sp2.toString() + window.location.hash;
       if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
-    }, [species, mainTab, showOverall, selected.join(","), ymStart, ymEnd, chartSub, tenIdxStart]);
+    }, [species, mainTab, showOverall, selected.join(","), ymStart, ymEnd, chartSub, tenIdxStart, rowDim, colDim, pivotDisplay]);
     const resetFilters = () => {
       setSpecies("돼지"); setSelected(itemNames.length ? [itemNames[0]] : []); setShowOverall(true);
       setYmStart(null); setYmEnd(null); setMainTab("chart"); setChartSub("trend"); setTenIdxStart(null);
+      setRowDim("item"); setColDim("year"); setPivotDisplay("abs");
     };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
@@ -285,7 +321,11 @@ window.ConsumerPriceApp = (function () {
         chartSub === "overlay" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute } }, "\uC5F0\uB3C4\uBCC4\uB85C 1~12\uC6D4 \uCD95 \uC704\uC5D0 \uACB9\uCCD0\uC11C \uACC4\uC808 \uD328\uD134\uC744 \uBE44\uAD50\uD569\uB2C8\uB2E4 (\uD604\uC7AC \uC120\uD0DD\uB41C \uBD80\uC704 \uD3C9\uADE0)."),
-            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+              React.createElement(PillToggle, { active: !overlayAllYears, onClick: () => setOverlayAllYears(false), color: COLORS.sage }, "\uCD5C\uADFC 8\uAC1C\uB144"),
+              React.createElement(PillToggle, { active: overlayAllYears, onClick: () => setOverlayAllYears(true), color: COLORS.sage }, "\uC804\uCCB4 \uC5F0\uB3C4"),
+              React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+            )
           ),
           overlay.series.length && overlay.categories.length
             ? React.createElement(React.Fragment, null,
@@ -296,21 +336,18 @@ window.ConsumerPriceApp = (function () {
         )
       ),
 
-      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
-        series.length
-          ? React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
-              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
-                React.createElement("thead", null, React.createElement("tr", null,
-                  React.createElement("th", { style: { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head } }, "연월"),
-                  series.map((s) => React.createElement("th", { key: s.id, style: { textAlign: "right", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, minWidth: 100 } }, s.name))
-                )),
-                React.createElement("tbody", null, tableIdx.map((i) => React.createElement("tr", { key: categories[i], style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
-                  React.createElement("td", { style: { padding: "8px 10px", color: COLORS.cream, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, categories[i]),
-                  series.map((s) => React.createElement("td", { key: s.id, style: { padding: "8px 10px", color: COLORS.cream, textAlign: "right" } }, s.data[i] != null ? Math.round(s.data[i]).toLocaleString() : "—"))
-                )))
-              )
-            )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
+      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: [["item", "\uBD80\uC704"], ["year", "\uC5F0\uB3C4"]] }),
+          React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: [["item", "\uBD80\uC704"], ["year", "\uC5F0\uB3C4"]] }),
+          React.createElement(PillToggle, { active: pivotDisplay === "abs", onClick: () => setPivotDisplay("abs"), color: COLORS.sage }, "\uC2E4\uC218\uCE58"),
+          React.createElement(PillToggle, { active: pivotDisplay === "yoy", onClick: () => setPivotDisplay("yoy"), color: COLORS.sage }, "\uC804\uC5F4 \uB300\uBE44 \uC99D\uAC10\uB960"),
+          React.createElement("div", { style: { flex: 1 } }),
+          React.createElement("button", { onClick: exportPivotXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+        ),
+        pivot.rowLabels.length && pivot.colLabels.length
+          ? React.createElement(PivotTable, { rowLabels: pivot.rowLabels, colLabels: pivot.colLabels, matrix: pivot.matrix, rowTotals: pivot.rowTotals, colTotals: pivot.colTotals, grandTotal: pivot.grandTotal, rowDimLabel: PIVOT_DIM_LABEL[rowDim], displayMode: pivotDisplay, formatValue: (v) => `${Math.round(v).toLocaleString()} ${unit}` })
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uBD80\uC704\uB97C \uC120\uD0DD\uD558\uC138\uC694.")
       ),
 
       mainTab === "tendays" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
