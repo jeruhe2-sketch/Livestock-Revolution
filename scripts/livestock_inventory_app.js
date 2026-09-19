@@ -5,7 +5,8 @@
    단위: 소=kg, 돼지=ton (그대로 표기, 서로 합산/비교하지 않음). */
 window.LivestockInventoryApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton, buildPivot, PivotTable } = window.RadarUI;
+  const PIVOT_DIM_LABEL = { item: "\uD56D\uBAA9", year: "\uC5F0\uB3C4" };
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a", "#7a8a3a", "#c48a3a", "#5a7ab9", "#9a4a6a"];
   const Toggle = PillToggle;
@@ -109,6 +110,35 @@ window.LivestockInventoryApp = (function () {
       downloadXlsx([header, ...rows], `국내_${species}_재고동향.xlsx`, "재고동향");
     };
 
+    const [rowDim, setRowDim] = useState(() => pOneOf("rd", "item", ["item", "year"]));
+    const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["item", "year"]));
+    const [pivotDisplay, setPivotDisplay] = useState(() => pOneOf("pdm", "abs", ["abs", "yoy"]));
+    const onRowDimChange = (v) => { if (v === colDim) setColDim(rowDim); setRowDim(v); };
+    const onColDimChange = (v) => { if (v === rowDim) setRowDim(colDim); setColDim(v); };
+    const pivotRows = useMemo(() => {
+      const out = [];
+      filtered.forEach((h) => {
+        const year = h.yearMonth.split("-")[0];
+        ALL_INDICATORS.forEach((name) => {
+          const v = name === "총재고" ? h.totStock : h.parts?.[name];
+          if (v != null && isFinite(v)) out.push({ item: name, year, value: v });
+        });
+      });
+      return out;
+    }, [filtered, ALL_INDICATORS]);
+    const dimVal = (row, dimKey) => dimKey === "item" ? row.item : row.year;
+    const pivot = useMemo(() => buildPivot(pivotRows, {
+      rowOf: (r) => dimVal(r, rowDim), colOf: (r) => dimVal(r, colDim), valueOf: (r) => r.value,
+      rowSort: rowDim === "year" ? (labels) => labels.sort((a, b) => +a - +b) : undefined,
+      colSort: colDim === "year" ? (labels) => labels.sort((a, b) => +a - +b) : undefined,
+    }), [pivotRows, rowDim, colDim]);
+    const exportPivotXlsx = () => {
+      const header = [PIVOT_DIM_LABEL[rowDim], ...pivot.colLabels, "\uCD1D\uD569\uACC4"];
+      const rows2 = pivot.rowLabels.map((rl) => [rl, ...pivot.colLabels.map((cl) => pivot.matrix[rl]?.[cl] != null ? Math.round(pivot.matrix[rl][cl]) : ""), pivot.rowTotals[rl] != null ? Math.round(pivot.rowTotals[rl]) : ""]);
+      const footer = ["\uCD1D\uD569\uACC4", ...pivot.colLabels.map((cl) => pivot.colTotals[cl] != null ? Math.round(pivot.colTotals[cl]) : ""), pivot.grandTotal != null ? Math.round(pivot.grandTotal) : ""];
+      downloadXlsx([header, ...rows2, footer], `국내_${species}_재고동향_피벗표_${PIVOT_DIM_LABEL[rowDim]}x${PIVOT_DIM_LABEL[colDim]}.xlsx`, "피벗표");
+    };
+
     const { linkCopied, copyShareLink } = useShareLink();
     React.useEffect(() => {
       const sp2 = new URLSearchParams();
@@ -117,11 +147,13 @@ window.LivestockInventoryApp = (function () {
       if (selected.length && !(selected.length === 1 && selected[0] === "총재고")) sp2.set("sel", selected.join(","));
       if (ymStart != null) sp2.set("ys", ymStart);
       if (ymEnd != null) sp2.set("ye", ymEnd);
+      if (mainTab === "table") { sp2.set("rd", rowDim); sp2.set("cd", colDim); if (pivotDisplay !== "abs") sp2.set("pdm", pivotDisplay); }
       const newSearch = "?" + sp2.toString() + window.location.hash;
       if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
-    }, [species, mainTab, selected.join(","), ymStart, ymEnd]);
+    }, [species, mainTab, selected.join(","), ymStart, ymEnd, rowDim, colDim, pivotDisplay]);
     const resetFilters = () => {
       setSpecies("돼지"); setSelected(["총재고"]); setYmStart(null); setYmEnd(null); setMainTab("chart");
+      setRowDim("item"); setColDim("year"); setPivotDisplay("abs");
     };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
@@ -219,25 +251,18 @@ window.LivestockInventoryApp = (function () {
           : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
       ),
 
-      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
-        series.length
-          ? React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
-              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
-                React.createElement("thead", null, React.createElement("tr", null,
-                  React.createElement("th", { style: { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, minWidth: 90 } }, "연월"),
-                  series.map((s) => React.createElement("th", { key: s.id, style: { textAlign: "right", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, minWidth: 100 } }, s.name))
-                )),
-                React.createElement("tbody", null, tableIdx.map((i) => React.createElement("tr", { key: categories[i], style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
-                  React.createElement("td", { style: { padding: "8px 10px", color: COLORS.cream, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, categories[i]),
-                  series.map((s) => React.createElement("td", { key: s.id, style: { padding: "8px 10px", color: COLORS.cream, textAlign: "right" } }, s.data[i] != null ? s.data[i].toLocaleString() : "—"))
-                ))),
-                React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
-                  React.createElement("td", { style: { padding: "8px 10px", position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "평균"),
-                  series.map((s) => React.createElement("td", { key: s.id, style: { padding: "8px 10px", textAlign: "right", fontWeight: 800, color: COLORS.amberSoft } }, (() => { const a = colAvg(s); return a != null ? Math.round(a).toLocaleString() : "—"; })()))
-                ))
-              )
-            )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "표시할 부위를 선택하세요.")
+      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: [["item", "\uD56D\uBAA9"], ["year", "\uC5F0\uB3C4"]] }),
+          React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: [["item", "\uD56D\uBAA9"], ["year", "\uC5F0\uB3C4"]] }),
+          React.createElement(PillToggle, { active: pivotDisplay === "abs", onClick: () => setPivotDisplay("abs"), color: COLORS.sage }, "\uC2E4\uC218\uCE58"),
+          React.createElement(PillToggle, { active: pivotDisplay === "yoy", onClick: () => setPivotDisplay("yoy"), color: COLORS.sage }, "\uC804\uC5F4 \uB300\uBE44 \uC99D\uAC10\uB960"),
+          React.createElement("div", { style: { flex: 1 } }),
+          React.createElement("button", { onClick: exportPivotXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+        ),
+        pivot.rowLabels.length && pivot.colLabels.length
+          ? React.createElement(PivotTable, { rowLabels: pivot.rowLabels, colLabels: pivot.colLabels, matrix: pivot.matrix, rowTotals: pivot.rowTotals, colTotals: pivot.colTotals, grandTotal: pivot.grandTotal, rowDimLabel: PIVOT_DIM_LABEL[rowDim], displayMode: pivotDisplay, formatValue: (v) => `${Math.round(v).toLocaleString()} ${unit}` })
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uB370\uC774\uD130 \uC5C6\uC74C")
       ),
 
       React.createElement("div", { style: { fontSize: 12, color: COLORS.mute } },
