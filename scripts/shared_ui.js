@@ -617,6 +617,77 @@ window.RadarUI = (function () {
     }, label || "\uD544\uD130 \uCD08\uAE30\uD654");
   }
 
+  /* ── 피벗 테이블(행×열 차원 선택) 공용 빌더+컴포넌트 ──
+     원본(EuTradeApp 등) 표준 패턴: 행/열 차원을 자유롭게 바꿀 수 있고, 실수치/
+     전열대비 증감률 토글, 총합계 행·열 자동계산. 가격/재고류는 기간에 걸쳐
+     "합"이 아니라 "평균"이 의미있는 값이라 aggregate 기본값은 평균.
+       rows: [{...}] 원본 로우 배열
+       rowOf(row), colOf(row): 행/열 라벨 추출
+       valueOf(row): 숫자값 추출
+       rowSort/colSort(labels, totalsMap): 정렬 커스터마이즈(기본: 행=값 내림차순, 열=문자열 오름차순) */
+  function buildPivot(rows, { rowOf, colOf, valueOf, rowSort, colSort }) {
+    const rowBuckets = {}, colBuckets = {}, cellBuckets = {};
+    const allVals = [];
+    rows.forEach((r) => {
+      const rl = rowOf(r), cl = colOf(r), v = valueOf(r);
+      if (rl == null || cl == null || v == null || !isFinite(v)) return;
+      (rowBuckets[rl] || (rowBuckets[rl] = [])).push(v);
+      (colBuckets[cl] || (colBuckets[cl] = [])).push(v);
+      if (!cellBuckets[rl]) cellBuckets[rl] = {};
+      (cellBuckets[rl][cl] || (cellBuckets[rl][cl] = [])).push(v);
+      allVals.push(v);
+    });
+    const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    const rowTotals = {}, colTotals = {}, matrix = {};
+    Object.keys(rowBuckets).forEach((rl) => { rowTotals[rl] = avg(rowBuckets[rl]); });
+    Object.keys(colBuckets).forEach((cl) => { colTotals[cl] = avg(colBuckets[cl]); });
+    Object.keys(cellBuckets).forEach((rl) => {
+      matrix[rl] = {};
+      Object.keys(cellBuckets[rl]).forEach((cl) => { matrix[rl][cl] = avg(cellBuckets[rl][cl]); });
+    });
+    const grandTotal = avg(allVals);
+    let rowLabels = Object.keys(rowTotals);
+    let colLabels = Object.keys(colTotals);
+    rowLabels = rowSort ? rowSort(rowLabels, rowTotals) : rowLabels.sort((a, b) => (rowTotals[b] || 0) - (rowTotals[a] || 0));
+    colLabels = colSort ? colSort(colLabels, colTotals) : colLabels.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return { rowLabels, colLabels, matrix, rowTotals, colTotals, grandTotal };
+  }
+
+  function PivotTable({ rowLabels, colLabels, matrix, rowTotals, colTotals, grandTotal, rowDimLabel, displayMode, formatValue }) {
+    const fmt = formatValue || ((v) => v == null ? "\u2014" : Math.round(v).toLocaleString());
+    const thSticky = { ...thStyle, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head, textAlign: "left" };
+    const thStickyTop = { ...thStyle, position: "sticky", top: 0, zIndex: 2, background: COLORS.head, textAlign: "right" };
+    function cellDisplay(rl, cl, ci) {
+      const v = matrix[rl] && matrix[rl][cl];
+      if (displayMode !== "yoy") return v != null ? fmt(v) : "\u2014";
+      const prevCol = colLabels[ci - 1];
+      if (!prevCol) return "\u2014";
+      const pv = matrix[rl] && matrix[rl][prevCol];
+      if (v == null || pv == null || pv === 0) return "\u2014";
+      const g = (v - pv) / pv * 100;
+      return `${g > 0 ? "+" : ""}${g.toFixed(1)}%`;
+    }
+    return React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
+      React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
+        React.createElement("thead", null, React.createElement("tr", null,
+          React.createElement("th", { style: thSticky }, rowDimLabel || ""),
+          colLabels.map((cl) => React.createElement("th", { key: cl, style: thStickyTop }, cl)),
+          React.createElement("th", { key: "__total", style: thStickyTop }, "\uCD1D\uD569\uACC4")
+        )),
+        React.createElement("tbody", null, rowLabels.map((rl) => React.createElement("tr", { key: rl, style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
+          React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, rl),
+          colLabels.map((cl, ci) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right" } }, cellDisplay(rl, cl, ci))),
+          React.createElement("td", { key: "__total", style: { ...tdStyle, textAlign: "right", fontWeight: 700 } }, rowTotals[rl] != null ? fmt(rowTotals[rl]) : "\u2014")
+        ))),
+        React.createElement("tfoot", null, React.createElement("tr", { style: { borderTop: `2px solid ${COLORS.panelBorder2}` } },
+          React.createElement("td", { style: { ...tdStyle, position: "sticky", left: 0, background: "#ede4d8", fontWeight: 800 } }, "\uCD1D\uD569\uACC4"),
+          colLabels.map((cl) => React.createElement("td", { key: cl, style: { ...tdStyle, textAlign: "right", fontWeight: 800, color: COLORS.amberSoft } }, colTotals[cl] != null ? fmt(colTotals[cl]) : "\u2014")),
+          React.createElement("td", { key: "__total", style: { ...tdStyle, textAlign: "right", fontWeight: 800, color: COLORS.amberSoft } }, grandTotal != null ? fmt(grandTotal) : "\u2014")
+        ))
+      )
+    );
+  }
+
   return {
     COLORS, thStyle, tdStyle,
     fmtUpdatedAt, pctFmt, downloadXlsx, useIsMobile,
@@ -624,5 +695,6 @@ window.RadarUI = (function () {
     SheetTab, SubTab, ToggleBtn, PillToggle,
     HoverAxisPicker, HoverMultiPicker, ChipGroup, buildYearOverlay,
     readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton,
+    buildPivot, PivotTable,
   };
 })();
