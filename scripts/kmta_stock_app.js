@@ -6,13 +6,14 @@
    합계 전용 버튼, 조회기간 평균선). */
 window.KmtaStockApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a"];
   const FILES = { "돼지": "./data/kmta_pork_stock.json", "소": "./data/kmta_beef_stock.json" };
 
   return function KmtaStockApp() {
-    const [species, setSpecies] = useState("돼지");
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [species, setSpecies] = useState(() => pOneOf("sp", "돼지", ["돼지", "소"]));
     const [dataBySpecies, setDataBySpecies] = useState({});
     const [errorBySpecies, setErrorBySpecies] = useState({});
 
@@ -36,12 +37,16 @@ window.KmtaStockApp = (function () {
       return [...set];
     }, [months]);
 
-    const [selected, setSelected] = useState(["합계"]);
-    const [mainTab, setMainTab] = useState("chart");
-    const [ymStart, setYmStart] = useState(null);
-    const [ymEnd, setYmEnd] = useState(null);
+    const [selected, setSelected] = useState(() => pList("sel", ["합계"]));
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table"]));
+    const [ymStart, setYmStart] = useState(() => pInt("ys", null));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", null));
 
-    React.useEffect(() => { setSelected(["합계"]); setYmStart(null); setYmEnd(null); }, [species]);
+    const didMount = React.useRef(false);
+    React.useEffect(() => {
+      if (!didMount.current) { didMount.current = true; return; }
+      setSelected(["합계"]); setYmStart(null); setYmEnd(null);
+    }, [species]);
 
     const { ALL_YM, YM_MIN, YM_MAX } = useMemo(() => {
       const all = months.map((mo) => mo.year * 100 + mo.month);
@@ -97,14 +102,32 @@ window.KmtaStockApp = (function () {
       return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     }, [filtered]);
 
+    const { linkCopied, copyShareLink } = useShareLink();
+    React.useEffect(() => {
+      const sp2 = new URLSearchParams();
+      sp2.set("sp", species);
+      sp2.set("tab", mainTab);
+      if (selected.length && !(selected.length === 1 && selected[0] === "합계")) sp2.set("sel", selected.join(","));
+      if (ymStart != null) sp2.set("ys", ymStart);
+      if (ymEnd != null) sp2.set("ye", ymEnd);
+      const newSearch = "?" + sp2.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [species, mainTab, selected.join(","), ymStart, ymEnd]);
+    const resetFilters = () => {
+      setSpecies("돼지"); setSelected(["합계"]); setYmStart(null); setYmEnd(null); setMainTab("chart");
+    };
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `\uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "\uBD88\uB7EC\uC624\uB294 \uC911...");
 
     const latest = months[months.length - 1];
     const prevMonth = months[months.length - 2];
+    const yearAgoMonth = months[months.length - 1 - 12] || null;
     const latestTotal = latest?.parts?.["합계"];
     const prevTotal = prevMonth?.parts?.["합계"];
+    const yearAgoTotal = yearAgoMonth?.parts?.["합계"];
     const momPct = latestTotal != null && prevTotal ? (latestTotal - prevTotal) / prevTotal * 100 : null;
+    const yoyPct = latestTotal != null && yearAgoTotal ? (latestTotal - yearAgoTotal) / yearAgoTotal * 100 : null;
 
 
     return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
@@ -117,17 +140,29 @@ window.KmtaStockApp = (function () {
         ["돼지", "소"].map((sp) => React.createElement(SubTab, { key: sp, active: species === sp, onClick: () => setSpecies(sp), label: sp }))
       ),
 
-      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
+      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `${species} \uD569\uACC4 (${latest.label})`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, latestTotal != null ? `${latestTotal.toLocaleString()} ${unit}` : "\u2014"),
-          momPct != null && React.createElement("div", { style: { fontSize: 12, color: momPct > 0 ? COLORS.rust : COLORS.sage, marginTop: 4 } }, `\uC804\uC6D4\uB300\uBE44 ${momPct > 0 ? "+" : ""}${momPct.toFixed(1)}%`)
+          React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 6 } },
+            momPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "\uC804\uC6D4 "),
+              React.createElement("span", { style: { color: momPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${momPct > 0 ? "+" : ""}${momPct.toFixed(1)}%`)
+            ),
+            yoyPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "\uC804\uB144 "),
+              React.createElement("span", { style: { color: yoyPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${yoyPct > 0 ? "+" : ""}${yoyPct.toFixed(1)}%`)
+            )
+          )
         ),
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `\uC870\uD68C\uAE30\uAC04 \uD3C9\uADE0 \uD569\uACC4 (${ymLabel(ys)}~${ymLabel(ye)})`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, periodAvgTotal != null ? `${Math.round(periodAvgTotal).toLocaleString()} ${unit}` : "\u2014")
         )
       ),
+
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
@@ -145,6 +180,7 @@ window.KmtaStockApp = (function () {
             React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             partNames.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
+            React.createElement(ResetFilterButton, { onClick: resetFilters }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
           )
         ),
