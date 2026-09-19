@@ -177,7 +177,7 @@ window.MlaDomesticApp = (function () {
             IND_ORDER.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, IND_SHORT[id])),
             React.createElement("div", { style: { flex: 1 } }),
             React.createElement(Toggle, { active: normalize, onClick: () => setNormalize((v) => !v), color: COLORS.amberSoft }, "지수화(기준일=100)"),
-            React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "엑셀 다운로드")
+            React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "엑셀 다운로드")
           )
         ),
         React.createElement("div", null,
@@ -222,7 +222,7 @@ window.MlaDomesticApp = (function () {
         chartSub === "overlay" && React.createElement(React.Fragment, null,
           React.createElement("div", { className: "radar-filter-row", style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
             React.createElement(HoverAxisPicker, { label: "지표", value: overlayIndicator, onChange: setOverlayIndicator, options: IND_ORDER.map((id) => [id, IND_SHORT[id]]) }),
-            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "엑셀 다운로드")
+            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "엑셀 다운로드")
           ),
           React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 12 } },
             overlaySeries.length ? React.createElement(SvgLineChart, { categories: overlayCategories, series: overlaySeries, height: 340, formatAxisValue: (v) => v.toFixed(0) })
@@ -258,7 +258,7 @@ window.MlaDomesticApp = (function () {
       React.createElement("h2", { style: { fontSize: 16, fontWeight: 800, color: COLORS.cream, marginBottom: 8 } }, "주간 도축량 (NLRS 자발적 조사)"),
       React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute, marginBottom: 10 } }, "매주 금요일 발표, 국가 합계(6개 주 합산) \u00B7 공급 선행지표"),
       React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 8 } },
-        React.createElement("button", { onClick: exportSlaughterXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream, fontSize: 12, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀")
+        React.createElement("button", { onClick: exportSlaughterXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀")
       ),
       React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 20 } },
         React.createElement(SvgLineChart, {

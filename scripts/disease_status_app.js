@@ -77,7 +77,7 @@ window.DiseaseStatusApp = (function () {
 
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
         React.createElement("h2", { style: { fontSize: 15, fontWeight: 800, color: COLORS.cream, margin: 0 } }, "\u{1F30F} 해외 (WOAH 즉시통보)"),
-        overseasAlerts.length > 0 && React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.panelBorder2}`, background: COLORS.panel, color: COLORS.cream } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+        overseasAlerts.length > 0 && React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
       ),
       overseasError && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginBottom: 20 } }, "아직 데이터가 없습니다 (파이프라인 최초 알림 대기 중)."),
       !overseasError && !overseas && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginBottom: 20 } }, "불러오는 중..."),
