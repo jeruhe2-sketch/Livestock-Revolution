@@ -8,7 +8,7 @@
    개인적 용도 및 내부 업무용으로만 사용. */
 window.MlaDomesticApp = (function () {
   const { useState, useEffect, useMemo, useRef } = React;
-  const { COLORS, SheetTab, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SheetTab, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, fmtUpdatedAt, pctFmt, downloadXlsx, readUrlParams, useShareLink, ShareLinkButton } = window.RadarUI;
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
   const IND_ORDER = ["0", "4", "13", "7", "11", "90cl"];
@@ -19,11 +19,16 @@ window.MlaDomesticApp = (function () {
 
   function fmtVal(v, unit) { return v == null || !isFinite(v) ? "—" : `${Number(v).toFixed(1)}${unit ? " " + unit : ""}`; }
 
-  function Tile({ label, value, sub, color }) {
+  function Tile({ label, value, cmps }) {
     return React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 150, flex: "1 1 150px" } },
       React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, label),
       React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, value),
-      sub && React.createElement("div", { style: { fontSize: 12, color, marginTop: 4 } }, sub)
+      cmps && cmps.length > 0 && React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" } },
+        cmps.map(([cmpLabel, pct]) => pct != null && React.createElement("div", { key: cmpLabel, style: { fontSize: 11.5 } },
+          React.createElement("span", { style: { color: COLORS.mute } }, `${cmpLabel} `),
+          React.createElement("span", { style: { color: pct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, pctFmt(pct))
+        ))
+      )
     );
   }
   const Toggle = PillToggle;
@@ -33,14 +38,15 @@ window.MlaDomesticApp = (function () {
   return function MlaDomesticApp() {
     const [raw, setRaw] = useState(null);
     const [error, setError] = useState(null);
-    const [selected, setSelected] = useState(["0"]);
-    const [normalize, setNormalize] = useState(false);
-    const [mainTab, setMainTab] = useState("chart");
-    const [chartSub, setChartSub] = useState("trend");
-    const [overlayIndicator, setOverlayIndicator] = useState("0");
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [selected, setSelected] = useState(() => { const v = pList("sel", null); return v && v.length ? v : ["0"]; });
+    const [normalize, setNormalize] = useState(() => p("nm", "0") === "1");
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table"]));
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "overlay"]));
+    const [overlayIndicator, setOverlayIndicator] = useState(() => pOneOf("oi", "0", IND_ORDER));
     // null이면 "전체 기간"을 의미 (아래 렌더에서 YM_MIN/YM_MAX로 대체)
-    const [ymStart, setYmStart] = useState(null);
-    const [ymEnd, setYmEnd] = useState(null);
+    const [ymStart, setYmStart] = useState(() => pInt("ys", null));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", null));
 
     useEffect(() => {
       fetch("./data/mla_domestic.json", { cache: "no-store" })
@@ -108,6 +114,20 @@ window.MlaDomesticApp = (function () {
       downloadXlsx([header, ...rows], `호주내수_${IND_SHORT[overlayIndicator] || overlayIndicator}_연도별겹쳐보기.xlsx`, "겹쳐보기");
     };
 
+    const { linkCopied, copyShareLink } = useShareLink();
+    useEffect(() => {
+      const sp2 = new URLSearchParams();
+      sp2.set("tab", mainTab);
+      sp2.set("csub", chartSub);
+      if (selected.length && !(selected.length === 1 && selected[0] === "0")) sp2.set("sel", selected.join(","));
+      if (normalize) sp2.set("nm", "1");
+      if (overlayIndicator !== "0") sp2.set("oi", overlayIndicator);
+      if (ymStart != null) sp2.set("ys", ymStart);
+      if (ymEnd != null) sp2.set("ye", ymEnd);
+      const newSearch = "?" + sp2.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [mainTab, chartSub, selected.join(","), normalize, overlayIndicator, ymStart, ymEnd]);
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
@@ -152,23 +172,30 @@ window.MlaDomesticApp = (function () {
         "매일 자동 갱신 \u00B7 수동작업 없음"
       ),
 
-      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
+      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
         IND_ORDER.map((id) => {
           const meta = names[id];
           const series = raw.indicators?.[id] || [];
           const latest = series[series.length - 1];
-          // 90CL은 주간 데이터라 "직전 1건"이 곧 전주, 나머지는 일간이라 7일 뒤로
-          const weekAgo = id === "90cl" ? series[series.length - 2] : series[series.length - 8];
-          const wowPct = latest && weekAgo ? (latest.value - weekAgo.value) / weekAgo.value * 100 : null;
+          const isWeekly = id === "90cl";
+          // 일간 지표: 전일=1건 전, 전주=7건 전, 전월=~30건 전, 전년=~365건 전
+          // 주간 지표(90cl): 전주=1건 전, 전월=4건 전, 전년=52건 전 (전일 해당없음)
+          const at = (back) => series[series.length - 1 - back];
+          const pctVs = (ref) => ref && latest ? (latest.value - ref.value) / ref.value * 100 : null;
+          const cmps = isWeekly
+            ? [["전주", pctVs(at(1))], ["전월", pctVs(at(4))], ["전년", pctVs(at(52))]]
+            : [["전일", pctVs(at(1))], ["전주", pctVs(at(7))], ["전월", pctVs(at(30))], ["전년", pctVs(at(365))]];
           return React.createElement(Tile, {
             key: id,
             label: IND_SHORT[id] || meta?.desc || id,
             value: fmtVal(latest?.value, meta?.unit),
-            sub: wowPct != null ? `1주 ${pctFmt(wowPct)}` : null,
-            color: wowPct > 0 ? COLORS.rust : "#3a6ea5"
+            cmps,
           });
         })
       ),
+
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
