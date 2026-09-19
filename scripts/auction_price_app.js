@@ -2,7 +2,7 @@
    지육(도체) 기준 전국 주간 가중평균. 소매가/수입단가와 단위가 달라 직접 비교 안 함. */
 window.AuctionPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, downloadXlsx, buildYearOverlay } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5"];
   const round = (v) => v == null ? null : Math.round(v);
@@ -17,12 +17,13 @@ window.AuctionPriceApp = (function () {
         .catch((e) => setError(String(e)));
     }, []);
 
-    const [species, setSpecies] = useState("돼지");
-    const [showOverall, setShowOverall] = useState(true);
-    const [showGrades, setShowGrades] = useState([]);
-    const [mainTab, setMainTab] = useState("chart");
-    const [idxStart, setIdxStart] = useState(null);
-    const [idxEnd, setIdxEnd] = useState(null);
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [species, setSpecies] = useState(() => pOneOf("sp", "돼지", ["돼지", "소"]));
+    const [showOverall, setShowOverall] = useState(() => p("ov", "1") === "1");
+    const [showGrades, setShowGrades] = useState(() => pList("g", []));
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table"]));
+    const [idxStart, setIdxStart] = useState(() => pInt("is", null));
+    const [idxEnd, setIdxEnd] = useState(() => pInt("ie", null));
 
     const speciesData = raw?.species?.[species];
     const weekly = speciesData?.weekly || [];
@@ -38,7 +39,11 @@ window.AuctionPriceApp = (function () {
     const IDX_MIN = 0, IDX_MAX = weekly.length - 1;
     const idxLabel = (i) => i == null || !weekly[i] ? "—" : weekly[i].label;
     const is = idxStart ?? IDX_MIN, ie = idxEnd ?? IDX_MAX;
-    React.useEffect(() => { setIdxStart(null); setIdxEnd(null); }, [species]);
+    const didMount = React.useRef(false);
+    React.useEffect(() => {
+      if (!didMount.current) { didMount.current = true; return; }
+      setIdxStart(null); setIdxEnd(null);
+    }, [species]);
 
     const filtered = useMemo(() => weekly.filter((_, i) => i >= is && i <= ie), [weekly, is, ie]);
 
@@ -53,7 +58,9 @@ window.AuctionPriceApp = (function () {
 
     const latest = weekly[weekly.length - 1];
     const prev = weekly[weekly.length - 2];
+    const yearAgo = weekly[weekly.length - 1 - 52] || null;
     const diffPct = latest && prev && prev.avgAmt ? round((latest.avgAmt - prev.avgAmt) / prev.avgAmt * 1000) / 10 : null;
+    const yoyPct = latest && yearAgo && yearAgo.avgAmt ? round((latest.avgAmt - yearAgo.avgAmt) / yearAgo.avgAmt * 1000) / 10 : null;
 
     // 조회기간(필터된 범위) 요약: 평균가 · 총 거래두수
     const periodAvgAmt = useMemo(() => {
@@ -75,7 +82,7 @@ window.AuctionPriceApp = (function () {
     };
 
     // ── 그룹 비교(등급별 랭킹) / 겹쳐보기(연도별 계절 패턴) ──
-    const [chartSub, setChartSub] = useState("trend");
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "group", "overlay"]));
     const groupItems = useMemo(() => {
       const overallVals = filtered.map((w) => w.avgAmt).filter((v) => v != null && isFinite(v));
       const overallItem = { key: "전체평균", v: overallVals.length ? overallVals.reduce((a, b) => a + b, 0) / overallVals.length : 0 };
@@ -110,6 +117,24 @@ window.AuctionPriceApp = (function () {
       downloadXlsx([header, ...rows], `국내_${species}_경락가격_겹쳐보기.xlsx`, "겹쳐보기");
     };
 
+    const { linkCopied, copyShareLink } = useShareLink();
+    React.useEffect(() => {
+      const sp2 = new URLSearchParams();
+      sp2.set("sp", species);
+      sp2.set("tab", mainTab);
+      if (!showOverall) sp2.set("ov", "0");
+      if (showGrades.length) sp2.set("g", showGrades.join(","));
+      if (idxStart != null) sp2.set("is", idxStart);
+      if (idxEnd != null) sp2.set("ie", idxEnd);
+      if (mainTab === "chart") sp2.set("csub", chartSub);
+      const newSearch = "?" + sp2.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [species, mainTab, showOverall, showGrades.join(","), idxStart, idxEnd, chartSub]);
+    const resetFilters = () => {
+      setSpecies("돼지"); setShowOverall(true); setShowGrades([]);
+      setIdxStart(null); setIdxEnd(null); setMainTab("chart"); setChartSub("trend");
+    };
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
@@ -123,11 +148,20 @@ window.AuctionPriceApp = (function () {
         }))
       ),
 
-      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
+      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
         latest && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `최근 주(${latest.label})`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, `${round(latest.avgAmt).toLocaleString()} ${unit}`),
-          diffPct != null && React.createElement("div", { style: { fontSize: 12, color: diffPct > 0 ? COLORS.rust : COLORS.sage, marginTop: 4 } }, `전주대비 ${diffPct > 0 ? "+" : ""}${diffPct}%`)
+          React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 6 } },
+            diffPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "전주 "),
+              React.createElement("span", { style: { color: diffPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${diffPct > 0 ? "+" : ""}${diffPct}%`)
+            ),
+            yoyPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "전년 "),
+              React.createElement("span", { style: { color: yoyPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${yoyPct > 0 ? "+" : ""}${yoyPct}%`)
+            )
+          )
         ),
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `조회기간 평균가 (${idxLabel(is)}~${idxLabel(ie)})`),
@@ -138,6 +172,9 @@ window.AuctionPriceApp = (function () {
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, periodTotalCnt != null ? `${Math.round(periodTotalCnt).toLocaleString()} 두` : "—")
         )
       ),
+
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
@@ -158,6 +195,7 @@ window.AuctionPriceApp = (function () {
               onClick: () => setShowGrades((s) => s.includes(g) ? s.filter((x) => x !== g) : [...s, g])
             }, g)),
             React.createElement("div", { style: { flex: 1 } }),
+            React.createElement(ResetFilterButton, { onClick: resetFilters }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀 다운로드")
           )
         ),
