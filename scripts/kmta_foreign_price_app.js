@@ -4,7 +4,7 @@
    원/kg ↔ US$/kg 환산과 관세/운임 차이까지 감안해야 해서 직접 스프레드 계산은 안 함. */
 window.KmtaForeignPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8"];
 
@@ -26,13 +26,18 @@ window.KmtaForeignPriceApp = (function () {
     }, [weeks]);
 
     const [selected, setSelected] = useState([]);
-    const [showOverall, setShowOverall] = useState(true);
-    const [mainTab, setMainTab] = useState("chart");
-    const [idxStart, setIdxStart] = useState(null);
-    const [idxEnd, setIdxEnd] = useState(null);
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [showOverall, setShowOverall] = useState(() => p("ov", "1") === "1");
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table"]));
+    const [idxStart, setIdxStart] = useState(() => pInt("is", null));
+    const [idxEnd, setIdxEnd] = useState(() => pInt("ie", null));
 
     React.useEffect(() => {
-      if (itemNames.length && selected.length === 0) setSelected([itemNames[0]]);
+      if (itemNames.length && selected.length === 0) {
+        const fromUrl = pList("sel", null);
+        const valid = fromUrl ? fromUrl.filter((k) => itemNames.includes(k)) : [];
+        setSelected(valid.length ? valid : [itemNames[0]]);
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itemNames.join(",")]);
 
@@ -73,7 +78,7 @@ window.KmtaForeignPriceApp = (function () {
     };
 
     // ── 그룹 비교(국가별 랭킹) / 겹쳐보기(연도별 계절 패턴) ──
-    const [chartSub, setChartSub] = useState("trend");
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "group", "overlay"]));
     const groupItems = useMemo(() => itemNames.map((name) => {
       const vals = filtered.map((w) => w.byCountry?.[name]).filter((v) => v != null && isFinite(v));
       return { key: name, v: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
@@ -101,15 +106,35 @@ window.KmtaForeignPriceApp = (function () {
       downloadXlsx([header, ...rows], `KMTA_돈육_해외시세_겹쳐보기.xlsx`, "겹쳐보기");
     };
 
+    const { linkCopied, copyShareLink } = useShareLink();
+    React.useEffect(() => {
+      const sp = new URLSearchParams();
+      sp.set("tab", mainTab);
+      if (!showOverall) sp.set("ov", "0");
+      if (selected.length) sp.set("sel", selected.join(","));
+      if (idxStart != null) sp.set("is", idxStart);
+      if (idxEnd != null) sp.set("ie", idxEnd);
+      if (mainTab === "chart") sp.set("csub", chartSub);
+      const newSearch = "?" + sp.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [mainTab, showOverall, selected.join(","), idxStart, idxEnd, chartSub]);
+    const resetFilters = () => {
+      setShowOverall(true); setSelected(itemNames.length ? [itemNames[0]] : []);
+      setIdxStart(null); setIdxEnd(null); setMainTab("chart"); setChartSub("trend");
+    };
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
     const latest = weeks[weeks.length - 1];
     const prevW = weeks[weeks.length - 2];
+    const yearAgoW = weeks[weeks.length - 1 - 52] || null;
     const headline = selected[0] || itemNames[0];
     const latestVal = latest ? latest.byCountry?.[headline] ?? null : null;
     const prevVal = prevW ? prevW.byCountry?.[headline] ?? null : null;
+    const yearAgoVal = yearAgoW ? yearAgoW.byCountry?.[headline] ?? null : null;
     const diffPct = latestVal != null && prevVal ? Math.round((latestVal - prevVal) / prevVal * 1000) / 10 : null;
+    const yoyPct = latestVal != null && yearAgoVal ? Math.round((latestVal - yearAgoVal) / yearAgoVal * 1000) / 10 : null;
 
     return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "해외시세 (돈육 국제가격)"),
@@ -117,13 +142,25 @@ window.KmtaForeignPriceApp = (function () {
         "\uD55C\uAD6D\uC721\uB958\uC720\uD1B5\uC218\uCD9C\uD611\uD68C(KMTA) \u00B7 \uB3C8\uC721 \uC9C0\uC721\uAC00\uACA9(US$/kg) \u00B7 \uAD6D\uAC00\uBCC4 \u00B7 \uC8FC \uB2E8\uC704 \u00B7 \uC77C\uBCF8\uC740 \uB3D9\uACBD\uC2DC\uC7A5 \uAE30\uC900"
       ),
 
-      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
+      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10, alignItems: "flex-start" } },
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `\uCD5C\uADFC(${latest.label}) ${headline || ""}`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, latestVal != null ? `US$ ${latestVal.toFixed(2)}/kg` : "\u2014"),
-          diffPct != null && React.createElement("div", { style: { fontSize: 12, color: diffPct > 0 ? COLORS.rust : COLORS.sage, marginTop: 4 } }, `\uC804\uC8FC\uB300\uBE44 ${diffPct > 0 ? "+" : ""}${diffPct}%`)
+          React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 6 } },
+            diffPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "\uC804\uC8FC "),
+              React.createElement("span", { style: { color: diffPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${diffPct > 0 ? "+" : ""}${diffPct}%`)
+            ),
+            yoyPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "\uC804\uB144 "),
+              React.createElement("span", { style: { color: yoyPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${yoyPct > 0 ? "+" : ""}${yoyPct}%`)
+            )
+          )
         )
       ),
+
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
 
       periodAvgByItem.length > 0 && React.createElement("div", { style: { marginBottom: 14 } },
         React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 8 } }, `\uC870\uD68C\uAE30\uAC04 \uD3C9\uADE0\uAC00 (${idxLabel(is)}~${idxLabel(ie)})`),
@@ -151,6 +188,7 @@ window.KmtaForeignPriceApp = (function () {
             React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             itemNames.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
+            React.createElement(ResetFilterButton, { onClick: resetFilters }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
           )
         ),
