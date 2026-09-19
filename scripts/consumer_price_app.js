@@ -4,7 +4,7 @@
    연도별 평년비교(consumerPriceYear) 세 가지를 한 화면에서. */
 window.ConsumerPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a"];
   const Toggle = PillToggle;
@@ -19,12 +19,13 @@ window.ConsumerPriceApp = (function () {
         .catch((e) => setError(String(e)));
     }, []);
 
-    const [species, setSpecies] = useState("돼지");
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [species, setSpecies] = useState(() => pOneOf("sp", "돼지", ["돼지", "소"]));
     const [selected, setSelected] = useState([]);
-    const [showOverall, setShowOverall] = useState(true);
-    const [mainTab, setMainTab] = useState("chart");
-    const [ymStart, setYmStart] = useState(null);
-    const [ymEnd, setYmEnd] = useState(null);
+    const [showOverall, setShowOverall] = useState(() => p("ov", "1") === "1");
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table", "tendays", "yearly"]));
+    const [ymStart, setYmStart] = useState(() => pInt("ys", null));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", null));
 
     const speciesData = raw?.species?.[species];
     const history = speciesData?.history || [];
@@ -39,7 +40,11 @@ window.ConsumerPriceApp = (function () {
     }, [history]);
 
     React.useEffect(() => {
-      if (itemNames.length && selected.length === 0) setSelected([itemNames[0]]);
+      if (itemNames.length && selected.length === 0) {
+        const fromUrl = pList("sel", null);
+        const valid = fromUrl ? fromUrl.filter((k) => itemNames.includes(k)) : [];
+        setSelected(valid.length ? valid : [itemNames[0]]);
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itemNames.join(",")]);
 
@@ -97,7 +102,7 @@ window.ConsumerPriceApp = (function () {
     };
 
     // ── 그룹 비교(부위별 랭킹) / 겹쳐보기(연도별 계절 패턴) ──
-    const [chartSub, setChartSub] = useState("trend");
+    const [chartSub, setChartSub] = useState(() => pOneOf("csub", "trend", ["trend", "group", "overlay"]));
     const groupItems = useMemo(() => itemNames.map((name) => {
       const vals = filtered.map((h) => h.items?.[name]).filter((v) => v != null && isFinite(v));
       return { key: name, v: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
@@ -127,8 +132,12 @@ window.ConsumerPriceApp = (function () {
 
     // 순별(초/중/하순, 월 3회) 기간 필터 - 일단위는 아니지만 월별보다 촘촘한 단위
     const TEN_MAX = tendays.length - 1;
-    const [tenIdxStart, setTenIdxStart] = useState(null);
-    React.useEffect(() => { setTenIdxStart(null); }, [species]);
+    const [tenIdxStart, setTenIdxStart] = useState(() => pInt("tis", null));
+    const didMount = React.useRef(false);
+    React.useEffect(() => {
+      if (!didMount.current) { didMount.current = true; return; }
+      setTenIdxStart(null);
+    }, [species]);
     const tenStart = tenIdxStart ?? Math.max(0, TEN_MAX - 35);
     const tendaysRecent = useMemo(() => tendays.filter((_, i) => i >= tenStart), [tendays, tenStart]);
     const tenCategories = tendaysRecent.map((t) => t.label);
@@ -137,6 +146,25 @@ window.ConsumerPriceApp = (function () {
       color: PALETTE[itemNames.indexOf(name) % PALETTE.length],
       data: tendaysRecent.map((t) => t.items?.[name] ?? null),
     })), [tendaysRecent, selected, itemNames]);
+
+    const { linkCopied, copyShareLink } = useShareLink();
+    React.useEffect(() => {
+      const sp2 = new URLSearchParams();
+      sp2.set("sp", species);
+      sp2.set("tab", mainTab);
+      if (!showOverall) sp2.set("ov", "0");
+      if (selected.length) sp2.set("sel", selected.join(","));
+      if (ymStart != null) sp2.set("ys", ymStart);
+      if (ymEnd != null) sp2.set("ye", ymEnd);
+      if (mainTab === "chart") sp2.set("csub", chartSub);
+      if (mainTab === "tendays" && tenIdxStart != null) sp2.set("tis", tenIdxStart);
+      const newSearch = "?" + sp2.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [species, mainTab, showOverall, selected.join(","), ymStart, ymEnd, chartSub, tenIdxStart]);
+    const resetFilters = () => {
+      setSpecies("돼지"); setSelected(itemNames.length ? [itemNames[0]] : []); setShowOverall(true);
+      setYmStart(null); setYmEnd(null); setMainTab("chart"); setChartSub("trend"); setTenIdxStart(null);
+    };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
@@ -174,6 +202,9 @@ window.ConsumerPriceApp = (function () {
         )
       ),
 
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
+
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 11.5, fontWeight: 700, color: COLORS.mute, letterSpacing: "0.05em", marginBottom: 4 } }, "지표"),
@@ -190,6 +221,7 @@ window.ConsumerPriceApp = (function () {
             React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             itemNames.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
+            React.createElement(ResetFilterButton, { onClick: resetFilters }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀 다운로드")
           )
         ),
