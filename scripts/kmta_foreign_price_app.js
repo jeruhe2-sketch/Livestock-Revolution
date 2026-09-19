@@ -4,7 +4,8 @@
    원/kg ↔ US$/kg 환산과 관세/운임 차이까지 감안해야 해서 직접 스프레드 계산은 안 함. */
 window.KmtaForeignPriceApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgLineChart, ChartLegend, BarRanking, fmtUpdatedAt, downloadXlsx, buildYearOverlay, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton, buildPivot, PivotTable } = window.RadarUI;
+  const PIVOT_DIM_LABEL = { item: "\uAD6D\uAC00", year: "\uC5F0\uB3C4" };
   const Toggle = PillToggle;
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8"];
 
@@ -85,7 +86,12 @@ window.KmtaForeignPriceApp = (function () {
     }).sort((a, b) => b.v - a.v), [filtered, itemNames]);
 
     const overlayTargetNames = selected.length ? selected : itemNames;
-    const overlay = useMemo(() => buildYearOverlay(weeks, {
+    const [overlayAllYears, setOverlayAllYears] = useState(false);
+    const maxYear = weeks.length ? weeks[weeks.length - 1].year : null;
+    const overlayWeeks = useMemo(() => (
+      overlayAllYears || !maxYear ? weeks : weeks.filter((w) => w.year >= maxYear - 7)
+    ), [weeks, overlayAllYears, maxYear]);
+    const overlay = useMemo(() => buildYearOverlay(overlayWeeks, {
       yearOf: (w) => w.year,
       bucketOf: (w) => w.month * 10 + (parseInt(w.week, 10) || 1),
       bucketLabel: (b, w) => `${w.month}\uC6D4 ${w.week}\uC8FC`,
@@ -93,7 +99,35 @@ window.KmtaForeignPriceApp = (function () {
         const vals = overlayTargetNames.map((n) => w.byCountry?.[n]).filter((v) => v != null && isFinite(v));
         return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
       },
-    }), [weeks, overlayTargetNames.join(",")]);
+    }), [overlayWeeks, overlayTargetNames.join(",")]);
+
+    const [rowDim, setRowDim] = useState(() => pOneOf("rd", "item", ["item", "year"]));
+    const [colDim, setColDim] = useState(() => pOneOf("cd", "year", ["item", "year"]));
+    const [pivotDisplay, setPivotDisplay] = useState(() => pOneOf("pdm", "abs", ["abs", "yoy"]));
+    const onRowDimChange = (v) => { if (v === colDim) setColDim(rowDim); setRowDim(v); };
+    const onColDimChange = (v) => { if (v === rowDim) setRowDim(colDim); setColDim(v); };
+    const pivotRows = useMemo(() => {
+      const out = [];
+      filtered.forEach((w) => {
+        itemNames.forEach((name) => {
+          const v = w.byCountry?.[name];
+          if (v != null && isFinite(v)) out.push({ item: name, year: String(w.year), value: v });
+        });
+      });
+      return out;
+    }, [filtered, itemNames]);
+    const dimVal = (row, dimKey) => dimKey === "item" ? row.item : row.year;
+    const pivot = useMemo(() => buildPivot(pivotRows, {
+      rowOf: (r) => dimVal(r, rowDim), colOf: (r) => dimVal(r, colDim), valueOf: (r) => r.value,
+      rowSort: rowDim === "year" ? (labels) => labels.sort((a, b) => +a - +b) : undefined,
+      colSort: colDim === "year" ? (labels) => labels.sort((a, b) => +a - +b) : undefined,
+    }), [pivotRows, rowDim, colDim]);
+    const exportPivotXlsx = () => {
+      const header = [PIVOT_DIM_LABEL[rowDim], ...pivot.colLabels, "\uCD1D\uD569\uACC4"];
+      const rows2 = pivot.rowLabels.map((rl) => [rl, ...pivot.colLabels.map((cl) => pivot.matrix[rl]?.[cl] != null ? pivot.matrix[rl][cl].toFixed(2) : ""), pivot.rowTotals[rl] != null ? pivot.rowTotals[rl].toFixed(2) : ""]);
+      const footer = ["\uCD1D\uD569\uACC4", ...pivot.colLabels.map((cl) => pivot.colTotals[cl] != null ? pivot.colTotals[cl].toFixed(2) : ""), pivot.grandTotal != null ? pivot.grandTotal.toFixed(2) : ""];
+      downloadXlsx([header, ...rows2, footer], `KMTA_돈육_해외시세_피벗표_${PIVOT_DIM_LABEL[rowDim]}x${PIVOT_DIM_LABEL[colDim]}.xlsx`, "피벗표");
+    };
 
     const exportGroupXlsx = () => {
       const header = ["국가", "평균가(US$/kg)"];
@@ -115,12 +149,14 @@ window.KmtaForeignPriceApp = (function () {
       if (idxStart != null) sp.set("is", idxStart);
       if (idxEnd != null) sp.set("ie", idxEnd);
       if (mainTab === "chart") sp.set("csub", chartSub);
+      if (mainTab === "table") { sp.set("rd", rowDim); sp.set("cd", colDim); if (pivotDisplay !== "abs") sp.set("pdm", pivotDisplay); }
       const newSearch = "?" + sp.toString() + window.location.hash;
       if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
-    }, [mainTab, showOverall, selected.join(","), idxStart, idxEnd, chartSub]);
+    }, [mainTab, showOverall, selected.join(","), idxStart, idxEnd, chartSub, rowDim, colDim, pivotDisplay]);
     const resetFilters = () => {
       setShowOverall(true); setSelected(itemNames.length ? [itemNames[0]] : []);
       setIdxStart(null); setIdxEnd(null); setMainTab("chart"); setChartSub("trend");
+      setRowDim("item"); setColDim("year"); setPivotDisplay("abs");
     };
 
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
@@ -241,7 +277,11 @@ window.KmtaForeignPriceApp = (function () {
         chartSub === "overlay" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 } },
             React.createElement("div", { style: { fontSize: 12.5, color: COLORS.mute } }, "\uC5F0\uB3C4\uBCC4\uB85C 1~12\uC6D4 x \uC8FC\uCC28 \uCD95 \uC704\uC5D0 \uACB9\uCCD0\uC11C \uACC4\uC808 \uD328\uD134\uC744 \uBE44\uAD50\uD569\uB2C8\uB2E4 (\uD604\uC7AC \uC120\uD0DD\uB41C \uAD6D\uAC00 \uD3C9\uADE0)."),
-            React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+              React.createElement(PillToggle, { active: !overlayAllYears, onClick: () => setOverlayAllYears(false), color: COLORS.sage }, "\uCD5C\uADFC 8\uAC1C\uB144"),
+              React.createElement(PillToggle, { active: overlayAllYears, onClick: () => setOverlayAllYears(true), color: COLORS.sage }, "\uC804\uCCB4 \uC5F0\uB3C4"),
+              React.createElement("button", { onClick: exportOverlayXlsx, style: { padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+            )
           ),
           overlay.series.length && overlay.categories.length
             ? React.createElement(React.Fragment, null,
@@ -252,21 +292,18 @@ window.KmtaForeignPriceApp = (function () {
         )
       ),
 
-      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, overflow: "hidden", marginBottom: 24 } },
-        series.length
-          ? React.createElement("div", { style: { overflowX: "auto", maxHeight: 460, overflowY: "auto" } },
-              React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 13.5, width: "100%" } },
-                React.createElement("thead", null, React.createElement("tr", null,
-                  React.createElement("th", { style: { textAlign: "left", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", left: 0, top: 0, zIndex: 3, background: COLORS.head } }, "\uC5F0-\uC6D4-\uC8FC"),
-                  series.map((s) => React.createElement("th", { key: s.id, style: { textAlign: "right", padding: "9px 10px", fontSize: 12.5, color: COLORS.mute, fontWeight: 700, borderBottom: `1px solid ${COLORS.panelBorder}`, position: "sticky", top: 0, zIndex: 2, background: COLORS.head } }, s.name))
-                )),
-                React.createElement("tbody", null, tableIdx.map((i) => React.createElement("tr", { key: categories[i], style: { borderTop: `1px solid ${COLORS.panelBorder}` } },
-                  React.createElement("td", { style: { padding: "8px 10px", color: COLORS.cream, position: "sticky", left: 0, background: COLORS.panel, fontWeight: 700 } }, categories[i]),
-                  series.map((s) => React.createElement("td", { key: s.id, style: { padding: "8px 10px", color: COLORS.cream, textAlign: "right" } }, s.data[i] != null ? s.data[i].toFixed(2) : "\u2014"))
-                )))
-              )
-            )
-          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uAD6D\uAC00\uC744 \uC120\uD0DD\uD558\uC138\uC694.")
+      mainTab === "table" && React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: 16, marginBottom: 24 } },
+        React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 } },
+          React.createElement(HoverAxisPicker, { label: "\uD589", value: rowDim, onChange: onRowDimChange, options: [["item", "\uAD6D\uAC00"], ["year", "\uC5F0\uB3C4"]] }),
+          React.createElement(HoverAxisPicker, { label: "\uC5F4", value: colDim, onChange: onColDimChange, options: [["item", "\uAD6D\uAC00"], ["year", "\uC5F0\uB3C4"]] }),
+          React.createElement(PillToggle, { active: pivotDisplay === "abs", onClick: () => setPivotDisplay("abs"), color: COLORS.sage }, "\uC2E4\uC218\uCE58"),
+          React.createElement(PillToggle, { active: pivotDisplay === "yoy", onClick: () => setPivotDisplay("yoy"), color: COLORS.sage }, "\uC804\uC5F4 \uB300\uBE44 \uC99D\uAC10\uB960"),
+          React.createElement("div", { style: { flex: 1 } }),
+          React.createElement("button", { onClick: exportPivotXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+        ),
+        pivot.rowLabels.length && pivot.colLabels.length
+          ? React.createElement(PivotTable, { rowLabels: pivot.rowLabels, colLabels: pivot.colLabels, matrix: pivot.matrix, rowTotals: pivot.rowTotals, colTotals: pivot.colTotals, grandTotal: pivot.grandTotal, rowDimLabel: PIVOT_DIM_LABEL[rowDim], displayMode: pivotDisplay, formatValue: (v) => `$${v.toFixed(2)}` })
+          : React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, textAlign: "center", padding: 40 } }, "\uD45C\uC2DC\uD560 \uAD6D\uAC00\uB97C \uC120\uD0DD\uD558\uC138\uC694.")
       ),
 
       React.createElement("div", { style: { fontSize: 12, color: COLORS.mute } },
