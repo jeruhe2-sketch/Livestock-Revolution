@@ -9,6 +9,7 @@
    한 번 더 읽어 요약만 함 (LLM/수동작업 없음). */
 window.KeyIndicatorsApp = (function () {
   const { useState, useEffect, useMemo } = React;
+  const { downloadXlsx } = window.RadarUI || {};
 
   const COLORS = {
     bg: "#f4f5f2", panel: "#ffffff", panelBorder: "#d7dad4", panelBorder2: "#b9bdb4",
@@ -357,11 +358,27 @@ window.KeyIndicatorsApp = (function () {
       { section: "feed", label: "대두 선물", value: cardStats.soybean.latest != null ? cardStats.soybean.latest.toFixed(2) : "—", unit: "\u00A2/bu", stats: cardStats.soybean, accent: ACCENT.futures, updatedAt: cmeUpdatedAt },
     ];
 
+    const exportXlsx = () => {
+      const header = ["지표", "값", "단위", "전일", "전주", "전월", "전년", "\uCD5C\uADFC \uAC31\uC2E0"];
+      const rows = entries.map((e) => [
+        e.label, e.value, e.unit,
+        e.stats?.dod != null ? `${e.stats.dod.toFixed(1)}%` : "",
+        e.stats?.wow != null ? `${e.stats.wow.toFixed(1)}%` : "",
+        e.stats?.mom != null ? `${e.stats.mom.toFixed(1)}%` : "",
+        e.stats?.yoy != null ? `${e.stats.yoy.toFixed(1)}%` : "",
+        e.updatedAt || "",
+      ]);
+      downloadXlsx([header, ...rows], "주요지표_스냅샷.xlsx", "주요지표");
+    };
+
     if (isMobile) {
       const counts = { fx: 0, meat: 0, futures: 0, feed: 0 };
       entries.forEach((e) => { counts[e.section]++; });
       return React.createElement("div", { style: { padding: "16px 14px 28px" } },
         React.createElement("h1", { style: { fontSize: 19, fontWeight: 800, margin: "2px 0 10px", letterSpacing: "-0.01em", color: COLORS.cream } }, "주요지표"),
+        loaded && downloadXlsx && React.createElement("div", { style: { marginBottom: 10 } },
+          React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 13, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
+        ),
         !loaded && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginTop: 20 } }, "불러오는 중..."),
         loaded && React.createElement(React.Fragment, null,
           React.createElement(MobileTabs, { sections: SECTIONS, active: mobileSection, onChange: setMobileSection, counts }),
@@ -377,6 +394,9 @@ window.KeyIndicatorsApp = (function () {
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", letterSpacing: "-0.01em", color: COLORS.cream } }, "주요지표"),
       React.createElement("div", { style: { fontSize: 13, color: COLORS.mute, marginBottom: 8 } },
         "각 탭에서 자동 갱신되는 데이터 요약. 카드를 클릭하면 해당 탭으로 이동합니다."
+      ),
+      loaded && downloadXlsx && React.createElement("div", { style: { marginBottom: 14 } },
+        React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} \uC5D1\uC140 \uB2E4\uC6B4\uB85C\uB4DC")
       ),
 
       !loaded && React.createElement("div", { style: { color: COLORS.mute, fontSize: 13, marginTop: 20 } }, "불러오는 중..."),
