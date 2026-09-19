@@ -5,7 +5,7 @@
    단위: 소=kg, 돼지=ton (그대로 표기, 서로 합산/비교하지 않음). */
 window.LivestockInventoryApp = (function () {
   const { useState, useMemo } = React;
-  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx } = window.RadarUI;
+  const { COLORS, SubTab, HoverAxisPicker, PillToggle, SvgTimeBarChart, ChartLegend, fmtUpdatedAt, downloadXlsx, readUrlParams, useShareLink, ShareLinkButton, ResetFilterButton } = window.RadarUI;
 
   const PALETTE = ["#b96a2e", "#3a6ea5", "#a34a3f", "#2e7d4f", "#8a5a30", "#6b5ca5", "#4a8fa8", "#a06a9a", "#7a8a3a", "#c48a3a", "#5a7ab9", "#9a4a6a"];
   const Toggle = PillToggle;
@@ -24,11 +24,12 @@ window.LivestockInventoryApp = (function () {
 
   return function LivestockInventoryApp() {
     const { raw, error } = useRadarData();
-    const [species, setSpecies] = useState("돼지");
-    const [selected, setSelected] = useState(["총재고"]);
-    const [mainTab, setMainTab] = useState("chart");
-    const [ymStart, setYmStart] = useState(null);
-    const [ymEnd, setYmEnd] = useState(null);
+    const { p, pOneOf, pList, pInt } = readUrlParams();
+    const [species, setSpecies] = useState(() => pOneOf("sp", "돼지", ["돼지", "소"]));
+    const [selected, setSelected] = useState(() => pList("sel", ["총재고"]));
+    const [mainTab, setMainTab] = useState(() => pOneOf("tab", "chart", ["chart", "table"]));
+    const [ymStart, setYmStart] = useState(() => pInt("ys", null));
+    const [ymEnd, setYmEnd] = useState(() => pInt("ye", null));
 
     const speciesData = raw?.species?.[species];
     const history = speciesData?.history || [];
@@ -108,12 +109,29 @@ window.LivestockInventoryApp = (function () {
       downloadXlsx([header, ...rows], `국내_${species}_재고동향.xlsx`, "재고동향");
     };
 
+    const { linkCopied, copyShareLink } = useShareLink();
+    React.useEffect(() => {
+      const sp2 = new URLSearchParams();
+      sp2.set("sp", species);
+      sp2.set("tab", mainTab);
+      if (selected.length && !(selected.length === 1 && selected[0] === "총재고")) sp2.set("sel", selected.join(","));
+      if (ymStart != null) sp2.set("ys", ymStart);
+      if (ymEnd != null) sp2.set("ye", ymEnd);
+      const newSearch = "?" + sp2.toString() + window.location.hash;
+      if (newSearch !== window.location.search + window.location.hash) window.history.replaceState(null, "", newSearch);
+    }, [species, mainTab, selected.join(","), ymStart, ymEnd]);
+    const resetFilters = () => {
+      setSpecies("돼지"); setSelected(["총재고"]); setYmStart(null); setYmEnd(null); setMainTab("chart");
+    };
+
     if (error) return React.createElement("div", { style: { padding: 24, color: COLORS.rust } }, `데이터를 불러오지 못했습니다: ${error}`);
     if (!raw) return React.createElement("div", { style: { padding: 24, color: COLORS.mute } }, "불러오는 중...");
 
     const latest = history[history.length - 1];
     const prevMonth = history[history.length - 2];
+    const yearAgo = history[history.length - 1 - 12] || null;
     const momPct = latest && prevMonth ? (latest.totStock - prevMonth.totStock) / prevMonth.totStock * 100 : null;
+    const yoyPct = latest && yearAgo ? (latest.totStock - yearAgo.totStock) / yearAgo.totStock * 100 : null;
 
     return React.createElement("div", { style: { padding: "clamp(14px,4vw,24px) clamp(10px,3vw,16px) 40px", maxWidth: 1040, margin: "0 auto" } },
       React.createElement("h1", { style: { fontSize: "clamp(18px,5.5vw,23px)", fontWeight: 800, margin: "5px 0 4px", color: COLORS.cream } }, "국내 축산물 재고동향"),
@@ -129,17 +147,29 @@ window.LivestockInventoryApp = (function () {
         }))
       ),
 
-      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 } },
+      latest && React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 } },
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `${species} 총재고 (${latest.yearMonth})`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, `${latest.totStock?.toLocaleString() ?? "—"} ${unit}`),
-          momPct != null && React.createElement("div", { style: { fontSize: 12, color: momPct > 0 ? COLORS.rust : COLORS.sage, marginTop: 4 } }, `전월대비 ${momPct > 0 ? "+" : ""}${momPct.toFixed(1)}%`)
+          React.createElement("div", { style: { display: "flex", gap: 14, marginTop: 6 } },
+            momPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "전월 "),
+              React.createElement("span", { style: { color: momPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${momPct > 0 ? "+" : ""}${momPct.toFixed(1)}%`)
+            ),
+            yoyPct != null && React.createElement("div", { style: { fontSize: 12 } },
+              React.createElement("span", { style: { color: COLORS.mute } }, "전년 "),
+              React.createElement("span", { style: { color: yoyPct > 0 ? COLORS.rust : COLORS.sage, fontWeight: 700 } }, `${yoyPct > 0 ? "+" : ""}${yoyPct.toFixed(1)}%`)
+            )
+          )
         ),
         React.createElement("div", { style: { background: COLORS.panel, border: `1px solid ${COLORS.panelBorder}`, borderRadius: 10, padding: "14px 16px", minWidth: 170, flex: "1 1 170px" } },
           React.createElement("div", { style: { fontSize: 12, color: COLORS.mute, marginBottom: 6 } }, `조회기간 평균 총재고 (${ymLabel(ys)}~${ymLabel(ye)})`),
           React.createElement("div", { style: { fontSize: 21, fontWeight: 800, color: COLORS.cream } }, periodAvgTot != null ? `${Math.round(periodAvgTot).toLocaleString()} ${unit}` : "—")
         )
       ),
+
+      React.createElement(ShareLinkButton, { linkCopied, onClick: copyShareLink }),
+      React.createElement("div", { style: { height: 8 } }),
 
       React.createElement("div", { style: { background: "#eef0ec", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 8 } },
         React.createElement("div", null,
@@ -157,6 +187,7 @@ window.LivestockInventoryApp = (function () {
             React.createElement("div", { style: { width: 1, alignSelf: "stretch", background: COLORS.panelBorder2, margin: "0 2px" } }),
             PART_INDICATORS.map((id) => React.createElement(Toggle, { key: id, active: selected.includes(id), onClick: () => toggle(id) }, id)),
             React.createElement("div", { style: { flex: 1 } }),
+            React.createElement(ResetFilterButton, { onClick: resetFilters }),
             React.createElement("button", { onClick: exportXlsx, style: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.sage}`, background: "rgba(111,148,130,0.14)", color: COLORS.sage, fontSize: 14, fontWeight: 700, cursor: "pointer" } }, "\u{1F4E5} 엑셀 다운로드")
           )
         ),
